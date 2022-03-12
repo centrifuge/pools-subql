@@ -1,0 +1,28 @@
+specVersion: 0.2.0
+name: centrifuge-pools
+version: 1.0.0
+description: ''
+repository: ''
+schema:
+  file: ./schema.graphql
+network:
+  endpoint: wss://fullnode-collator-2.development.cntrfg.com
+  genesisHash: '0xe505dc7ccb1d48fb60423f4bef259dd8628d86a8a01b383c5278856502cbc9ae'
+  chaintypes:
+    file: ./dist/chaintypes.js
+dataSources:
+  - kind: substrate/Runtime
+    startBlock: 1
+    mapping:
+      file: ./dist/index.js
+      handlers:
+        - handler: handlePoolCreated
+          kind: substrate/EventHandler
+          filter:
+            module: pools
+            method: Created
+        - handler: handleInvestOrderUpdated
+          kind: substrate/EventHandler
+          filter:
+            module: pools
+            method: InvestOrderUpdated

@@ -1,0 +1,107 @@
+type Pool @entity {
+  id: ID!
+  
+  currency: String!
+  metadata: String!
+
+  minEpochTime: Int!
+  challengeTime: Int!
+  maxNavAge: Int!
+
+  currentEpoch: Epoch!
+  lastEpochClosed: Epoch!
+  lastEpochExecuted: Epoch!
+
+  tranches: [Tranche] @derivedFrom(field: "pool")
+
+  currentState: PoolState
+}
+
+type Tranche @entity {
+  id: ID!
+
+  pool: Pool!
+
+  isResidual: Boolean!
+  seniority: Int!
+  interestRate: BigInt
+  minRiskBuffer: BigInt
+}
+
+type TrancheState @entity {
+  id: ID!
+
+  tranche: Tranche!
+
+  supply: BigInt!
+  price: BigInt!
+  poolState: PoolState!
+  # invest: BigInt!
+  # redeem: BigInt!
+}
+
+# Track all state that regularly changes
+type PoolState @entity {
+  id: ID!
+
+  netAssetValue: BigInt!
+  totalReserve: BigInt!
+  availableReserve: BigInt!
+  maxReserve: BigInt!
+  # debt: BigInt!
+
+  # trancheState: [TrancheState] @derivedFrom(field: "poolState")
+}
+
+type Epoch @entity {
+  id: ID!
+  
+  # pool: Pool!
+
+  openedAt: Date!
+  closedAt: Date
+  executedAt: Date
+
+  # openPoolState: PoolState!
+  # closePoolState: PoolState
+  # executePoolState: PoolState
+
+  # investorOrders: [InvestorTransaction]
+  # borrowerActions: 
+}
+
+
+enum InvestorTransactionType {
+  INVEST_ORDER_UPDATE
+  REDEEM_ORDER_UPDATE
+  INVEST_ORDER_CANCEL
+  REDEEM_ORDER_CANCEL
+  INVEST_EXECUTION
+  REDEEM_EXECUTION
+  TRANSFER_IN
+  TRANSFER_OUT
+}
+
+type InvestorTransaction {
+  id: ID! # transaction hash
+
+  transaction: String! # transaction hash
+  owner: Account! @index
+  pool: Pool! @index
+  epoch: Epoch!
+  symbol: String
+  timestamp: BigInt
+  type: InvestorTransactionType!
+  tokenAmount: BigInt
+  currencyAmount: BigInt
+  newBalance: BigInt
+  newBalanceValue: BigInt
+  tokenPrice: BigInt
+  transactionFee: BigInt
+}
+
+type Account @entity {
+  id: ID!
+
+  publicAddress: String!
+}
