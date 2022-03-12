@@ -27,6 +27,7 @@ export async function handlePoolCreated(event: SubstrateEvent): Promise<void> {
   // Create the pool
   let pool = new Pool(poolId.toString());
 
+  pool.type = "POOL";
   pool.metadata = metadata.toString();
   pool.currency = Object.keys(poolData.currency)[0].toString();
 

@@ -1,5 +1,7 @@
 type Pool @entity {
   id: ID!
+
+  type: String! @index
   
   currency: String!
   metadata: String!
@@ -53,6 +55,13 @@ type PoolState @entity {
   # trancheState: [TrancheState] @derivedFrom(field: "poolState")
 }
 
+type DailyPoolState @entity {
+  id: ID!
+  
+  timestamp: Date!
+  poolState: PoolState!
+}
+
 type Epoch @entity {
   id: ID!
   
@@ -69,7 +78,6 @@ type Epoch @entity {
   # investorOrders: [InvestorTransaction]
   # borrowerActions: 
 }
-
 
 enum InvestorTransactionType {
   INVEST_ORDER_UPDATE
