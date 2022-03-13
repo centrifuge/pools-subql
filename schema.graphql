@@ -13,9 +13,10 @@ type Pool @entity {
   challengeTime: Int!
   maxNavAge: Int!
 
-  currentEpoch: Epoch!
-  lastEpochClosed: Epoch!
-  lastEpochExecuted: Epoch!
+  # This cannot reference Pool directly, since this leads to a cyclic dependency.
+  currentEpoch: Int!
+  lastEpochClosed: Int
+  lastEpochExecuted: Int
 
   tranches: [Tranche] @derivedFrom(field: "pool")
 
@@ -26,6 +27,9 @@ type Tranche @entity {
   id: ID!
 
   pool: Pool!
+
+  # id cannot be the tranche id as it's not globally unique, so we store it separately
+  trancheId: Int!
 
   isResidual: Boolean!
   seniority: Int!
@@ -68,9 +72,7 @@ type DailyPoolState @entity {
 type Epoch @entity {
   id: ID!
   
-  # This cannot reference Pool directly, since this leads to a cyclic dependency
-  # pools => epochs => pools (through the currentEpoch etc fields).
-  poolId: String!
+  pool: Pool!
 
   index: Int!
 
@@ -102,7 +104,7 @@ type InvestorTransaction @entity {
 
   # account: Account! @index
   pool: Pool! @index
-  # tranche: Tranche! @index
+  tranche: Tranche! @index
   epoch: Epoch! @index
   timestamp: Date!
   type: InvestorTransactionType!
@@ -117,3 +119,22 @@ type Account @entity {
 
   publicAddress: String!
 }
+
+# enum InvestorOrderType @entity {
+#   INVEST
+#   REDEEM
+# }
+
+# type OutstandingOrder @entity {
+#   id: ID!
+
+#   pool: Pool! @index
+#   tranche: Tranche! @index
+#   epoch: Epoch! @index
+#   timestamp: Date!
+#   type: InvestorTransactionType!
+#   tokenAmount: BigInt
+#   currencyAmount: BigInt
+#   tokenPrice: BigInt
+#   transactionFee: BigInt
+# }
