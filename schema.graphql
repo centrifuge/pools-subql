@@ -1,6 +1,9 @@
 type Pool @entity {
   id: ID!
 
+  # It's not possible to simply retrieve all entities, but it is supported
+  # to get all entities by a field. Hence we add the same type field to all
+  # pools, so we can do Pool.getByType("POOL").
   type: String! @index
   
   currency: String!
@@ -65,7 +68,11 @@ type DailyPoolState @entity {
 type Epoch @entity {
   id: ID!
   
-  # pool: Pool!
+  # This cannot reference Pool directly, since this leads to a cyclic dependency
+  # pools => epochs => pools (through the currentEpoch etc fields).
+  poolId: String!
+
+  index: Int!
 
   openedAt: Date!
   closedAt: Date
@@ -75,7 +82,7 @@ type Epoch @entity {
   # closePoolState: PoolState
   # executePoolState: PoolState
 
-  # investorOrders: [InvestorTransaction]
+  investorTransactions: [InvestorTransaction] @derivedFrom(field: "epoch")
   # borrowerActions: 
 }
 
@@ -90,20 +97,17 @@ enum InvestorTransactionType {
   TRANSFER_OUT
 }
 
-type InvestorTransaction {
+type InvestorTransaction @entity {
   id: ID! # transaction hash
 
-  transaction: String! # transaction hash
-  owner: Account! @index
+  # account: Account! @index
   pool: Pool! @index
-  epoch: Epoch!
-  symbol: String
-  timestamp: BigInt
+  # tranche: Tranche! @index
+  epoch: Epoch! @index
+  timestamp: Date!
   type: InvestorTransactionType!
   tokenAmount: BigInt
   currencyAmount: BigInt
-  newBalance: BigInt
-  newBalanceValue: BigInt
   tokenPrice: BigInt
   transactionFee: BigInt
 }
