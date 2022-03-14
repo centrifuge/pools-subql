@@ -62,6 +62,13 @@ type PoolState @entity {
   # trancheState: [TrancheState] @derivedFrom(field: "poolState")
 }
 
+type HourlyPoolState @entity {
+  id: ID!
+  
+  timestamp: Date!
+  poolState: PoolState!
+}
+
 type DailyPoolState @entity {
   id: ID!
   

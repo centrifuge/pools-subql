@@ -1,6 +1,6 @@
 import { SubstrateBlock } from '@subql/types'
-import { BLOCK_TIME_SECONDS, SECONDS_PER_DAY } from '../config'
-import { Pool, PoolState, DailyPoolState } from '../types'
+import { BLOCK_TIME_SECONDS, SECONDS_PER_HOUR, SECONDS_PER_DAY } from '../config'
+import { Pool, PoolState, HourlyPoolState } from '../types'
 
 export async function handleBlock(block: SubstrateBlock): Promise<void> {
   const blockTimeSec = block.timestamp.getTime() / 1000
@@ -11,16 +11,32 @@ export async function handleBlock(block: SubstrateBlock): Promise<void> {
   // are skipped.
   //
   // TODO: we could probably address this by querying the db within n x BLOCK_TIME_SECONDS.
+  if (blockTimeSec % SECONDS_PER_HOUR <= BLOCK_TIME_SECONDS) {
+    const pools = await Pool.getByType('POOL')
+
+    for (let pool of pools) {
+      const result = await api.query.pools.pool(pool.id.toString())
+      const poolData = result.toJSON() as any
+
+      const navResult = await api.query.loans.poolNAV(pool.id.toString())
+      const nav = navResult.toJSON() as any
+
+      let poolState = new PoolState(`${pool.id.toString()}-${blockTimeSec.toString()}`)
+      poolState.netAssetValue = BigInt(nav !== null ? nav.latestNav.toString() : 0)
+      poolState.totalReserve = BigInt(poolData.totalReserve.toString())
+      poolState.availableReserve = BigInt(poolData.availableReserve.toString())
+      poolState.maxReserve = BigInt(poolData.maxReserve.toString())
+      await poolState.save()
+
+      let hourlyPoolState = new HourlyPoolState(`${pool.id.toString()}-${blockTimeSec.toString()}`)
+      hourlyPoolState.timestamp = block.timestamp
+      hourlyPoolState.poolStateId = poolState.id
+      await hourlyPoolState.save()
+    }
+  }
+
   if (blockTimeSec % SECONDS_PER_DAY <= BLOCK_TIME_SECONDS) {
     const pools = await Pool.getByType('POOL')
     logger.info(`It\'s a new day: ${block.timestamp}: there are ${pools.length} pools.`)
-
-    pools.forEach(async (pool: Pool) => {
-      logger.info(`Pool ${pool.id}: ${JSON.stringify(pool)}`)
-      let dailyPoolState = new DailyPoolState(`${pool.id}-${blockTimeSec.toString()}`)
-      dailyPoolState.timestamp = block.timestamp
-      dailyPoolState.poolStateId = pool.currentStateId
-      await dailyPoolState.save()
-    })
   }
 }
