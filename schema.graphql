@@ -33,20 +33,24 @@ type Tranche @entity {
 
   isResidual: Boolean!
   seniority: Int!
-  interestRate: BigInt
+  interestRatePerSec: BigInt
   minRiskBuffer: BigInt
 }
 
 type TrancheState @entity {
   id: ID!
 
-  tranche: Tranche!
+  poolState: PoolState!
 
   supply: BigInt!
   price: BigInt!
-  poolState: PoolState!
-  # invest: BigInt!
-  # redeem: BigInt!
+
+  outstandingInvestOrders: BigInt!
+  outstandingRedeemOrders: BigInt!
+
+  yield30Days: BigInt
+  yield90Days: BigInt
+  yieldSinceInception: BigInt
 }
 
 # Track all state that regularly changes
@@ -54,12 +58,14 @@ type PoolState @entity {
   id: ID!
 
   netAssetValue: BigInt!
+
   totalReserve: BigInt!
   availableReserve: BigInt!
   maxReserve: BigInt!
-  # debt: BigInt!
 
-  # trancheState: [TrancheState] @derivedFrom(field: "poolState")
+  totalDebt: BigInt
+
+  trancheStates: [TrancheState] @derivedFrom(field: "poolState")
 }
 
 type HourlyPoolState @entity {
@@ -74,6 +80,12 @@ type DailyPoolState @entity {
   
   timestamp: Date!
   poolState: PoolState!
+
+  # Aggregated data over the last 24 hours corresponding to this DailyPoolState
+  totalBorrowed: BigInt
+  totalRepaid: BigInt
+  totalInvested: BigInt
+  totalRedeemed: BigInt
 }
 
 type Epoch @entity {
@@ -92,7 +104,13 @@ type Epoch @entity {
   # executePoolState: PoolState
 
   investorTransactions: [InvestorTransaction] @derivedFrom(field: "epoch")
-  # borrowerActions: 
+  borrowerActions: [BorrowerTransaction] @derivedFrom(field: "epoch")
+
+  # Aggregated data during this epoch
+  totalBorrowed: BigInt
+  totalRepaid: BigInt
+  totalInvested: BigInt
+  totalRedeemed: BigInt
 }
 
 enum InvestorTransactionType {
@@ -127,21 +145,46 @@ type Account @entity {
   publicAddress: String!
 }
 
-# enum InvestorOrderType @entity {
-#   INVEST
-#   REDEEM
-# }
+enum LoanStatus {
+  CREATED
+  ACTIVE
+  CLOSED
+}
 
-# type OutstandingOrder @entity {
-#   id: ID!
+type Loan @entity {
+  id: ID!
 
-#   pool: Pool! @index
-#   tranche: Tranche! @index
-#   epoch: Epoch! @index
-#   timestamp: Date!
-#   type: InvestorTransactionType!
-#   tokenAmount: BigInt
-#   currencyAmount: BigInt
-#   tokenPrice: BigInt
-#   transactionFee: BigInt
-# }
+  createdAt: Date!
+
+  # collateral: 
+  status: LoanStatus!
+  # TODO: how to store loan type data
+
+  interestRatePerSec: BigInt
+  outstandingDebt: BigInt
+
+  writeOffIndex: Int
+  adminWrittenOff: Boolean
+
+  pool: Pool!
+}
+
+enum BorrowerTransactionType {
+  CREATED
+  PRICED
+  BORROWED
+  REPAID
+  CLOSED
+}
+
+type BorrowerTransaction @entity {
+  id: ID!
+
+  account: Account!
+  epoch: Epoch!
+  loan: Loan!
+  type: BorrowerTransactionType!
+ 
+  # only applies to BORROWED and REPAID transactions
+  amount: BigInt 
+}

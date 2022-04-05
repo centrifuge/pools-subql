@@ -52,7 +52,7 @@ export async function handlePoolCreated(event: SubstrateEvent): Promise<void> {
     tranche.seniority = Number(trancheData.seniority.toString())
 
     if (!tranche.isResidual) {
-      tranche.interestRate = BigInt(trancheData.interestPerSec.toString())
+      tranche.interestRatePerSec = BigInt(trancheData.interestPerSec.toString())
       tranche.minRiskBuffer = BigInt(trancheData.minRiskBuffer.toString())
     }
 
