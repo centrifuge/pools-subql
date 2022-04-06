@@ -1,5 +1,5 @@
 import { SubstrateEvent } from '@subql/types'
-import { Pool, InvestorTransaction, Account, InvestorTransactionType } from '../types'
+import { Pool, InvestorTransaction, Account, InvestorTransactionType, OutstandingOrder } from '../types'
 
 export async function handleInvestOrderUpdated(event: SubstrateEvent): Promise<void> {
   logger.info(`Invest order updated: ${event.toString()}`)
@@ -39,7 +39,18 @@ const handleOrderUpdated = async (event: SubstrateEvent, type: InvestorTransacti
 
   await tx.save()
 
-  // TODO: create OutstandingOrder
+  // Create outstanding order so we can check which were fulfilled in the epoch execute handler
+  let outstandingOrder = await OutstandingOrder.get(
+    `${poolId.toString()}-${trancheId.toString()}-${address.toString()}`
+  )
+  outstandingOrder.invest = BigInt(
+    type === InvestorTransactionType.INVEST_ORDER_UPDATE ? BigInt(amount.toString()) : outstandingOrder.invest
+  )
+  outstandingOrder.redeem = BigInt(
+    type === InvestorTransactionType.REDEEM_ORDER_UPDATE ? BigInt(amount.toString()) : outstandingOrder.redeem
+  )
+  outstandingOrder.epochId = pool.currentEpoch.toString()
+  await outstandingOrder.save()
 }
 
 const loadOrCreateAccount = async (address: string) => {

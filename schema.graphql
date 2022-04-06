@@ -139,6 +139,18 @@ type InvestorTransaction @entity {
   transactionFee: BigInt
 }
 
+type OutstandingOrder @entity {
+  id: ID! # pool id - tranche id - investor address
+
+  # account: Account! @index
+  pool: Pool! @index
+  tranche: Tranche! @index
+
+  invest: BigInt!
+  redeem: BigInt!
+  epoch: Epoch! @index
+}
+
 type Account @entity {
   id: ID!
 

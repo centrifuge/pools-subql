@@ -1,5 +1,5 @@
 import { SubstrateEvent } from '@subql/types'
-import { Epoch, Tranche } from '../types'
+import { Epoch, OutstandingOrder } from '../types'
 
 export async function handleEpochClosed(event: SubstrateEvent): Promise<void> {
   logger.info(`Epoch closed: ${event.toString()}`)
@@ -28,12 +28,7 @@ export async function handleEpochExecuted(event: SubstrateEvent): Promise<void> 
   epoch.executedAt = event.block.timestamp
   await epoch.save()
 
-  const tranches = await Tranche.getByPoolId(poolId.toString())
-  const outstandingOrders = await Promise.all(
-    tranches.map((_1, index: number) => api.query.pools.order.entries({ Tranche: [poolId, index] }))
-  )
-
-  logger.info(`Outstanding orders: ${JSON.stringify(outstandingOrders)}`)
-
-  // TODO: loop over order.entries(), apply fulfillment from epoch, create InvestorTransactions
+  // TODO: loop over OutstandingOrder, apply fulfillment from epoch, create InvestorTransactions, optionally remove orders
+  const orders = await OutstandingOrder.getByPoolId(poolId.toString())
+  logger.info(`${JSON.stringify(orders)}`)
 }
