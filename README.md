@@ -1,4 +1,14 @@
-# Centrifuge Pools Subquery
+# Centrifuge Subquery
+
+[![SubQuery](https://img.shields.io/static/v1?label=built+with&message=SubQuery&color=FF4581)](https://subquery.network/)
+[![embrio.tech](https://img.shields.io/static/v1?label=by&message=EMBRIO.tech&color=24ae5f)](https://embrio.tech)
+[![Centrifuge](https://img.shields.io/static/v1?label=for&message=Centrifuge&color=2762ff)](https://centrifuge.io/)
+
+<!-- [![Docker](https://img.shields.io/static/v1?label=shipped+with&message=Docker&color=287cf9)](https://www.docker.com/) -->
+
+A GraphQL API to query the Centrifuge Parachain on Polkadot.
+
+🚧 We are breeding the next EMBRIO. More soon... 🚀
 
 ### Environment
 - [Typescript](https://www.typescriptlang.org/) are required to compile project and define types.  
