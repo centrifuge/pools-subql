@@ -5,6 +5,8 @@ type Pool @entity {
   # to get all entities by a field. Hence we add the same type field to all
   # pools, so we can do Pool.getByType("POOL").
   type: String! @index
+
+  createdAt: Date!
   
   currency: String!
   metadata: String!
@@ -127,7 +129,7 @@ enum InvestorTransactionType {
 type InvestorTransaction @entity {
   id: ID! # transaction hash
 
-  # account: Account! @index
+  account: Account @index
   pool: Pool! @index
   tranche: Tranche! @index
   epoch: Epoch! @index
@@ -142,19 +144,31 @@ type InvestorTransaction @entity {
 type OutstandingOrder @entity {
   id: ID! # pool id - tranche id - investor address
 
-  # account: Account! @index
+  account: Account @index
   pool: Pool! @index
   tranche: Tranche! @index
 
   invest: BigInt!
   redeem: BigInt!
-  epoch: Epoch! @index
+  epoch: Epoch @index
 }
 
 type Account @entity {
   id: ID!
 
   publicAddress: String!
+}
+
+type AccountBalance @entity {
+  id: ID! # pool id - tranche id - account id
+
+  account: Account @index
+  pool: Pool! @index
+  tranche: Tranche! @index
+
+  collected: BigInt!
+  uncollected: BigInt!
+  ordered: BigInt!
 }
 
 enum LoanStatus {

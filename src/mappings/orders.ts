@@ -17,7 +17,7 @@ const handleOrderUpdated = async (event: SubstrateEvent, type: InvestorTransacti
 
   const pool = await Pool.get(poolId.toString())
 
-  // const account = await loadOrCreateAccount(address.toString());
+  // const account = await loadOrCreateAccount(address.toString())
 
   const trancheId = 0 // TODO: this should come from the event
   const result = await api.query.pools.order({ Tranche: [poolId, trancheId] }, address.toString())
@@ -26,7 +26,7 @@ const handleOrderUpdated = async (event: SubstrateEvent, type: InvestorTransacti
 
   let tx = new InvestorTransaction(event.hash.toString())
 
-  // tx.accountId = account.id;
+  // tx.accountId = account.id
   tx.poolId = poolId.toString()
   tx.epochId = `${poolId.toString()}-${pool.currentEpoch}`
   tx.trancheId = `${poolId.toString()}-${trancheId.toString()}`
@@ -40,28 +40,55 @@ const handleOrderUpdated = async (event: SubstrateEvent, type: InvestorTransacti
   await tx.save()
 
   // Create outstanding order so we can check which were fulfilled in the epoch execute handler
-  let outstandingOrder = await OutstandingOrder.get(
-    `${poolId.toString()}-${trancheId.toString()}-${address.toString()}`
-  )
-  outstandingOrder.invest = BigInt(
-    type === InvestorTransactionType.INVEST_ORDER_UPDATE ? BigInt(amount.toString()) : outstandingOrder.invest
-  )
-  outstandingOrder.redeem = BigInt(
-    type === InvestorTransactionType.REDEEM_ORDER_UPDATE ? BigInt(amount.toString()) : outstandingOrder.redeem
-  )
-  outstandingOrder.epochId = pool.currentEpoch.toString()
-  await outstandingOrder.save()
+  // let outstandingOrder = await loadOrCreateOutstandingOrder(poolId.toString(), trancheId.toString(), address.toString())
+  // outstandingOrder.invest = BigInt(
+  //   type === InvestorTransactionType.INVEST_ORDER_UPDATE ? BigInt(amount.toString()) : outstandingOrder.invest
+  // )
+  // outstandingOrder.redeem = BigInt(
+  //   type === InvestorTransactionType.REDEEM_ORDER_UPDATE ? BigInt(amount.toString()) : outstandingOrder.redeem
+  // )
+  // outstandingOrder.epochId = pool.currentEpoch.toString()
+  // await outstandingOrder.save()
 }
 
 const loadOrCreateAccount = async (address: string) => {
-  const account = await Account.get(address)
+  try {
+    const account = await Account.get(address)
 
-  if (!account) {
-    let account = new Account(address)
-    account.publicAddress = address
-    await account.save()
+    if (!account) {
+      let account = new Account(address)
+      account.publicAddress = address
+      await account.save()
+      return account
+    }
+
     return account
+  } catch (e) {
+    logger.error(`${e}`)
   }
+}
 
-  return account
+const loadOrCreateOutstandingOrder = async (poolId: string, trancheId: string, address: string) => {
+  try {
+    const id = `${poolId.toString()}-${trancheId.toString()}-${address}`
+
+    const order = await OutstandingOrder.get(id)
+
+    if (!order) {
+      let order = new OutstandingOrder(id)
+      order.poolId = poolId
+      order.trancheId = `${poolId}-${trancheId}`
+
+      order.invest = BigInt(0)
+      order.redeem = BigInt(0)
+      // order.accountId = accountId
+      await order.save()
+
+      return order
+    }
+
+    return order
+  } catch (e) {
+    logger.error(`${e}`)
+  }
 }
