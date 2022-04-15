@@ -1,6 +1,6 @@
 import { SubstrateBlock } from '@subql/types'
 import { BLOCK_TIME_SECONDS, SECONDS_PER_HOUR, SECONDS_PER_DAY } from '../config'
-import { Pool, PoolState, HourlyPoolState } from '../types'
+import { Pool, PoolState, HourlyPoolState, DailyPoolState } from '../types'
 
 export async function handleBlock(block: SubstrateBlock): Promise<void> {
   const blockTimeSec = block.timestamp.getTime() / 1000
@@ -12,6 +12,7 @@ export async function handleBlock(block: SubstrateBlock): Promise<void> {
   //
   // TODO: we could probably address this by querying the db within n x BLOCK_TIME_SECONDS.
   if (blockTimeSec % SECONDS_PER_HOUR <= BLOCK_TIME_SECONDS) {
+    // A new hour has started
     const pools = await Pool.getByType('POOL')
 
     for (let pool of pools) {
@@ -32,11 +33,14 @@ export async function handleBlock(block: SubstrateBlock): Promise<void> {
       hourlyPoolState.timestamp = block.timestamp
       hourlyPoolState.poolStateId = poolState.id
       await hourlyPoolState.save()
-    }
-  }
 
-  if (blockTimeSec % SECONDS_PER_DAY <= BLOCK_TIME_SECONDS) {
-    const pools = await Pool.getByType('POOL')
-    logger.info(`It\'s a new day: ${block.timestamp}: there are ${pools.length} pools.`)
+      if (blockTimeSec % SECONDS_PER_DAY <= BLOCK_TIME_SECONDS) {
+        // A new day has started as well
+        let dailyPoolState = new DailyPoolState(`${pool.id.toString()}-${blockTimeSec.toString()}`)
+        dailyPoolState.timestamp = block.timestamp
+        dailyPoolState.poolStateId = poolState.id
+        await dailyPoolState.save()
+      }
+    }
   }
 }

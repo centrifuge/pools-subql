@@ -5,7 +5,7 @@ export async function handlePoolCreated(event: SubstrateEvent): Promise<void> {
   logger.info(`Pool created: ${event.toString()}`)
 
   const [poolId, metadata] = event.event.data
-  const result = await await api.query.pools.pool(poolId)
+  const result = await api.query.pools.pool(poolId)
   const poolData = result.toJSON() as any
 
   // Save the current pool state
@@ -21,6 +21,7 @@ export async function handlePoolCreated(event: SubstrateEvent): Promise<void> {
   let pool = new Pool(poolId.toString())
 
   pool.type = 'POOL'
+  pool.createdAt = event.block.timestamp
   pool.metadata = metadata.toString()
   pool.currency = Object.keys(poolData.currency)[0].toString()
 
