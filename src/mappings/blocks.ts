@@ -1,46 +1,75 @@
 import { SubstrateBlock } from '@subql/types'
-import { BLOCK_TIME_SECONDS, SECONDS_PER_HOUR, SECONDS_PER_DAY } from '../config'
-import { Pool, PoolState, HourlyPoolState, DailyPoolState } from '../types'
+import { SNAPSHOT_INTERVAL_SECONDS } from '../config'
+import { Pool, PoolState, PoolSnapshot, Tranche, TrancheState, TrancheSnapshot } from '../types'
+import { PoolData, PoolNavData } from '../helpers/types'
+
+// These values must be initialised with the last block in the db
+
+const timekeeper = new Timekeeper(0)
 
 export async function handleBlock(block: SubstrateBlock): Promise<void> {
-  const blockTimeSec = block.timestamp.getTime() / 1000
+  const blockHeight = block.block.header.number.toNumber()
+  const blockTimeSec = block.timestamp.valueOf() / 1000
+  const blockPeriodStart = blockTimeSec - blockTimeSec % SNAPSHOT_INTERVAL_SECONDS
 
-  // This is imperfect if block time isn't consistent. However, the alternative is querying db
-  // to check the last saved daily state, which significantly slows down every handleBlock call.
-  // For now, we assume this is sufficient, but we need to double check in production if some days
-  // are skipped.
-  //
-  // TODO: we could probably address this by querying the db within n x BLOCK_TIME_SECONDS.
-  if (blockTimeSec % SECONDS_PER_HOUR <= BLOCK_TIME_SECONDS) {
-    // A new hour has started
+  const newPeriod = blockPeriodStart !== timekeeper.getCurrentPeriod()
+
+  if (newPeriod) {
+    logger.info(`It's a new period on block ${blockHeight}: ${block.timestamp.toISOString()}`)
+    timekeeper.setCurrentPeriod(blockPeriodStart)
+  }
+  
+  if (newPeriod) {
+    // CREATE SNAPSHOTS OF POOL STATES
     const pools = await Pool.getByType('POOL')
-
     for (let pool of pools) {
-      const result = await api.query.pools.pool(pool.id.toString())
-      const poolData = result.toJSON() as any
+      const poolResponse = await api.query.pools.pool(pool.id)
+      const poolData = poolResponse.toJSON() as any as PoolData
+      //logger.info(`PoolData: ${poolResponse.toString()}`)
 
-      const navResult = await api.query.loans.poolNAV(pool.id.toString())
-      const nav = navResult.toJSON() as any
+      const poolNavResponse = await api.query.loans.poolNAV(pool.id)
+      const navData = poolNavResponse.toJSON() as any as PoolNavData
+      //logger.info(`NAVData: ${poolNavResponse.toString()}`)
 
-      let poolState = new PoolState(`${pool.id.toString()}-${blockTimeSec.toString()}`)
-      poolState.netAssetValue = BigInt(nav !== null ? nav.latestNav.toString() : 0)
-      poolState.totalReserve = BigInt(poolData.totalReserve.toString())
-      poolState.availableReserve = BigInt(poolData.availableReserve.toString())
-      poolState.maxReserve = BigInt(poolData.maxReserve.toString())
+      const poolState = await PoolState.get(pool.id)
+      poolState.netAssetValue = BigInt(navData ? navData.latestNav : 0)
+      poolState.totalReserve = BigInt(poolData.totalReserve ?? 0)
+      poolState.availableReserve = BigInt(poolData.availableReserve ?? 0)
+      poolState.maxReserve = BigInt(poolData.maxReserve ?? 0)
       await poolState.save()
 
-      let hourlyPoolState = new HourlyPoolState(`${pool.id.toString()}-${blockTimeSec.toString()}`)
-      hourlyPoolState.timestamp = block.timestamp
-      hourlyPoolState.poolStateId = poolState.id
-      await hourlyPoolState.save()
+      const {id, ...copyPoolState} = poolState
+      const poolSnapshot = new PoolSnapshot(`${pool.id.toString()}-${blockHeight.toString()}`)
+      Object.assign(poolSnapshot, copyPoolState)
+      
+      poolSnapshot.poolId = pool.id
+      poolSnapshot.timestamp = block.timestamp
+      poolSnapshot.blockHeight = blockHeight
+      await poolSnapshot.save()
 
-      if (blockTimeSec % SECONDS_PER_DAY <= BLOCK_TIME_SECONDS) {
-        // A new day has started as well
-        let dailyPoolState = new DailyPoolState(`${pool.id.toString()}-${blockTimeSec.toString()}`)
-        dailyPoolState.timestamp = block.timestamp
-        dailyPoolState.poolStateId = poolState.id
-        await dailyPoolState.save()
+      const tranches = await Tranche.getByPoolId(pool.id)
+      for (const tranche of tranches) {
+        const trancheState = await TrancheState.get(tranche.id)
+        const trancheData = poolData.tranches[tranche.trancheId]
+        trancheState.outstandingInvestOrders = BigInt(trancheData.outstandingInvestOrders)
+        trancheState.outstandingRedeemOrders = BigInt(trancheData.outstandingRedeemOrders)
+        await trancheState.save()
       }
+    }
+
+    // CREATE SNAPSHOTS OF TRANCHE STATES
+    const tranches = await Tranche.getByType("TRANCHE")
+    for (let tranche of tranches) {
+      const trancheState = await TrancheState.get(tranche.id)
+      const {id, ...copyTrancheState} = trancheState
+      const trancheSnapshot = new TrancheSnapshot(`${tranche.id}-${blockHeight.toString()}`)
+      Object.assign(trancheSnapshot, copyTrancheState)
+
+      trancheSnapshot.trancheId = tranche.id
+      trancheSnapshot.timestamp = block.timestamp
+      trancheSnapshot.blockHeight = blockHeight
+
+      await trancheSnapshot.save()
     }
   }
 }
