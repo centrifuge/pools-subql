@@ -1,25 +1,17 @@
 import { SubstrateBlock } from '@subql/types'
-import { SNAPSHOT_INTERVAL_SECONDS } from '../config'
-import { Pool, PoolState, PoolSnapshot, Tranche, TrancheState, TrancheSnapshot } from '../types'
+import { Pool, PoolState, PoolSnapshot, Tranche, TrancheState, TrancheSnapshot, Timekeeper } from '../types'
 import { PoolData, PoolNavData } from '../helpers/types'
+import { getPeriodStart, MemTimekeeper } from '../helpers/timeKeeping'
 
-// These values must be initialised with the last block in the db
-
-const timekeeper = new Timekeeper(0)
+const memTimekeeper = initialiseMemTimekeeper()
 
 export async function handleBlock(block: SubstrateBlock): Promise<void> {
+  const blockPeriodStart = getPeriodStart(block.timestamp)
   const blockHeight = block.block.header.number.toNumber()
-  const blockTimeSec = block.timestamp.valueOf() / 1000
-  const blockPeriodStart = blockTimeSec - blockTimeSec % SNAPSHOT_INTERVAL_SECONDS
-
-  const newPeriod = blockPeriodStart !== timekeeper.getCurrentPeriod()
-
-  if (newPeriod) {
-    logger.info(`It's a new period on block ${blockHeight}: ${block.timestamp.toISOString()}`)
-    timekeeper.setCurrentPeriod(blockPeriodStart)
-  }
+  const newPeriod = (await memTimekeeper).processBlock(block)
   
   if (newPeriod) {
+    logger.info(`It's a new period on block ${blockHeight}: ${block.timestamp.toISOString()}`)
     // CREATE SNAPSHOTS OF POOL STATES
     const pools = await Pool.getByType('POOL')
     for (let pool of pools) {
@@ -71,5 +63,20 @@ export async function handleBlock(block: SubstrateBlock): Promise<void> {
 
       await trancheSnapshot.save()
     }
+
+    const timekeeper = new Timekeeper("global")
+    timekeeper.lastPeriodStart = blockPeriodStart
+    await timekeeper.save()
+    
   }
+}
+
+async function initialiseMemTimekeeper():Promise<MemTimekeeper> {
+  let lastPeriodStart: Date
+  try {
+    lastPeriodStart = (await Timekeeper.get("global")).lastPeriodStart
+  } catch (error) {
+    lastPeriodStart = new Date(0)
+  }
+  return new MemTimekeeper(lastPeriodStart)
 }
