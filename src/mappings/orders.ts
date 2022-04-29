@@ -1,17 +1,20 @@
 import { SubstrateEvent } from '@subql/types'
+import { errorHandler } from '../helpers/errorHandler'
 import { Pool, InvestorTransaction, Account, InvestorTransactionType, OutstandingOrder } from '../types'
 
-export async function handleInvestOrderUpdated(event: SubstrateEvent): Promise<void> {
+export const handleInvestOrderUpdated = errorHandler(_handleInvestOrderUpdated)
+async function _handleInvestOrderUpdated(event: SubstrateEvent): Promise<void> {
   logger.info(`Invest order updated: ${event.toString()}`)
   handleOrderUpdated(event, InvestorTransactionType.INVEST_ORDER_UPDATE)
 }
 
-export async function handleRedeemOrderUpdated(event: SubstrateEvent): Promise<void> {
+export const handleRedeemOrderUpdated = errorHandler(_handleRedeemOrderUpdated)
+async function _handleRedeemOrderUpdated(event: SubstrateEvent): Promise<void> {
   logger.info(`Redeem order updated: ${event.toString()}`)
   handleOrderUpdated(event, InvestorTransactionType.REDEEM_ORDER_UPDATE)
 }
 
-async function handleOrderUpdated(event: SubstrateEvent, type: InvestorTransactionType) {
+export async function handleOrderUpdated(event: SubstrateEvent, type: InvestorTransactionType) {
   const [poolId, address] = event.event.data
   const [_1, _2, amount] = event.extrinsic?.extrinsic.args
 

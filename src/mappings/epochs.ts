@@ -1,7 +1,9 @@
 import { SubstrateEvent } from '@subql/types'
+import { errorHandler } from '../helpers/errorHandler'
 import { Epoch, OutstandingOrder } from '../types'
 
-export async function handleEpochClosed(event: SubstrateEvent): Promise<void> {
+export const handleEpochClosed = errorHandler(_handleEpochClosed)
+async function _handleEpochClosed(event: SubstrateEvent): Promise<void> {
   logger.info(`Epoch closed in block ${event.block.block.header.number}: ${event.toString()}`)
 
   // Close the current epoch
@@ -20,7 +22,8 @@ export async function handleEpochClosed(event: SubstrateEvent): Promise<void> {
 }
 
 
-export async function handleEpochExecuted(event: SubstrateEvent): Promise<void> {
+export const handleEpochExecuted = errorHandler(_handleEpochExecuted)
+async function _handleEpochExecuted(event: SubstrateEvent): Promise<void> {
   logger.info(`Epoch executed: ${event.toString()}`)
 
   // Execute the epoch

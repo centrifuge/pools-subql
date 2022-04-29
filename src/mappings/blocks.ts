@@ -2,10 +2,12 @@ import { SubstrateBlock } from '@subql/types'
 import { Pool, PoolState, PoolSnapshot, Tranche, TrancheState, TrancheSnapshot, Timekeeper } from '../types'
 import { PoolData, PoolNavData } from '../helpers/types'
 import { getPeriodStart, MemTimekeeper } from '../helpers/timeKeeping'
+import { errorHandler } from '../helpers/errorHandler'
 
 const memTimekeeper = initialiseMemTimekeeper()
 
-export async function handleBlock(block: SubstrateBlock): Promise<void> {
+export const handleBlock = errorHandler(_handleBlock)
+async function _handleBlock(block: SubstrateBlock): Promise<void> {
   const blockPeriodStart = getPeriodStart(block.timestamp)
   const blockHeight = block.block.header.number.toNumber()
   const newPeriod = (await memTimekeeper).processBlock(block)

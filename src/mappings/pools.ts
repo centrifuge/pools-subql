@@ -1,8 +1,10 @@
 import { SubstrateEvent } from '@subql/types'
 import { Epoch, Pool, PoolState, Tranche, TrancheState } from '../types'
 import { TrancheData } from '../helpers/types'
+import { errorHandler } from '../helpers/errorHandler'
 
-export async function handlePoolCreated(event: SubstrateEvent): Promise<void> {
+export const handlePoolCreated = errorHandler(_handlePoolCreated)
+async function _handlePoolCreated(event: SubstrateEvent): Promise<void> {
   logger.info(`Pool created in block ${event.block.block.header.number}: ${event.toString()}`)
 
   const [poolId, metadata] = event.event.data
@@ -70,7 +72,8 @@ export async function handlePoolCreated(event: SubstrateEvent): Promise<void> {
   })
 }
 
-export async function handlePoolTotalDebt(event: SubstrateEvent):Promise<void> {
+export const handlePoolTotalDebt = errorHandler(_handlePoolTotalDebt)
+async function _handlePoolTotalDebt(event: SubstrateEvent):Promise<void> {
   const [poolId, loanId, amount] = event.event.data
   const eventType = event.event.method
   logger.info(`Pool ${poolId.toString()} totalDebt ${eventType} in block ${event.block.block.header.number} by ${amount.toString()}`)
