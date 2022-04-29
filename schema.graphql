@@ -1,6 +1,6 @@
 type Timekeeper @entity {
   id: ID!
-  lastBlockTimestamp: Date!
+  lastPeriodStart: Date!
 }
 
 type Pool @entity {
