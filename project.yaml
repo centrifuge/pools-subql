@@ -12,7 +12,7 @@ network:
     file: ./dist/chaintypes.js
 dataSources:
   - kind: substrate/Runtime
-    startBlock: 1
+    startBlock: 21000
     mapping:
       file: ./dist/index.js
       handlers:
@@ -23,23 +23,33 @@ dataSources:
           filter:
             module: pools
             method: Created
-        - handler: handleInvestOrderUpdated
+        # - handler: handleInvestOrderUpdated
+        #   kind: substrate/EventHandler
+        #   filter:
+        #     module: pools
+        #     method: InvestOrderUpdated
+        # - handler: handleRedeemOrderUpdated
+        #   kind: substrate/EventHandler
+        #   filter:
+        #     module: pools
+        #     method: RedeemOrderUpdated
+        # - handler: handleEpochClosed
+        #   kind: substrate/EventHandler
+        #   filter:
+        #     module: pools
+        #     method: EpochClosed
+        # - handler: handleEpochExecuted
+        #   kind: substrate/EventHandler
+        #   filter:
+        #     module: pools
+        #     method: EpochExecuted
+        - handler: handlePoolTotalDebt
           kind: substrate/EventHandler
           filter:
-            module: pools
-            method: InvestOrderUpdated
-        - handler: handleRedeemOrderUpdated
+            module: loans
+            method: Borrowed
+        - handler: handlePoolTotalDebt
           kind: substrate/EventHandler
           filter:
-            module: pools
-            method: RedeemOrderUpdated
-        - handler: handleEpochClosed
-          kind: substrate/EventHandler
-          filter:
-            module: pools
-            method: EpochClosed
-        - handler: handleEpochExecuted
-          kind: substrate/EventHandler
-          filter:
-            module: pools
-            method: EpochExecuted
+            module: loans
+            method: Repaid

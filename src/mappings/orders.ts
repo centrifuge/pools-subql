@@ -11,7 +11,7 @@ export async function handleRedeemOrderUpdated(event: SubstrateEvent): Promise<v
   handleOrderUpdated(event, InvestorTransactionType.REDEEM_ORDER_UPDATE)
 }
 
-const handleOrderUpdated = async (event: SubstrateEvent, type: InvestorTransactionType) => {
+async function handleOrderUpdated(event: SubstrateEvent, type: InvestorTransactionType) {
   const [poolId, address] = event.event.data
   const [_1, _2, amount] = event.extrinsic?.extrinsic.args
 
@@ -51,7 +51,7 @@ const handleOrderUpdated = async (event: SubstrateEvent, type: InvestorTransacti
   // await outstandingOrder.save()
 }
 
-const loadOrCreateAccount = async (address: string) => {
+async function loadOrCreateAccount(address: string) {
   try {
     const account = await Account.get(address)
 
@@ -68,7 +68,7 @@ const loadOrCreateAccount = async (address: string) => {
   }
 }
 
-const loadOrCreateOutstandingOrder = async (poolId: string, trancheId: string, address: string) => {
+async function loadOrCreateOutstandingOrder(poolId: string, trancheId: string, address: string) {
   try {
     const id = `${poolId.toString()}-${trancheId.toString()}-${address}`
 
