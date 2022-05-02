@@ -97,7 +97,7 @@ type Epoch @entity {
 
   index: Int!
 
-  openedAt: Date!
+  openedAt: Date
   closedAt: Date
   executedAt: Date
 
