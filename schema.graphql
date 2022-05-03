@@ -30,7 +30,7 @@ type Tranche @entity {
   pool: Pool!
 
   # id cannot be the tranche id as it's not globally unique, so we store it separately
-  trancheId: Int!
+  trancheId: String!
 
   isResidual: Boolean!
   seniority: Int!

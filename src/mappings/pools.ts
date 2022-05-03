@@ -43,9 +43,10 @@ export async function handlePoolCreated(event: SubstrateEvent): Promise<void> {
 
   // Create the tranches
   await poolData.tranches.tranches.map(async (trancheData: any, index: number) => {
-    let tranche = new Tranche(`${pool.id}-${index.toString()}`)
+    const trancheId = trancheData.currency['tranche'][1]
+    let tranche = new Tranche(`${pool.id}-${trancheId.toString()}`)
     tranche.poolId = pool.id
-    tranche.trancheId = index
+    tranche.trancheId = trancheId
     tranche.isResidual = index === 0 // only the first tranche is a residual tranche
     tranche.seniority = Number(trancheData.seniority.toString())
 

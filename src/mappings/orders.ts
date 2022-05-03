@@ -12,14 +12,11 @@ export async function handleRedeemOrderUpdated(event: SubstrateEvent): Promise<v
 }
 
 const handleOrderUpdated = async (event: SubstrateEvent, type: InvestorTransactionType) => {
-  const [poolId, trancheId, address, _oldOrder, newOrder] = event.event.data
+  const [poolId, trancheId, _address, _oldOrder, newOrder] = event.event.data
 
   const pool = await Pool.get(poolId.toString())
 
   // const account = await loadOrCreateAccount(address.toString())
-
-  const result = await api.query.pools.order(trancheId, address.toString())
-  const order = result.toJSON() as any
 
   let tx = new InvestorTransaction(event.hash.toString())
 
