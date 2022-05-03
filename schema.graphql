@@ -12,7 +12,6 @@ type Pool @entity {
   metadata: String!
 
   minEpochTime: Int!
-  challengeTime: Int!
   maxNavAge: Int!
 
   # This cannot reference Pool directly, since this leads to a cyclic dependency.

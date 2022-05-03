@@ -23,10 +23,10 @@ export async function handleBlock(block: SubstrateBlock): Promise<void> {
       const nav = navResult.toJSON() as any
 
       let poolState = new PoolState(`${pool.id.toString()}-${blockTimeSec.toString()}`)
-      poolState.netAssetValue = BigInt(nav !== null ? nav.latestNav.toString() : 0)
-      poolState.totalReserve = BigInt(poolData.totalReserve.toString())
-      poolState.availableReserve = BigInt(poolData.availableReserve.toString())
-      poolState.maxReserve = BigInt(poolData.maxReserve.toString())
+      poolState.netAssetValue = BigInt(nav !== null ? nav.latest.toString() : 0)
+      poolState.totalReserve = BigInt(poolData.reserve.total.toString())
+      poolState.availableReserve = BigInt(poolData.reserve.available.toString())
+      poolState.maxReserve = BigInt(poolData.reserve.max.toString())
       await poolState.save()
 
       let hourlyPoolState = new HourlyPoolState(`${pool.id.toString()}-${blockTimeSec.toString()}`)

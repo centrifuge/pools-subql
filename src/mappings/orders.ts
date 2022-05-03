@@ -12,17 +12,14 @@ export async function handleRedeemOrderUpdated(event: SubstrateEvent): Promise<v
 }
 
 const handleOrderUpdated = async (event: SubstrateEvent, type: InvestorTransactionType) => {
-  const [poolId, address] = event.event.data
-  const [_1, _2, amount] = event.extrinsic?.extrinsic.args
+  const [poolId, trancheId, address, _oldOrder, newOrder] = event.event.data
 
   const pool = await Pool.get(poolId.toString())
 
   // const account = await loadOrCreateAccount(address.toString())
 
-  const trancheId = 0 // TODO: this should come from the event
-  const result = await api.query.pools.order({ Tranche: [poolId, trancheId] }, address.toString())
+  const result = await api.query.pools.order(trancheId, address.toString())
   const order = result.toJSON() as any
-  logger.info(`Order: ${JSON.stringify(order)}`)
 
   let tx = new InvestorTransaction(event.hash.toString())
 
@@ -34,8 +31,8 @@ const handleOrderUpdated = async (event: SubstrateEvent, type: InvestorTransacti
   tx.type = type
 
   // Invest orders are submitted in the currency amount, while redeem orders are submitted in the token amount
-  tx.currencyAmount = BigInt(type === InvestorTransactionType.INVEST_ORDER_UPDATE ? BigInt(amount.toString()) : 0)
-  tx.tokenAmount = BigInt(type === InvestorTransactionType.REDEEM_ORDER_UPDATE ? BigInt(amount.toString()) : 0)
+  tx.currencyAmount = BigInt(type === InvestorTransactionType.INVEST_ORDER_UPDATE ? BigInt(newOrder.toString()) : 0)
+  tx.tokenAmount = BigInt(type === InvestorTransactionType.REDEEM_ORDER_UPDATE ? BigInt(newOrder.toString()) : 0)
 
   await tx.save()
 

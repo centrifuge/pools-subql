@@ -13,7 +13,7 @@ export async function handlePoolCreated(event: SubstrateEvent): Promise<void> {
   poolState.netAssetValue = BigInt(0)
   poolState.totalReserve = BigInt(0)
   poolState.availableReserve = BigInt(0)
-  poolState.maxReserve = BigInt(poolData.maxReserve.toString())
+  poolState.maxReserve = BigInt(poolData.reserve.max.toString())
 
   await poolState.save()
 
@@ -25,9 +25,8 @@ export async function handlePoolCreated(event: SubstrateEvent): Promise<void> {
   pool.metadata = metadata.toString()
   pool.currency = Object.keys(poolData.currency)[0].toString()
 
-  pool.minEpochTime = Number(poolData.minEpochTime.toString())
-  pool.challengeTime = Number(poolData.challengeTime.toString())
-  pool.maxNavAge = Number(poolData.maxNavAge.toString())
+  pool.minEpochTime = Number(poolData.parameters.minEpochTime.toString())
+  pool.maxNavAge = Number(poolData.parameters.maxNavAge.toString())
 
   pool.currentEpoch = 1
 
@@ -43,9 +42,7 @@ export async function handlePoolCreated(event: SubstrateEvent): Promise<void> {
   await epoch.save()
 
   // Create the tranches
-  await poolData.tranches.map(async (trancheData: any, index: number) => {
-    logger.info(`Tranche ${index}: ${JSON.stringify(trancheData)}`)
-
+  await poolData.tranches.tranches.map(async (trancheData: any, index: number) => {
     let tranche = new Tranche(`${pool.id}-${index.toString()}`)
     tranche.poolId = pool.id
     tranche.trancheId = index
@@ -53,8 +50,8 @@ export async function handlePoolCreated(event: SubstrateEvent): Promise<void> {
     tranche.seniority = Number(trancheData.seniority.toString())
 
     if (!tranche.isResidual) {
-      tranche.interestRatePerSec = BigInt(trancheData.interestPerSec.toString())
-      tranche.minRiskBuffer = BigInt(trancheData.minRiskBuffer.toString())
+      tranche.interestRatePerSec = BigInt(trancheData.trancheType.nonResidual.interestRatePerSec.toString())
+      tranche.minRiskBuffer = BigInt(trancheData.trancheType.nonResidual.minRiskBuffer.toString())
     }
 
     await tranche.save()
