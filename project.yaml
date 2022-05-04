@@ -6,8 +6,8 @@ repository: ''
 schema:
   file: ./schema.graphql
 network:
-  endpoint: wss://fullnode.demo.cntrfg.com
-  genesisHash: '0x58e48c99021be1b890d2ddf83a547e7d826c8f556736f390f8f96abf5cbe80b8'
+  endpoint: wss://fullnode-collator-2.development.cntrfg.com
+  genesisHash: '0xe505dc7ccb1d48fb60423f4bef259dd8628d86a8a01b383c5278856502cbc9ae'
   chaintypes:
     file: ./dist/chaintypes.js
 dataSources:
