@@ -7,6 +7,13 @@ export async function handleEpochClosed(event: SubstrateEvent): Promise<void> {
   // Close the current epoch
   const [poolId, epochId] = event.event.data
   let epoch = await Epoch.get(`${poolId.toString()}-${epochId.toString()}`)
+  if (!epoch) {
+    logger.error(`Epoch ${epochId.toString()} does not exist when closing, should have been created already.`)
+    epoch = new Epoch(`${poolId.toString()}-${epochId.toString()}`)
+    epoch.index = Number(epochId.toString())
+    epoch.poolId = poolId.toString()
+  }
+
   epoch.closedAt = event.block.timestamp
   await epoch.save()
 
@@ -25,8 +32,8 @@ export async function handleEpochExecuted(event: SubstrateEvent): Promise<void> 
   // Execute the epoch
   const [poolId, epochId] = event.event.data
   let epoch = await Epoch.get(`${poolId.toString()}-${epochId.toString()}`)
-
   if (!epoch) {
+    logger.error(`Epoch ${epochId.toString()} does not exist when executing, should have been created already.`)
     epoch = new Epoch(`${poolId.toString()}-${epochId.toString()}`)
     epoch.index = Number(epochId.toString())
     epoch.poolId = poolId.toString()
