@@ -48,3 +48,8 @@ dataSources:
           filter:
             module: proxy
             method: ProxyAdded
+        - handler: handleProxyAnonymousCreated
+          kind: substrate/EventHandler
+          filter:
+            module: proxy
+            method: AnonymousCreated

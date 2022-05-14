@@ -217,16 +217,17 @@ type BorrowerTransaction @entity {
 type AnonymousProxy @entity {
   id: ID!
 
-  account: Account!
-  createdBy: Account!
+  account: String!
+  createdBy: String!
   proxyType: String
 }
 
 type Proxy @entity {
   id: ID!
 
-  delegator: Account!
-  delegatee: Account!
+  delegator: String!
+  delegatee: String!
   proxyType: String
+  removed: Boolean
   delay: Int
 }
