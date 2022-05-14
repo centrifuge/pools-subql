@@ -213,3 +213,20 @@ type BorrowerTransaction @entity {
   # only applies to BORROWED and REPAID transactions
   amount: BigInt 
 }
+
+type AnonymousProxy @entity {
+  id: ID!
+
+  account: Account!
+  createdBy: Account!
+  proxyType: String
+}
+
+type Proxy @entity {
+  id: ID!
+
+  delegator: Account!
+  delegatee: Acount!
+  proxyType: String
+  delay: Int
+}

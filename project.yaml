@@ -43,3 +43,8 @@ dataSources:
           filter:
             module: pools
             method: EpochExecuted
+        - handler: handleProxyAdded
+          kind: substrate/EventHandler
+          filter:
+            module: proxy
+            method: ProxyAdded
