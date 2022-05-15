@@ -6,7 +6,7 @@ export async function handleProxyAdded(event: SubstrateEvent): Promise<void> {
 
   const [delegator, delegatee, proxyType, delay] = event.event.data
 
-  const proxy = new Proxy(`${delegator.toString()}-${delegatee.toString()}`)
+  const proxy = new Proxy(`${delegator.toString()}-${delegatee.toString()}-${proxyType.toString()}}`)
   proxy.delegator = delegator.toString()
   proxy.delegatee = delegatee.toString()
   proxy.proxyType = proxyType.toString()
