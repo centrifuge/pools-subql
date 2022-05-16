@@ -18,7 +18,6 @@ type Pool @entity {
   metadata: String!
 
   minEpochTime: Int!
-  challengeTime: Int!
   maxNavAge: Int!
 
   # This cannot reference Pool directly, since this leads to a cyclic dependency.
@@ -34,6 +33,7 @@ type Pool @entity {
 # Track current state that regularly changes
 type PoolState @entity {
   id: ID! #poolId
+  type: String! @index
   #States
   netAssetValue: BigInt!
   totalReserve: BigInt!
@@ -83,6 +83,7 @@ type Tranche @entity {
 
 type TrancheState @entity {
   id: ID! #poolId-index
+  type: String! @index
   supply: BigInt
   price: Float
 
