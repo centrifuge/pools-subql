@@ -5,19 +5,18 @@ import { errorHandler } from '../helpers/errorHandler'
 
 export const handlePoolCreated = errorHandler(_handlePoolCreated)
 async function _handlePoolCreated(event: SubstrateEvent): Promise<void> {
-  logger.info(`Pool created in block ${event.block.block.header.number}: ${event.toString()}`)
-
   const [poolId, metadata] = event.event.data
   const poolData = (<any>await api.query.pools.pool(poolId)).unwrap()
-  logger.info(`PoolData: ${JSON.stringify(poolData)}`)
+
+  logger.info(`Pool ${poolId.toString()} created in block ${event.block.block.header.number}`)
 
   // Save the current pool state
   const poolState = new PoolState(`${poolId.toString()}`)
   poolState.type = 'ALL'
   poolState.netAssetValue = BigInt(0)
-  poolState.totalReserve = BigInt(0)
-  poolState.availableReserve = BigInt(0)
-  poolState.maxReserve = poolData.reserve.max.toBigInt() ?? BigInt(0)
+  poolState.totalReserve = poolData.reserve.total.toBigInt()
+  poolState.availableReserve = poolData.reserve.available.toBigInt()
+  poolState.maxReserve = poolData.reserve.max.toBigInt()
   poolState.totalDebt = BigInt(0)
 
   await poolState.save()
@@ -32,8 +31,8 @@ async function _handlePoolCreated(event: SubstrateEvent): Promise<void> {
   pool.currency = poolData.currency.toString()
   pool.metadata = metadata.toString()
 
-  pool.minEpochTime = Number(poolData.parameters.minEpochTime.toNumber())
-  pool.maxNavAge = Number(poolData.parameters.maxNavAge.toNumber())
+  pool.minEpochTime = poolData.parameters.minEpochTime.toNumber()
+  pool.maxNavAge = poolData.parameters.maxNavAge.toNumber()
   pool.currentEpoch = 1
 
   await pool.save()
@@ -47,8 +46,6 @@ async function _handlePoolCreated(event: SubstrateEvent): Promise<void> {
 
   // Create the tranches
   await poolData.tranches.tranches.map(async (trancheData: any, index: number) => {
-    logger.info(`Tranche ${index}: ${JSON.stringify(trancheData)}`)
-
     // Create the tranche state
     const trancheState = new TrancheState(`${pool.id}-${index.toString()}`)
     trancheState.type = 'ALL'
@@ -59,12 +56,9 @@ async function _handlePoolCreated(event: SubstrateEvent): Promise<void> {
     tranche.poolId = pool.id
     tranche.trancheId = index
     tranche.isResidual = trancheData.trancheType.isResidual // only the first tranche is a residual tranche
-    tranche.seniority = Number(trancheData.seniority.toNumber())
+    tranche.seniority = trancheData.seniority.toNumber()
 
     if (!tranche.isResidual) {
-      logger.info(
-        `Tranche ${index} isResidual: ${tranche.isResidual}, ${JSON.stringify(trancheData.trancheType.asNonResidual)}`
-      )
       tranche.interestRatePerSec = trancheData.trancheType.asNonResidual.interestRatePerSec.toBigInt()
       tranche.minRiskBuffer = trancheData.trancheType.asNonResidual.minRiskBuffer.toBigInt()
     }

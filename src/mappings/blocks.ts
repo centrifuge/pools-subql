@@ -1,5 +1,5 @@
 import { SubstrateBlock } from '@subql/types'
-import { Pool, PoolState, PoolSnapshot, Tranche, TrancheState, TrancheSnapshot, Timekeeper } from '../types'
+import { PoolState, PoolSnapshot, Tranche, TrancheState, TrancheSnapshot, Timekeeper } from '../types'
 import { getPeriodStart, MemTimekeeper } from '../helpers/timeKeeping'
 import { errorHandler } from '../helpers/errorHandler'
 import { stateSnapshotter } from '../helpers/stateSnapshot'
@@ -18,13 +18,19 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
     // Populate State Updates
     const poolStates = await PoolState.getByType('ALL')
     poolStates.forEach(async (poolState) => {
-      const poolData = (<any>await api.query.pools.pool(poolState.id)).unwrap()
-      const navData = (<any>await api.query.loans.poolNAV(poolState.id)).unwrap()
+      const poolResponse = <any>await api.query.pools.pool(poolState.id)
+      if (poolResponse.isSome) {
+        const poolData = poolResponse.unwrap()
+        poolState.totalReserve = poolData.reserve.total.toBigInt()
+        poolState.availableReserve = poolData.reserve.available.toBigInt()
+        poolState.maxReserve = poolData.reserve.max.toBigInt()
+      }
 
-      poolState.netAssetValue = navData ? navData.latestNav.toBigInt() : BigInt(0)
-      poolState.totalReserve = poolData.reserve.total.toBigInt() ?? BigInt(0)
-      poolState.availableReserve = poolData.reserve.available.toBigInt() ?? BigInt(0)
-      poolState.maxReserve = poolData.reserve.max.toBigInt() ?? BigInt(0)
+      const navResponse = <any>await api.query.loans.poolNAV(poolState.id)
+      if (navResponse.isSome) {
+        const navData = navResponse.unwrap()
+        poolState.netAssetValue = navData.latest.toBigInt()
+      }
 
       await poolState.save()
     })
