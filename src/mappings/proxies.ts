@@ -36,5 +36,5 @@ export async function handleProxyRemoved(event: SubstrateEvent): Promise<void> {
   logger.info(`Proxy removed: ${event.toString()}`)
 
   const [delegator, delegatee, proxyType, delay] = event.event.data
-  await Proxy.remove((`${delegator.toString()}-${delegatee.toString()}-${proxyType.toString()}}`)
+  await Proxy.remove(`${delegator.toString()}-${delegatee.toString()}-${proxyType.toString()}}`)
 }
