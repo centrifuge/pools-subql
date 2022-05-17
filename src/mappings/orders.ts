@@ -1,4 +1,5 @@
 import { SubstrateEvent } from '@subql/types'
+import { OrderEvent } from 'centrifuge-subql/helpers/types'
 import { errorHandler } from '../helpers/errorHandler'
 import { Pool, InvestorTransaction, Account, InvestorTransactionType, OutstandingOrder } from '../types'
 
@@ -15,7 +16,7 @@ async function _handleRedeemOrderUpdated(event: SubstrateEvent): Promise<void> {
 }
 
 const handleOrderUpdated = async (event: SubstrateEvent, type: InvestorTransactionType) => {
-  const [poolId, trancheId, _address, _oldOrder, newOrder] = event.event.data
+  const [poolId, trancheId, _address, _oldOrder, newOrder] = event.event.data as unknown as OrderEvent
 
   const pool = await Pool.get(poolId.toString())
 

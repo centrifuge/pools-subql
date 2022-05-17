@@ -1,4 +1,5 @@
 import { SubstrateEvent } from '@subql/types'
+import { EpochEvent } from 'centrifuge-subql/helpers/types'
 import { errorHandler } from '../helpers/errorHandler'
 import { Epoch, OutstandingOrder } from '../types'
 
@@ -7,7 +8,7 @@ async function _handleEpochClosed(event: SubstrateEvent): Promise<void> {
   logger.info(`Epoch closed in block ${event.block.block.header.number}: ${event.toString()}`)
 
   // Close the current epoch
-  const [poolId, epochId] = event.event.data
+  const [poolId, epochId] = event.event.data as unknown as EpochEvent
   let epoch = await Epoch.get(`${poolId.toString()}-${epochId.toString()}`)
   if (!epoch) {
     logger.error(`Epoch ${epochId.toString()} does not exist when closing, should have been created already.`)
@@ -20,7 +21,7 @@ async function _handleEpochClosed(event: SubstrateEvent): Promise<void> {
   await epoch.save()
 
   // Create the new epoch
-  const newIndex = Number(epochId.toString()) + 1
+  const newIndex = epochId.toNumber() + 1
   let newEpoch = new Epoch(`${poolId.toString()}-${newIndex.toString()}`)
   newEpoch.index = newIndex
   newEpoch.poolId = poolId.toString()
@@ -33,12 +34,12 @@ async function _handleEpochExecuted(event: SubstrateEvent): Promise<void> {
   logger.info(`Epoch executed: ${event.toString()}`)
 
   // Execute the epoch
-  const [poolId, epochId] = event.event.data
+  const [poolId, epochId] = event.event.data as unknown as EpochEvent
   let epoch = await Epoch.get(`${poolId.toString()}-${epochId.toString()}`)
   if (!epoch) {
     logger.error(`Epoch ${epochId.toString()} does not exist when executing, should have been created already.`)
     epoch = new Epoch(`${poolId.toString()}-${epochId.toString()}`)
-    epoch.index = Number(epochId.toString())
+    epoch.index = epochId.toNumber()
     epoch.poolId = poolId.toString()
   }
 

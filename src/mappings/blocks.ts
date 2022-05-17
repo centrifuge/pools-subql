@@ -3,6 +3,8 @@ import { PoolState, PoolSnapshot, Tranche, TrancheState, TrancheSnapshot, Timeke
 import { getPeriodStart, MemTimekeeper } from '../helpers/timeKeeping'
 import { errorHandler } from '../helpers/errorHandler'
 import { stateSnapshotter } from '../helpers/stateSnapshot'
+import { Option } from '@polkadot/types'
+import { PoolDetails, NavDetails } from 'centrifuge-subql/helpers/types'
 
 const memTimekeeper = initialiseMemTimekeeper()
 
@@ -18,7 +20,7 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
     // Populate State Updates
     const poolStates = await PoolState.getByType('ALL')
     poolStates.forEach(async (poolState) => {
-      const poolResponse = <any>await api.query.pools.pool(poolState.id)
+      const poolResponse = await api.query.pools.pool<Option<PoolDetails>>(poolState.id)
       if (poolResponse.isSome) {
         const poolData = poolResponse.unwrap()
         poolState.totalReserve = poolData.reserve.total.toBigInt()
@@ -26,7 +28,7 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
         poolState.maxReserve = poolData.reserve.max.toBigInt()
       }
 
-      const navResponse = <any>await api.query.loans.poolNAV(poolState.id)
+      const navResponse = await api.query.loans.poolNAV<Option<NavDetails>>(poolState.id)
       if (navResponse.isSome) {
         const navData = navResponse.unwrap()
         poolState.netAssetValue = navData.latest.toBigInt()

@@ -1,12 +1,13 @@
 import { SubstrateEvent } from '@subql/types'
+import { Option } from '@polkadot/types'
 import { Epoch, Pool, PoolState, Tranche, TrancheState } from '../types'
-import { TrancheData } from '../helpers/types'
 import { errorHandler } from '../helpers/errorHandler'
+import { LoanEvent, PoolDetails, TrancheDetails } from 'centrifuge-subql/helpers/types'
 
 export const handlePoolCreated = errorHandler(_handlePoolCreated)
 async function _handlePoolCreated(event: SubstrateEvent): Promise<void> {
   const [poolId, metadata] = event.event.data
-  const poolData = (<any>await api.query.pools.pool(poolId)).unwrap()
+  const poolData = (await api.query.pools.pool<Option<PoolDetails>>(poolId)).unwrap()
 
   logger.info(`Pool ${poolId.toString()} created in block ${event.block.block.header.number}`)
 
@@ -45,7 +46,7 @@ async function _handlePoolCreated(event: SubstrateEvent): Promise<void> {
   await epoch.save()
 
   // Create the tranches
-  await poolData.tranches.tranches.map(async (trancheData: any, index: number) => {
+  await poolData.tranches.tranches.map(async (trancheData: TrancheDetails, index: number) => {
     // Create the tranche state
     const trancheState = new TrancheState(`${pool.id}-${index.toString()}`)
     trancheState.type = 'ALL'
@@ -71,7 +72,7 @@ async function _handlePoolCreated(event: SubstrateEvent): Promise<void> {
 
 export const handlePoolTotalDebt = errorHandler(_handlePoolTotalDebt)
 async function _handlePoolTotalDebt(event: SubstrateEvent): Promise<void> {
-  const [poolId, loanId, amount] = event.event.data
+  const [poolId, loanId, amount] = event.event.data as unknown as LoanEvent
   const eventType = event.event.method
   logger.info(
     `Pool ${poolId.toString()} totalDebt ${eventType} in block ${
@@ -83,11 +84,11 @@ async function _handlePoolTotalDebt(event: SubstrateEvent): Promise<void> {
 
   switch (eventType) {
     case 'Borrowed':
-      poolState.totalDebt += BigInt(amount.toString())
+      poolState.totalDebt += amount.toBigInt()
       break
 
     case 'Repaid':
-      poolState.totalDebt -= BigInt(amount.toString())
+      poolState.totalDebt -= amount.toBigInt()
       break
 
     default:
