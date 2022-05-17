@@ -47,15 +47,17 @@ async function _handlePoolCreated(event: SubstrateEvent): Promise<void> {
 
   // Create the tranches
   await poolData.tranches.tranches.map(async (trancheData: TrancheDetails, index: number) => {
+    const trancheId = poolData.tranches.ids[index].toUtf8()
+
     // Create the tranche state
-    const trancheState = new TrancheState(`${pool.id}-${index.toString()}`)
+    const trancheState = new TrancheState(`${pool.id}-${trancheId.toString()}`)
     trancheState.type = 'ALL'
     await trancheState.save()
 
-    const tranche = new Tranche(`${pool.id}-${index.toString()}`)
+    const tranche = new Tranche(`${pool.id}-${trancheId.toString()}`)
     tranche.type = 'ALL'
     tranche.poolId = pool.id
-    tranche.trancheId = index
+    tranche.trancheId = trancheId
     tranche.isResidual = trancheData.trancheType.isResidual // only the first tranche is a residual tranche
     tranche.seniority = trancheData.seniority.toNumber()
 

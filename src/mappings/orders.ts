@@ -27,7 +27,7 @@ const handleOrderUpdated = async (event: SubstrateEvent, type: InvestorTransacti
   // tx.accountId = account.id
   tx.poolId = poolId.toString()
   tx.epochId = `${poolId.toString()}-${pool.currentEpoch}`
-  tx.trancheId = `${poolId.toString()}-${trancheId.toString()}`
+  tx.trancheId = `${poolId.toString()}-${trancheId.toUtf8()}`
   tx.timestamp = event.block.timestamp
   tx.type = type
 
