@@ -2,7 +2,7 @@ import { SubstrateEvent } from '@subql/types'
 import { Option } from '@polkadot/types'
 import { Epoch, Pool, PoolState, Tranche, TrancheState } from '../types'
 import { errorHandler } from '../helpers/errorHandler'
-import { LoanEvent, PoolDetails, TrancheDetails } from 'centrifuge-subql/helpers/types'
+import { PoolDetails, TrancheDetails } from 'centrifuge-subql/helpers/types'
 
 export const handlePoolCreated = errorHandler(_handlePoolCreated)
 async function _handlePoolCreated(event: SubstrateEvent): Promise<void> {
@@ -70,33 +70,4 @@ async function _handlePoolCreated(event: SubstrateEvent): Promise<void> {
 
     await tranche.save()
   })
-}
-
-export const handlePoolTotalDebt = errorHandler(_handlePoolTotalDebt)
-async function _handlePoolTotalDebt(event: SubstrateEvent): Promise<void> {
-  const [poolId, loanId, amount] = event.event.data as unknown as LoanEvent
-  const eventType = event.event.method
-  logger.info(
-    `Pool ${poolId.toString()} totalDebt ${eventType} in block ${
-      event.block.block.header.number
-    } by ${amount.toString()}`
-  )
-  // Find corresponding pool state
-  const poolState = await PoolState.get(poolId.toString())
-
-  switch (eventType) {
-    case 'Borrowed':
-      poolState.totalDebt += amount.toBigInt()
-      break
-
-    case 'Repaid':
-      poolState.totalDebt -= amount.toBigInt()
-      break
-
-    default:
-      throw new Error('Invalid EventType in handlePoolTotalDebt')
-      break
-  }
-
-  await poolState.save()
 }

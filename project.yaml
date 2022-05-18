@@ -43,13 +43,3 @@ dataSources:
           filter:
             module: pools
             method: EpochExecuted
-        - handler: handlePoolTotalDebt
-          kind: substrate/EventHandler
-          filter:
-            module: loans
-            method: Borrowed
-        - handler: handlePoolTotalDebt
-          kind: substrate/EventHandler
-          filter:
-            module: loans
-            method: Repaid
