@@ -15,7 +15,8 @@ async function _handleRedeemOrderUpdated(event: SubstrateEvent): Promise<void> {
   handleOrderUpdated(event, InvestorTransactionType.REDEEM_ORDER_UPDATE)
 }
 
-const handleOrderUpdated = async (event: SubstrateEvent, type: InvestorTransactionType) => {
+const handleOrderUpdated = errorHandler(_handleOrderUpdate)
+async function _handleOrderUpdate(event: SubstrateEvent, type: InvestorTransactionType) {
   const [poolId, trancheId, _address, _oldOrder, newOrder] = event.event.data as unknown as OrderEvent
 
   const pool = await Pool.get(poolId.toString())
@@ -27,7 +28,7 @@ const handleOrderUpdated = async (event: SubstrateEvent, type: InvestorTransacti
   // tx.accountId = account.id
   tx.poolId = poolId.toString()
   tx.epochId = `${poolId.toString()}-${pool.currentEpoch}`
-  tx.trancheId = `${poolId.toString()}-${trancheId.toUtf8()}`
+  tx.trancheId = `${poolId.toString()}-${trancheId.toHex()}`
   tx.timestamp = event.block.timestamp
   tx.type = type
 

@@ -1,5 +1,5 @@
 import { SubstrateEvent } from '@subql/types'
-import { Option } from '@polkadot/types'
+import { Option, TypeRegistry } from '@polkadot/types'
 import { Epoch, Pool, PoolState, Tranche, TrancheState } from '../types'
 import { errorHandler } from '../helpers/errorHandler'
 import { PoolDetails, TrancheDetails } from 'centrifuge-subql/helpers/types'
@@ -46,28 +46,33 @@ async function _handlePoolCreated(event: SubstrateEvent): Promise<void> {
   await epoch.save()
 
   // Create the tranches
-  await poolData.tranches.tranches.map(async (trancheData: TrancheDetails, index: number) => {
-    const trancheId = poolData.tranches.ids[index].toUtf8()
+  poolData.tranches.tranches.map(async (trancheData: TrancheDetails, index: number) => {
+    try {
+      const trancheId = poolData.tranches.ids.toArray()[index].toHex()
+      logger.info(`trancheId: ${trancheId}`)
 
-    // Create the tranche state
-    const trancheState = new TrancheState(`${pool.id}-${trancheId.toString()}`)
-    trancheState.type = 'ALL'
-    await trancheState.save()
+      // Create the tranche state
+      const trancheState = new TrancheState(`${pool.id}-${trancheId}`)
+      trancheState.type = 'ALL'
+      await trancheState.save()
 
-    const tranche = new Tranche(`${pool.id}-${trancheId.toString()}`)
-    tranche.type = 'ALL'
-    tranche.poolId = pool.id
-    tranche.trancheId = trancheId
-    tranche.isResidual = trancheData.trancheType.isResidual // only the first tranche is a residual tranche
-    tranche.seniority = trancheData.seniority.toNumber()
+      const tranche = new Tranche(`${pool.id}-${trancheId}`)
+      tranche.type = 'ALL'
+      tranche.poolId = pool.id
+      tranche.trancheId = trancheId
+      tranche.isResidual = trancheData.trancheType.isResidual // only the first tranche is a residual tranche
+      tranche.seniority = trancheData.seniority.toNumber()
 
-    if (!tranche.isResidual) {
-      tranche.interestRatePerSec = trancheData.trancheType.asNonResidual.interestRatePerSec.toBigInt()
-      tranche.minRiskBuffer = trancheData.trancheType.asNonResidual.minRiskBuffer.toBigInt()
+      if (!tranche.isResidual) {
+        tranche.interestRatePerSec = trancheData.trancheType.asNonResidual.interestRatePerSec.toBigInt()
+        tranche.minRiskBuffer = trancheData.trancheType.asNonResidual.minRiskBuffer.toBigInt()
+      }
+
+      tranche.stateId = trancheState.id
+
+      await tranche.save()
+    } catch (error) {
+      logger.error(error)
     }
-
-    tranche.stateId = trancheState.id
-
-    await tranche.save()
   })
 }
