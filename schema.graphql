@@ -1,3 +1,8 @@
+type Timekeeper @entity {
+  id: ID!
+  lastPeriodStart: Date!
+}
+
 type Pool @entity {
   id: ID!
 
@@ -6,8 +11,9 @@ type Pool @entity {
   # pools, so we can do Pool.getByType("POOL").
   type: String! @index
 
-  createdAt: Date!
-  
+  createdAtTimestamp: Date!
+  createdAtHeight: Int!
+
   currency: String!
   metadata: String!
 
@@ -19,15 +25,50 @@ type Pool @entity {
   lastEpochClosed: Int
   lastEpochExecuted: Int
 
-  tranches: [Tranche] @derivedFrom(field: "pool")
+  state: PoolState!
 
-  currentState: PoolState
+  tranches: [Tranche] @derivedFrom(field: "pool")
+}
+
+# Track current state that regularly changes
+type PoolState @entity {
+  id: ID! #poolId
+  type: String! @index
+  #States
+  netAssetValue: BigInt!
+  totalReserve: BigInt!
+  availableReserve: BigInt!
+  maxReserve: BigInt!
+  totalDebt: BigInt!
+
+  tranches: [Tranche] @derivedFrom(field: "pool")
+}
+#Tracks PoolState over Time
+type PoolSnapshot @entity {
+  id: ID! #poolId-blockHeight
+  pool: Pool!
+
+  timestamp: Date!
+  blockHeight: Int!
+
+  #States
+  netAssetValue: BigInt!
+  totalReserve: BigInt!
+  availableReserve: BigInt!
+  maxReserve: BigInt!
+  totalDebt: BigInt!
+
+  # Aggregated transaction data over the last period
+  totalBorrowed: BigInt
+  totalRepaid: BigInt
+  totalInvested: BigInt
+  totalRedeemed: BigInt
 }
 
 type Tranche @entity {
-  id: ID!
-
-  pool: Pool!
+  id: ID! #poolId-index
+  type: String! @index
+  pool: Pool! @index
 
   # id cannot be the tranche id as it's not globally unique, so we store it separately
   trancheId: String!
@@ -36,62 +77,44 @@ type Tranche @entity {
   seniority: Int!
   interestRatePerSec: BigInt
   minRiskBuffer: BigInt
+
+  state: TrancheState!
 }
 
 type TrancheState @entity {
-  id: ID!
+  id: ID! #poolId-index
+  type: String! @index
+  supply: BigInt
+  price: Float
 
-  poolState: PoolState!
-
-  supply: BigInt!
-  price: BigInt!
-
-  outstandingInvestOrders: BigInt!
-  outstandingRedeemOrders: BigInt!
+  outstandingInvestOrders: BigInt
+  outstandingRedeemOrders: BigInt
 
   yield30Days: BigInt
   yield90Days: BigInt
   yieldSinceInception: BigInt
 }
 
-# Track all state that regularly changes
-type PoolState @entity {
-  id: ID!
+type TrancheSnapshot @entity {
+  id: ID! #poolId-index-blockheight
+  tranche: Tranche!
 
-  netAssetValue: BigInt!
-
-  totalReserve: BigInt!
-  availableReserve: BigInt!
-  maxReserve: BigInt!
-
-  totalDebt: BigInt
-
-  trancheStates: [TrancheState] @derivedFrom(field: "poolState")
-}
-
-type HourlyPoolState @entity {
-  id: ID!
-  
   timestamp: Date!
-  poolState: PoolState!
-}
+  blockHeight: Int!
 
-type DailyPoolState @entity {
-  id: ID!
-  
-  timestamp: Date!
-  poolState: PoolState!
+  supply: BigInt
+  price: Float
 
-  # Aggregated data over the last 24 hours corresponding to this DailyPoolState
-  totalBorrowed: BigInt
-  totalRepaid: BigInt
-  totalInvested: BigInt
-  totalRedeemed: BigInt
+  outstandingInvestOrders: BigInt
+  outstandingRedeemOrders: BigInt
+
+  yield30Days: BigInt
+  yield90Days: BigInt
+  yieldSinceInception: BigInt
 }
 
 type Epoch @entity {
-  id: ID!
-  
+  id: ID! #poolId-index
   pool: Pool!
 
   index: Int!
@@ -127,7 +150,6 @@ enum InvestorTransactionType {
 
 type InvestorTransaction @entity {
   id: ID! # transaction hash
-
   account: Account @index
   pool: Pool! @index
   tranche: Tranche! @index
@@ -140,9 +162,9 @@ type InvestorTransaction @entity {
   transactionFee: BigInt
 }
 
+#UNUSED
 type OutstandingOrder @entity {
   id: ID! # pool id - tranche id - investor address
-
   account: Account @index
   pool: Pool! @index
   tranche: Tranche! @index
@@ -160,7 +182,6 @@ type Account @entity {
 
 type AccountBalance @entity {
   id: ID! # pool id - tranche id - account id
-
   account: Account @index
   pool: Pool! @index
   tranche: Tranche! @index
@@ -176,12 +197,13 @@ enum LoanStatus {
   CLOSED
 }
 
+#UNUSED
 type Loan @entity {
   id: ID!
 
   createdAt: Date!
 
-  # collateral: 
+  # collateral:
   status: LoanStatus!
   # TODO: how to store loan type data
 
@@ -202,6 +224,7 @@ enum BorrowerTransactionType {
   CLOSED
 }
 
+#UNUSED
 type BorrowerTransaction @entity {
   id: ID!
 
@@ -209,7 +232,7 @@ type BorrowerTransaction @entity {
   epoch: Epoch!
   loan: Loan!
   type: BorrowerTransactionType!
- 
+
   # only applies to BORROWED and REPAID transactions
-  amount: BigInt 
+  amount: BigInt
 }

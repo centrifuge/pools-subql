@@ -1,36 +1,40 @@
 import { SubstrateEvent } from '@subql/types'
-import { Epoch, Pool, PoolState, Tranche } from '../types'
+import { Option, TypeRegistry } from '@polkadot/types'
+import { Epoch, Pool, PoolState, Tranche, TrancheState } from '../types'
+import { errorHandler } from '../helpers/errorHandler'
+import { PoolDetails, TrancheDetails } from 'centrifuge-subql/helpers/types'
 
-export async function handlePoolCreated(event: SubstrateEvent): Promise<void> {
-  logger.info(`Pool created: ${event.toString()}`)
-
+export const handlePoolCreated = errorHandler(_handlePoolCreated)
+async function _handlePoolCreated(event: SubstrateEvent): Promise<void> {
   const [poolId, metadata] = event.event.data
-  const result = await api.query.pools.pool(poolId)
-  const poolData = result.toJSON() as any
+  const poolData = (await api.query.pools.pool<Option<PoolDetails>>(poolId)).unwrap()
+
+  logger.info(`Pool ${poolId.toString()} created in block ${event.block.block.header.number}`)
 
   // Save the current pool state
-  let poolState = new PoolState(`${poolId.toString()}-${new Date().getTime().toString()}`)
+  const poolState = new PoolState(`${poolId.toString()}`)
+  poolState.type = 'ALL'
   poolState.netAssetValue = BigInt(0)
-  poolState.totalReserve = BigInt(0)
-  poolState.availableReserve = BigInt(0)
-  poolState.maxReserve = BigInt(poolData.reserve.max.toString())
+  poolState.totalReserve = poolData.reserve.total.toBigInt()
+  poolState.availableReserve = poolData.reserve.available.toBigInt()
+  poolState.maxReserve = poolData.reserve.max.toBigInt()
+  poolState.totalDebt = BigInt(0)
 
   await poolState.save()
 
   // Create the pool
-  let pool = new Pool(poolId.toString())
+  const pool = new Pool(poolId.toString())
+  pool.stateId = poolId.toString()
+  pool.type = 'ALL'
+  pool.createdAtTimestamp = event.block.timestamp
+  pool.createdAtHeight = event.block.block.header.number.toNumber()
 
-  pool.type = 'POOL'
-  pool.createdAt = event.block.timestamp
+  pool.currency = poolData.currency.toString()
   pool.metadata = metadata.toString()
-  pool.currency = Object.keys(poolData.currency)[0].toString()
 
-  pool.minEpochTime = Number(poolData.parameters.minEpochTime.toString())
-  pool.maxNavAge = Number(poolData.parameters.maxNavAge.toString())
-
+  pool.minEpochTime = poolData.parameters.minEpochTime.toNumber()
+  pool.maxNavAge = poolData.parameters.maxNavAge.toNumber()
   pool.currentEpoch = 1
-
-  pool.currentStateId = poolState.id
 
   await pool.save()
 
@@ -42,19 +46,33 @@ export async function handlePoolCreated(event: SubstrateEvent): Promise<void> {
   await epoch.save()
 
   // Create the tranches
-  await poolData.tranches.tranches.map(async (trancheData: any, index: number) => {
-    const trancheId = trancheData.currency['tranche'][1]
-    let tranche = new Tranche(`${pool.id}-${trancheId.toString()}`)
-    tranche.poolId = pool.id
-    tranche.trancheId = trancheId
-    tranche.isResidual = index === 0 // only the first tranche is a residual tranche
-    tranche.seniority = Number(trancheData.seniority.toString())
+  poolData.tranches.tranches.map(async (trancheData: TrancheDetails, index: number) => {
+    try {
+      const trancheId = poolData.tranches.ids.toArray()[index].toHex()
+      logger.info(`trancheId: ${trancheId}`)
 
-    if (!tranche.isResidual) {
-      tranche.interestRatePerSec = BigInt(trancheData.trancheType.nonResidual.interestRatePerSec.toString())
-      tranche.minRiskBuffer = BigInt(trancheData.trancheType.nonResidual.minRiskBuffer.toString())
+      // Create the tranche state
+      const trancheState = new TrancheState(`${pool.id}-${trancheId}`)
+      trancheState.type = 'ALL'
+      await trancheState.save()
+
+      const tranche = new Tranche(`${pool.id}-${trancheId}`)
+      tranche.type = 'ALL'
+      tranche.poolId = pool.id
+      tranche.trancheId = trancheId
+      tranche.isResidual = trancheData.trancheType.isResidual // only the first tranche is a residual tranche
+      tranche.seniority = trancheData.seniority.toNumber()
+
+      if (!tranche.isResidual) {
+        tranche.interestRatePerSec = trancheData.trancheType.asNonResidual.interestRatePerSec.toBigInt()
+        tranche.minRiskBuffer = trancheData.trancheType.asNonResidual.minRiskBuffer.toBigInt()
+      }
+
+      tranche.stateId = trancheState.id
+
+      await tranche.save()
+    } catch (error) {
+      logger.error(error)
     }
-
-    await tranche.save()
   })
 }
