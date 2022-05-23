@@ -100,7 +100,7 @@ type TrancheSnapshot @entity {
   tranche: Tranche!
 
   timestamp: Date!
-  blockHeight: Int!
+  blockNumber: Int!
 
   supply: BigInt
   price: Float
