@@ -35,7 +35,7 @@ export async function stateSnapshotter<
   stateEntities.forEach((stateEntity) => {
     const blockNumber = block.block.header.number.toNumber()
     const { id, type, ...copyStateEntity } = stateEntity
-    const snapshotEntity = new snapshotModel(`${id}-${blockHeight.toString()}`)
+    const snapshotEntity = new snapshotModel(`${id}-${blockNumber.toString()}`)
     Object.assign(snapshotEntity, copyStateEntity)
     snapshotEntity.timestamp = block.timestamp
     snapshotEntity.blockHeight = blockHeight
