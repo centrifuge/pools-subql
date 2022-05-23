@@ -8,7 +8,6 @@
 
 A GraphQL API to query the Centrifuge Parachain on Polkadot.
 
-🚧 We are breeding the next EMBRIO. More soon... 🚀
 
 ### Environment
 - [Typescript](https://www.typescriptlang.org/) are required to compile project and define types.  
