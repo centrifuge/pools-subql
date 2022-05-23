@@ -38,7 +38,7 @@ export async function stateSnapshotter<
     const snapshotEntity = new snapshotModel(`${id}-${blockNumber.toString()}`)
     Object.assign(snapshotEntity, copyStateEntity)
     snapshotEntity.timestamp = block.timestamp
-    snapshotEntity.blockHeight = blockHeight
+    snapshotEntity.blockNumber = blockNumber
     if (fkReferenceName) snapshotEntity[fkReferenceName] = stateEntity.id
     newEntitySaves.push(snapshotEntity.save())
   })

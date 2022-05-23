@@ -11,11 +11,11 @@ const memTimekeeper = initialiseMemTimekeeper()
 export const handleBlock = errorHandler(_handleBlock)
 async function _handleBlock(block: SubstrateBlock): Promise<void> {
   const blockPeriodStart = getPeriodStart(block.timestamp)
-  const blockHeight = block.block.header.number.toNumber()
+  const blockNumber = block.block.header.number.toNumber()
   const newPeriod = (await memTimekeeper).processBlock(block)
 
   if (newPeriod) {
-    logger.info(`It's a new period on block ${blockHeight}: ${block.timestamp.toISOString()}`)
+    logger.info(`It's a new period on block ${blockNumber}: ${block.timestamp.toISOString()}`)
 
     // Populate State Updates
     const poolStates = await PoolState.getByType('ALL')
