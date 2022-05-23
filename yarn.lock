@@ -1252,7 +1252,7 @@
   resolved "https://registry.yarnpkg.com/@subql/types-terra/-/types-terra-0.4.0.tgz#09f70e6b8820fa98b9bf2f6807cde4476a179d5f"
   integrity sha512-+Qx9tPCAQpIF0u4jSnW5GbjZoVdpt4GJpkIp4hDao3uUS6Vs68ZbtNQCl+EMP0eU7WTHJjwWmTflPvf665SYaw==
 
-"@subql/types@1.0.0", "@subql/types@latest":
+"@subql/types@1.0.0":
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/@subql/types/-/types-1.0.0.tgz#1f6d29f552effba474b35e3e83d41e27b1becac0"
   integrity sha512-UU6bvJp2JWfSTLArkl10fFIvJCZC3I+0/Swk8wn0Mnh+qNjhxPudS9FA7+qV2WIGZ9WNABqNq7KSpomGCiqeow==
@@ -3430,10 +3430,10 @@ ipfs-http-client@^52.0.3:
     stream-to-it "^0.2.2"
     uint8arrays "^3.0.0"
 
-ipfs-unixfs@^6.0.3:
-  version "6.0.7"
-  resolved "https://registry.yarnpkg.com/ipfs-unixfs/-/ipfs-unixfs-6.0.7.tgz#9df35c334c9fad78761419994a0c078e14a1caf4"
-  integrity sha512-5mKbQgvux6n5lQ+upGWWPKcoswXahdOcyGQ2SbIIRV6eBJMzxLprzKsyb0GMsg80tHX2wnNOxBKSCiSGjb+54A==
+ipfs-unixfs@6.0.6, ipfs-unixfs@^6.0.3:
+  version "6.0.6"
+  resolved "https://registry.yarnpkg.com/ipfs-unixfs/-/ipfs-unixfs-6.0.6.tgz#c44881c1bcd6a474c665e67108cbf31e54c63eec"
+  integrity sha512-gTkjYKXuHnqIf6EFfS+ESaYEl3I3aaQQ0UX8MhpNzreMLEuMnuqpoI/uLLllTZa31WRplKixabbpRTSmTYRNwA==
   dependencies:
     err-code "^3.0.1"
     protobufjs "^6.10.2"
