@@ -16,7 +16,7 @@ interface GenericState {
 interface GenericSnapshot {
   id: string
   timestamp: Date
-  blockHeight: number
+  blockNumber: number
   save(): Promise<void>
 }
 
