@@ -33,7 +33,7 @@ export async function stateSnapshotter<
   if (!stateModel.hasOwnProperty('getByType')) throw new Error('stateModel has no method .hasOwnProperty()')
   const stateEntities = await stateModel.getByType('ALL')
   stateEntities.forEach((stateEntity) => {
-    const blockHeight = block.block.header.number.toNumber()
+    const blockNumber = block.block.header.number.toNumber()
     const { id, type, ...copyStateEntity } = stateEntity
     const snapshotEntity = new snapshotModel(`${id}-${blockHeight.toString()}`)
     Object.assign(snapshotEntity, copyStateEntity)
