@@ -11,8 +11,8 @@ type Pool @entity {
   # pools, so we can do Pool.getByType("POOL").
   type: String! @index
 
-  createdAtTimestamp: Date!
-  createdAtHeight: Int!
+  createdAt: Date!
+  createdAtBlockNumber: Int!
 
   currency: String!
   metadata: String!
