@@ -45,7 +45,7 @@ type PoolState @entity {
 }
 #Tracks PoolState over Time
 type PoolSnapshot @entity {
-  id: ID! #poolId-blockHeight
+  id: ID! #poolId-blockNumber
   pool: Pool!
 
   timestamp: Date!
@@ -96,7 +96,7 @@ type TrancheState @entity {
 }
 
 type TrancheSnapshot @entity {
-  id: ID! #poolId-index-blockheight
+  id: ID! #poolId-index-blockNumber
   tranche: Tranche!
 
   timestamp: Date!
@@ -234,7 +234,7 @@ type BorrowerTransaction @entity {
   type: BorrowerTransactionType!
 
   # only applies to BORROWED and REPAID transactions
-  amount: BigInt 
+  amount: BigInt
 }
 
 type AnonymousProxy @entity {
@@ -254,4 +254,3 @@ type Proxy @entity {
   removed: Boolean
   delay: Int
 }
-
