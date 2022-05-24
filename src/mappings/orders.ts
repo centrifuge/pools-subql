@@ -1,18 +1,23 @@
 import { SubstrateEvent } from '@subql/types'
+import { OrderEvent } from 'centrifuge-subql/helpers/types'
+import { errorHandler } from '../helpers/errorHandler'
 import { Pool, InvestorTransaction, Account, InvestorTransactionType, OutstandingOrder } from '../types'
 
-export async function handleInvestOrderUpdated(event: SubstrateEvent): Promise<void> {
+export const handleInvestOrderUpdated = errorHandler(_handleInvestOrderUpdated)
+async function _handleInvestOrderUpdated(event: SubstrateEvent): Promise<void> {
   logger.info(`Invest order updated: ${event.toString()}`)
   handleOrderUpdated(event, InvestorTransactionType.INVEST_ORDER_UPDATE)
 }
 
-export async function handleRedeemOrderUpdated(event: SubstrateEvent): Promise<void> {
+export const handleRedeemOrderUpdated = errorHandler(_handleRedeemOrderUpdated)
+async function _handleRedeemOrderUpdated(event: SubstrateEvent): Promise<void> {
   logger.info(`Redeem order updated: ${event.toString()}`)
   handleOrderUpdated(event, InvestorTransactionType.REDEEM_ORDER_UPDATE)
 }
 
-const handleOrderUpdated = async (event: SubstrateEvent, type: InvestorTransactionType) => {
-  const [poolId, trancheId, _address, _oldOrder, newOrder] = event.event.data
+const handleOrderUpdated = errorHandler(_handleOrderUpdate)
+async function _handleOrderUpdate(event: SubstrateEvent, type: InvestorTransactionType) {
+  const [poolId, trancheId, _address, _oldOrder, newOrder] = event.event.data as unknown as OrderEvent
 
   const pool = await Pool.get(poolId.toString())
 
@@ -23,7 +28,7 @@ const handleOrderUpdated = async (event: SubstrateEvent, type: InvestorTransacti
   // tx.accountId = account.id
   tx.poolId = poolId.toString()
   tx.epochId = `${poolId.toString()}-${pool.currentEpoch}`
-  tx.trancheId = `${poolId.toString()}-${trancheId.toString()}`
+  tx.trancheId = `${poolId.toString()}-${trancheId.toHex()}`
   tx.timestamp = event.block.timestamp
   tx.type = type
 
@@ -45,7 +50,7 @@ const handleOrderUpdated = async (event: SubstrateEvent, type: InvestorTransacti
   // await outstandingOrder.save()
 }
 
-const loadOrCreateAccount = async (address: string) => {
+async function loadOrCreateAccount(address: string) {
   try {
     const account = await Account.get(address)
 
@@ -62,7 +67,7 @@ const loadOrCreateAccount = async (address: string) => {
   }
 }
 
-const loadOrCreateOutstandingOrder = async (poolId: string, trancheId: string, address: string) => {
+async function loadOrCreateOutstandingOrder(poolId: string, trancheId: string, address: string) {
   try {
     const id = `${poolId.toString()}-${trancheId.toString()}-${address}`
 

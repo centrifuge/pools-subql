@@ -1,46 +1,59 @@
 import { SubstrateBlock } from '@subql/types'
-import { BLOCK_TIME_SECONDS, SECONDS_PER_HOUR, SECONDS_PER_DAY } from '../config'
-import { Pool, PoolState, HourlyPoolState, DailyPoolState } from '../types'
+import { PoolState, PoolSnapshot, Tranche, TrancheState, TrancheSnapshot, Timekeeper } from '../types'
+import { getPeriodStart, MemTimekeeper } from '../helpers/timeKeeping'
+import { errorHandler } from '../helpers/errorHandler'
+import { stateSnapshotter } from '../helpers/stateSnapshot'
+import { Option } from '@polkadot/types'
+import { PoolDetails, NavDetails } from 'centrifuge-subql/helpers/types'
 
-export async function handleBlock(block: SubstrateBlock): Promise<void> {
-  const blockTimeSec = block.timestamp.getTime() / 1000
+const memTimekeeper = initialiseMemTimekeeper()
 
-  // This is imperfect if block time isn't consistent. However, the alternative is querying db
-  // to check the last saved daily state, which significantly slows down every handleBlock call.
-  // For now, we assume this is sufficient, but we need to double check in production if some days
-  // are skipped.
-  //
-  // TODO: we could probably address this by querying the db within n x BLOCK_TIME_SECONDS.
-  if (blockTimeSec % SECONDS_PER_HOUR <= BLOCK_TIME_SECONDS) {
-    // A new hour has started
-    const pools = await Pool.getByType('POOL')
+export const handleBlock = errorHandler(_handleBlock)
+async function _handleBlock(block: SubstrateBlock): Promise<void> {
+  const blockPeriodStart = getPeriodStart(block.timestamp)
+  const blockNumber = block.block.header.number.toNumber()
+  const newPeriod = (await memTimekeeper).processBlock(block)
 
-    for (let pool of pools) {
-      const result = await api.query.pools.pool(pool.id.toString())
-      const poolData = result.toJSON() as any
+  if (newPeriod) {
+    logger.info(`It's a new period on block ${blockNumber}: ${block.timestamp.toISOString()}`)
 
-      const navResult = await api.query.loans.poolNAV(pool.id.toString())
-      const nav = navResult.toJSON() as any
-
-      let poolState = new PoolState(`${pool.id.toString()}-${blockTimeSec.toString()}`)
-      poolState.netAssetValue = BigInt(nav !== null ? nav.latest.toString() : 0)
-      poolState.totalReserve = BigInt(poolData.reserve.total.toString())
-      poolState.availableReserve = BigInt(poolData.reserve.available.toString())
-      poolState.maxReserve = BigInt(poolData.reserve.max.toString())
-      await poolState.save()
-
-      let hourlyPoolState = new HourlyPoolState(`${pool.id.toString()}-${blockTimeSec.toString()}`)
-      hourlyPoolState.timestamp = block.timestamp
-      hourlyPoolState.poolStateId = poolState.id
-      await hourlyPoolState.save()
-
-      if (blockTimeSec % SECONDS_PER_DAY <= BLOCK_TIME_SECONDS) {
-        // A new day has started as well
-        let dailyPoolState = new DailyPoolState(`${pool.id.toString()}-${blockTimeSec.toString()}`)
-        dailyPoolState.timestamp = block.timestamp
-        dailyPoolState.poolStateId = poolState.id
-        await dailyPoolState.save()
+    // Populate State Updates
+    const poolStates = await PoolState.getByType('ALL')
+    for (const poolState of poolStates) {
+      const poolResponse = await api.query.pools.pool<Option<PoolDetails>>(poolState.id)
+      if (poolResponse.isSome) {
+        const poolData = poolResponse.unwrap()
+        poolState.totalReserve = poolData.reserve.total.toBigInt()
+        poolState.availableReserve = poolData.reserve.available.toBigInt()
+        poolState.maxReserve = poolData.reserve.max.toBigInt()
       }
+
+      const navResponse = await api.query.loans.poolNAV<Option<NavDetails>>(poolState.id)
+      if (navResponse.isSome) {
+        const navData = navResponse.unwrap()
+        poolState.netAssetValue = navData.latest.toBigInt()
+      }
+
+      await poolState.save()
     }
+
+    //Perform Snapshots and reset
+    await stateSnapshotter(PoolState, PoolSnapshot, block, 'poolId')
+    await stateSnapshotter(TrancheState, TrancheSnapshot, block, 'trancheId')
+
+    //Update Timekeeper
+    const timekeeper = new Timekeeper('global')
+    timekeeper.lastPeriodStart = blockPeriodStart
+    await timekeeper.save()
   }
+}
+
+async function initialiseMemTimekeeper(): Promise<MemTimekeeper> {
+  let lastPeriodStart: Date
+  try {
+    lastPeriodStart = (await Timekeeper.get('global')).lastPeriodStart
+  } catch (error) {
+    lastPeriodStart = new Date(0)
+  }
+  return new MemTimekeeper(lastPeriodStart)
 }

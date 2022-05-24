@@ -1,4 +1,11 @@
-# Centrifuge Pools Subquery
+# Centrifuge Subquery
+
+[![SubQuery](https://img.shields.io/static/v1?label=built+with&message=SubQuery&color=FF4581)](https://subquery.network/)
+
+<!-- [![Docker](https://img.shields.io/static/v1?label=shipped+with&message=Docker&color=287cf9)](https://www.docker.com/) -->
+
+A GraphQL API to query the Centrifuge Parachain on Polkadot.
+
 
 ### Environment
 - [Typescript](https://www.typescriptlang.org/) are required to compile project and define types.  

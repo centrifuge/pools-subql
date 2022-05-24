@@ -58,3 +58,8 @@ dataSources:
           filter:
             module: proxy
             method: AnonymousCreated
+        - handler: computeTotalBorrowings
+          kind: substrate/EventHandler
+          filter:
+            module: loans
+            method: Borrowed
