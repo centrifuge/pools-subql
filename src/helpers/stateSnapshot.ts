@@ -1,4 +1,5 @@
 import { SubstrateBlock } from '@subql/types'
+import { errorHandler } from './errorHandler'
 
 interface Constructor<C> {
   new (id: string): C
@@ -11,6 +12,7 @@ interface TypeGetter<C> {
 interface GenericState {
   id: string
   type: string
+  save(): Promise<void>
 }
 
 interface GenericSnapshot {
@@ -20,7 +22,18 @@ interface GenericSnapshot {
   save(): Promise<void>
 }
 
-export async function stateSnapshotter<
+export const stateSnapshotter = errorHandler(_stateSnapshotter)
+/**
+ * Creates a snapshot of a generic stateModel to a snapshotModel.
+ * A snapshotModel has the same fields as the originating stateModel, however a timestamp and a blockNumber are added.
+ * Fields ending with an _ underscore are reset to 0 at the end of a period. All such resettable fields must be of type BigInt.
+ * @param stateModel the data model to be snapshotted
+ * @param snapshotModel the data model where the snapshot is saved. (must have additional timestamp and blockNumber fields)
+ * @param block the correspondint substrateBlock to provide additional state values to the snapshot
+ * @param fkReferenceName (optional) name of the foreignKey to save a reference to the originating entity.
+ * @returns A promise resolving when all state manipulations in the DB is completed
+ */
+async function _stateSnapshotter<
   T extends Constructor<GenericState> & TypeGetter<GenericState>,
   U extends Constructor<GenericSnapshot>
 >(
@@ -29,18 +42,27 @@ export async function stateSnapshotter<
   block: SubstrateBlock,
   fkReferenceName: string = undefined
 ): Promise<Promise<void>[]> {
-  let newEntitySaves = []
+  let entitySaves = []
   if (!stateModel.hasOwnProperty('getByType')) throw new Error('stateModel has no method .hasOwnProperty()')
   const stateEntities = await stateModel.getByType('ALL')
-  stateEntities.forEach((stateEntity) => {
+  for (const stateEntity of stateEntities) {
     const blockNumber = block.block.header.number.toNumber()
     const { id, type, ...copyStateEntity } = stateEntity
     const snapshotEntity = new snapshotModel(`${id}-${blockNumber.toString()}`)
     Object.assign(snapshotEntity, copyStateEntity)
     snapshotEntity.timestamp = block.timestamp
     snapshotEntity.blockNumber = blockNumber
+
     if (fkReferenceName) snapshotEntity[fkReferenceName] = stateEntity.id
-    newEntitySaves.push(snapshotEntity.save())
-  })
-  return Promise.all(newEntitySaves)
+
+    const propNamesToReset = Object.getOwnPropertyNames(stateEntity).filter((propName) => propName.endsWith('_'))
+    for (const propName of propNamesToReset) {
+      logger.info(`Resetting entity: ${propName}`)
+      stateEntity[propName] = BigInt(0)
+    }
+
+    entitySaves.push(stateEntity.save())
+    entitySaves.push(snapshotEntity.save())
+  }
+  return Promise.all(entitySaves)
 }

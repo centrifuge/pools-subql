@@ -1,10 +1,6 @@
-export interface HandlerFunction {
-  (...args): Promise<void>
-}
-
-export function errorHandler(method: HandlerFunction): HandlerFunction {
-  return async function <T>(...obj: T[]): Promise<any> {
-    return method(...obj).catch((err) => {
+export function errorHandler<E extends Error, F extends Function>(method: F) {
+  return async function (...obj) {
+    return method(...obj).catch((err: E) => {
       logger.error(err)
     })
   }

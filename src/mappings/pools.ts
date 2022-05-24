@@ -1,8 +1,8 @@
 import { SubstrateEvent } from '@subql/types'
-import { Option, TypeRegistry } from '@polkadot/types'
+import { Option } from '@polkadot/types'
 import { Epoch, Pool, PoolState, Tranche, TrancheState } from '../types'
 import { errorHandler } from '../helpers/errorHandler'
-import { PoolDetails, TrancheDetails } from 'centrifuge-subql/helpers/types'
+import { LoanEvent, PoolDetails, TrancheDetails } from 'centrifuge-subql/helpers/types'
 
 export const handlePoolCreated = errorHandler(_handlePoolCreated)
 async function _handlePoolCreated(event: SubstrateEvent): Promise<void> {
@@ -19,6 +19,15 @@ async function _handlePoolCreated(event: SubstrateEvent): Promise<void> {
   poolState.availableReserve = poolData.reserve.available.toBigInt()
   poolState.maxReserve = poolData.reserve.max.toBigInt()
   poolState.totalDebt = BigInt(0)
+
+  poolState.totalBorrowed_ = BigInt(0)
+  poolState.totalRepaid_ = BigInt(0)
+  poolState.totalInvested_ = BigInt(0)
+  poolState.totalRedeemed_ = BigInt(0)
+  poolState.totalNumberOfLoans_ = BigInt(0)
+
+  poolState.totalEverBorrowed = BigInt(0)
+  poolState.totalEverNumberOfLoans = BigInt(0)
 
   await poolState.save()
 
@@ -46,33 +55,46 @@ async function _handlePoolCreated(event: SubstrateEvent): Promise<void> {
   await epoch.save()
 
   // Create the tranches
-  poolData.tranches.tranches.map(async (trancheData: TrancheDetails, index: number) => {
-    try {
-      const trancheId = poolData.tranches.ids.toArray()[index].toHex()
-      logger.info(`trancheId: ${trancheId}`)
+  const tranches = poolData.tranches.tranches
+  for (const [index, trancheData] of tranches.entries()) {
+    const trancheId = poolData.tranches.ids.toArray()[index].toHex()
+    logger.info(`trancheId: ${trancheId}`)
 
-      // Create the tranche state
-      const trancheState = new TrancheState(`${pool.id}-${trancheId}`)
-      trancheState.type = 'ALL'
-      await trancheState.save()
+    // Create the tranche state
+    const trancheState = new TrancheState(`${pool.id}-${trancheId}`)
+    trancheState.type = 'ALL'
+    await trancheState.save()
 
-      const tranche = new Tranche(`${pool.id}-${trancheId}`)
-      tranche.type = 'ALL'
-      tranche.poolId = pool.id
-      tranche.trancheId = trancheId
-      tranche.isResidual = trancheData.trancheType.isResidual // only the first tranche is a residual tranche
-      tranche.seniority = trancheData.seniority.toNumber()
+    const tranche = new Tranche(`${pool.id}-${trancheId}`)
+    tranche.type = 'ALL'
+    tranche.poolId = pool.id
+    tranche.trancheId = trancheId
+    tranche.isResidual = trancheData.trancheType.isResidual // only the first tranche is a residual tranche
+    tranche.seniority = trancheData.seniority.toNumber()
 
-      if (!tranche.isResidual) {
-        tranche.interestRatePerSec = trancheData.trancheType.asNonResidual.interestRatePerSec.toBigInt()
-        tranche.minRiskBuffer = trancheData.trancheType.asNonResidual.minRiskBuffer.toBigInt()
-      }
-
-      tranche.stateId = trancheState.id
-
-      await tranche.save()
-    } catch (error) {
-      logger.error(error)
+    if (!tranche.isResidual) {
+      tranche.interestRatePerSec = trancheData.trancheType.asNonResidual.interestRatePerSec.toBigInt()
+      tranche.minRiskBuffer = trancheData.trancheType.asNonResidual.minRiskBuffer.toBigInt()
     }
-  })
+
+    tranche.stateId = trancheState.id
+
+    await tranche.save()
+  }
+}
+
+export const computeTotalBorrowings = errorHandler(_computeTotalBorrowings)
+async function _computeTotalBorrowings(event: SubstrateEvent): Promise<void> {
+  const [poolId, loanId, amount] = event.event.data as unknown as LoanEvent
+  const poolState = await PoolState.get(poolId.toString())
+
+  logger.info(`Pool: ${poolId.toString()} borrowed ${amount.toString()}`)
+
+  poolState.totalBorrowed_ = poolState.totalBorrowed_ + amount.toBigInt()
+  poolState.totalEverBorrowed = poolState.totalEverBorrowed + amount.toBigInt()
+
+  poolState.totalNumberOfLoans_ = poolState.totalNumberOfLoans_ + BigInt(1)
+  poolState.totalEverNumberOfLoans = poolState.totalEverNumberOfLoans + BigInt(1)
+
+  await poolState.save()
 }

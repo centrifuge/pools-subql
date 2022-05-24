@@ -19,7 +19,7 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
 
     // Populate State Updates
     const poolStates = await PoolState.getByType('ALL')
-    poolStates.forEach(async (poolState) => {
+    for (const poolState of poolStates) {
       const poolResponse = await api.query.pools.pool<Option<PoolDetails>>(poolState.id)
       if (poolResponse.isSome) {
         const poolData = poolResponse.unwrap()
@@ -35,13 +35,11 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
       }
 
       await poolState.save()
-    })
+    }
 
-    //Perform Snapshots
+    //Perform Snapshots and reset
     await stateSnapshotter(PoolState, PoolSnapshot, block, 'poolId')
     await stateSnapshotter(TrancheState, TrancheSnapshot, block, 'trancheId')
-
-    //Reset accumulted states to 0
 
     //Update Timekeeper
     const timekeeper = new Timekeeper('global')
