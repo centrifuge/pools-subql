@@ -43,3 +43,8 @@ dataSources:
           filter:
             module: pools
             method: EpochExecuted
+        - handler: computeTotalBorrowings
+          kind: substrate/EventHandler
+          filter:
+            module: loans
+            method: Borrowed
