@@ -136,3 +136,5 @@ src/types
 
 .DS_store
 
+.data/
+

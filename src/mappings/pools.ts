@@ -35,8 +35,8 @@ async function _handlePoolCreated(event: SubstrateEvent): Promise<void> {
   const pool = new Pool(poolId.toString())
   pool.stateId = poolId.toString()
   pool.type = 'ALL'
-  pool.createdAtTimestamp = event.block.timestamp
-  pool.createdAtHeight = event.block.block.header.number.toNumber()
+  pool.createdAt = event.block.timestamp
+  pool.createdAtBlockNumber = event.block.block.header.number.toNumber()
 
   pool.currency = poolData.currency.toString()
   pool.metadata = metadata.toString()

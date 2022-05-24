@@ -43,6 +43,21 @@ dataSources:
           filter:
             module: pools
             method: EpochExecuted
+        - handler: handleProxyAdded
+          kind: substrate/EventHandler
+          filter:
+            module: proxy
+            method: ProxyAdded
+        - handler: handleProxyRemoved
+          kind: substrate/EventHandler
+          filter:
+            module: proxy
+            method: ProxyRemoved
+        - handler: handleProxyAnonymousCreated
+          kind: substrate/EventHandler
+          filter:
+            module: proxy
+            method: AnonymousCreated
         - handler: computeTotalBorrowings
           kind: substrate/EventHandler
           filter:

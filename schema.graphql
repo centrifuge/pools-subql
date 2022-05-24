@@ -11,8 +11,8 @@ type Pool @entity {
   # pools, so we can do Pool.getByType("POOL").
   type: String! @index
 
-  createdAtTimestamp: Date!
-  createdAtHeight: Int!
+  createdAt: Date!
+  createdAtBlockNumber: Int!
 
   currency: String!
   metadata: String!
@@ -56,11 +56,11 @@ type PoolState @entity {
 }
 #Tracks PoolState over Time
 type PoolSnapshot @entity {
-  id: ID! #poolId-blockHeight
+  id: ID! #poolId-blockNumber
   pool: Pool!
 
   timestamp: Date!
-  blockHeight: Int!
+  blockNumber: Int!
 
   #States
   netAssetValue: BigInt!
@@ -112,11 +112,11 @@ type TrancheState @entity {
 }
 
 type TrancheSnapshot @entity {
-  id: ID! #poolId-index-blockheight
+  id: ID! #poolId-index-blockNumber
   tranche: Tranche!
 
   timestamp: Date!
-  blockHeight: Int!
+  blockNumber: Int!
 
   supply: BigInt
   price: Float
@@ -251,4 +251,22 @@ type BorrowerTransaction @entity {
 
   # only applies to BORROWED and REPAID transactions
   amount: BigInt
+}
+
+type AnonymousProxy @entity {
+  id: ID!
+
+  account: String!
+  createdBy: String!
+  proxyType: String
+}
+
+type Proxy @entity {
+  id: ID!
+
+  delegator: String!
+  delegatee: String!
+  proxyType: String
+  removed: Boolean
+  delay: Int
 }

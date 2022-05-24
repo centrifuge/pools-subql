@@ -18,7 +18,7 @@ interface GenericState {
 interface GenericSnapshot {
   id: string
   timestamp: Date
-  blockHeight: number
+  blockNumber: number
   save(): Promise<void>
 }
 
@@ -46,12 +46,12 @@ async function _stateSnapshotter<
   if (!stateModel.hasOwnProperty('getByType')) throw new Error('stateModel has no method .hasOwnProperty()')
   const stateEntities = await stateModel.getByType('ALL')
   for (const stateEntity of stateEntities) {
-    const blockHeight = block.block.header.number.toNumber()
+    const blockNumber = block.block.header.number.toNumber()
     const { id, type, ...copyStateEntity } = stateEntity
-    const snapshotEntity = new snapshotModel(`${id}-${blockHeight.toString()}`)
+    const snapshotEntity = new snapshotModel(`${id}-${blockNumber.toString()}`)
     Object.assign(snapshotEntity, copyStateEntity)
     snapshotEntity.timestamp = block.timestamp
-    snapshotEntity.blockHeight = blockHeight
+    snapshotEntity.blockNumber = blockNumber
 
     if (fkReferenceName) snapshotEntity[fkReferenceName] = stateEntity.id
 
