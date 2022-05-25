@@ -33,23 +33,6 @@ Open your browser and head to `http://localhost:3000`.
 
 Finally, you should see a GraphQL playground is showing in the explorer and the schemas that are ready to query.
 
-### Entities
-
-```mermaid
-classDiagram
-    Pool <|-- Tranche
-    Pool <|-- Epoch
-    Pool <|-- BorrowerTransaction
-    Pool <|-- PoolState
-    Pool <|-- DailyPoolState
-    Tranche <|-- TrancheState
-    Tranche <|-- InvestorTransaction
-    Epoch <|-- InvestorTransaction
-    Epoch <|-- BorrowerTransaction
-    Account <|-- InvestorTransaction
-    Account <|-- BorrowerTransaction
-```
-
 ## Data Model
 
 !!! Data fields ending with an underscore `_` are automatically reset at the end of a period and bust be of type `BigInt`!!!
