@@ -1,5 +1,6 @@
 import { SubstrateBlock } from '@subql/types'
 import { errorHandler } from './errorHandler'
+import { getPeriodStart } from './timeKeeping'
 
 interface Constructor<C> {
   new (id: string): C
@@ -19,6 +20,7 @@ interface GenericSnapshot {
   id: string
   timestamp: Date
   blockNumber: number
+  periodStart: Date
   save(): Promise<void>
 }
 
@@ -52,6 +54,7 @@ async function _stateSnapshotter<
     Object.assign(snapshotEntity, copyStateEntity)
     snapshotEntity.timestamp = block.timestamp
     snapshotEntity.blockNumber = blockNumber
+    snapshotEntity.periodStart = getPeriodStart(block.timestamp)
 
     if (fkReferenceName) snapshotEntity[fkReferenceName] = stateEntity.id
 

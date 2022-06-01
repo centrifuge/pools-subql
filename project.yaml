@@ -23,6 +23,27 @@ dataSources:
           filter:
             module: pools
             method: Created
+        - handler: handleEpochClosed
+          kind: substrate/EventHandler
+          filter:
+            module: pools
+            method: EpochClosed
+        - handler: updateEpochReferences
+          kind: substrate/EventHandler
+          filter:
+            module: pools
+            method: EpochClosed
+        
+        - handler: handleEpochExecuted
+          kind: substrate/EventHandler
+          filter:
+            module: pools
+            method: EpochExecuted
+        - handler: updateEpochReferences
+          kind: substrate/EventHandler
+          filter:
+            module: pools
+            method: EpochExecuted
         - handler: handleInvestOrderUpdated
           kind: substrate/EventHandler
           filter:
@@ -33,16 +54,6 @@ dataSources:
           filter:
             module: pools
             method: RedeemOrderUpdated
-        - handler: handleEpochClosed
-          kind: substrate/EventHandler
-          filter:
-            module: pools
-            method: EpochClosed
-        - handler: handleEpochExecuted
-          kind: substrate/EventHandler
-          filter:
-            module: pools
-            method: EpochExecuted
         - handler: handleProxyAdded
           kind: substrate/EventHandler
           filter:
