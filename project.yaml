@@ -7,7 +7,7 @@ schema:
   file: ./schema.graphql
 network:
   endpoint: wss://fullnode-collator-2.development.cntrfg.com
-  genesisHash: '0x3e8c9d20daf0eab3deb3a58f71c430dad1ca28a911fab34158792e3eeb77c39b'
+  genesisHash: '0x31eae49488ddf60b2ae2829e5bb9e2ae67aef01756fd8ee0e6c63fe85b603774'
   chaintypes:
     file: ./dist/chaintypes.js
 dataSources:
@@ -23,6 +23,27 @@ dataSources:
           filter:
             module: pools
             method: Created
+        - handler: handleEpochClosed
+          kind: substrate/EventHandler
+          filter:
+            module: pools
+            method: EpochClosed
+        - handler: updateEpochReferences
+          kind: substrate/EventHandler
+          filter:
+            module: pools
+            method: EpochClosed
+        
+        - handler: handleEpochExecuted
+          kind: substrate/EventHandler
+          filter:
+            module: pools
+            method: EpochExecuted
+        - handler: updateEpochReferences
+          kind: substrate/EventHandler
+          filter:
+            module: pools
+            method: EpochExecuted
         - handler: handleInvestOrderUpdated
           kind: substrate/EventHandler
           filter:
@@ -33,16 +54,6 @@ dataSources:
           filter:
             module: pools
             method: RedeemOrderUpdated
-        - handler: handleEpochClosed
-          kind: substrate/EventHandler
-          filter:
-            module: pools
-            method: EpochClosed
-        - handler: handleEpochExecuted
-          kind: substrate/EventHandler
-          filter:
-            module: pools
-            method: EpochExecuted
         - handler: handleProxyAdded
           kind: substrate/EventHandler
           filter:

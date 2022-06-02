@@ -55,7 +55,7 @@ export interface EpochExecutionTranche extends Struct {
 
 export interface EpochSolution extends Enum {
   isHealthy: boolean
-  inUngealthy: boolean
+  isUnhealthy: boolean
   asHealthy: { solution: TrancheSolution[]; score: u128 }
   asUnhealthy: {
     state: Enum[]
@@ -63,6 +63,12 @@ export interface EpochSolution extends Enum {
     riskBufferImprovementScores: Option<Vec<u128>>
     reserveImprovementScore: Option<u128>
   }
+}
+
+export interface EpochDetails extends Struct {
+  investemntFulfillment: Perquintill
+  redeemFulfillment: Perquintill
+  tokenPrice: u128
 }
 
 export interface TrancheSolution extends Struct {
@@ -73,3 +79,4 @@ export interface TrancheSolution extends Struct {
 export interface LoanEvent extends ITuple<[u64, u128, u128]> {}
 export interface EpochEvent extends ITuple<[u64, u32]> {}
 export interface OrderEvent extends ITuple<[u64, U8aFixed, AccountId32, u128, u128]> {}
+export interface EpochSolutionEvent extends ITuple<[u64, u32, EpochSolution]> {}

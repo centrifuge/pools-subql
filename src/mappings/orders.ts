@@ -1,5 +1,5 @@
 import { SubstrateEvent } from '@subql/types'
-import { OrderEvent } from 'centrifuge-subql/helpers/types'
+import { OrderEvent } from '../helpers/types'
 import { errorHandler } from '../helpers/errorHandler'
 import { Pool, InvestorTransaction, Account, InvestorTransactionType, OutstandingOrder } from '../types'
 
