@@ -1,10 +1,10 @@
 import { SubstrateBlock } from '@subql/types'
-import { PoolState, PoolSnapshot, Tranche, TrancheState, TrancheSnapshot, Timekeeper } from '../types'
+import { PoolState, PoolSnapshot, TrancheState, TrancheSnapshot, Timekeeper, Pool, Tranche } from '../types'
 import { getPeriodStart, MemTimekeeper } from '../helpers/timeKeeping'
 import { errorHandler } from '../helpers/errorHandler'
 import { stateSnapshotter } from '../helpers/stateSnapshot'
-import { Option } from '@polkadot/types'
-import { PoolDetails, NavDetails } from 'centrifuge-subql/helpers/types'
+import { updatePoolNav, updatePoolState } from './pools'
+import { updateTranchePrice } from './tranches'
 
 const memTimekeeper = initialiseMemTimekeeper()
 
@@ -17,24 +17,17 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
   if (newPeriod) {
     logger.info(`It's a new period on block ${blockNumber}: ${block.timestamp.toISOString()}`)
 
-    // Populate State Updates
-    const poolStates = await PoolState.getByType('ALL')
-    for (const poolState of poolStates) {
-      const poolResponse = await api.query.pools.pool<Option<PoolDetails>>(poolState.id)
-      if (poolResponse.isSome) {
-        const poolData = poolResponse.unwrap()
-        poolState.totalReserve = poolData.reserve.total.toBigInt()
-        poolState.availableReserve = poolData.reserve.available.toBigInt()
-        poolState.maxReserve = poolData.reserve.max.toBigInt()
-      }
+    // Update Pool States
+    const pools = await Pool.getByType('ALL')
+    for (const pool of pools) {
+      await updatePoolState(pool.id)
+      await updatePoolNav(pool.id)
 
-      const navResponse = await api.query.loans.poolNAV<Option<NavDetails>>(poolState.id)
-      if (navResponse.isSome) {
-        const navData = navResponse.unwrap()
-        poolState.netAssetValue = navData.latest.toBigInt()
+      // Update tranche states
+      const tranches = await Tranche.getByPoolId(pool.id)
+      for (const tranche of tranches) {
+        await updateTranchePrice(pool.id, tranche.trancheId, pool.currentEpoch)
       }
-
-      await poolState.save()
     }
 
     //Perform Snapshots and reset
