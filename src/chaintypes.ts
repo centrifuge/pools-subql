@@ -60,11 +60,13 @@ const definitions: OverrideBundleDefinition = {
   rpc: {
     pools: {
       trancheTokenPrices: {
-        description: 'Retrieve token prices for all tranches',
+        description: 'Retrieve prices for all tranches',
         params: [
           {
             name: 'pool_id',
             type: 'u64',
+            isHistoric: true,
+            isOptional: false,
           },
         ],
         type: 'Vec<BalanceRatio>',

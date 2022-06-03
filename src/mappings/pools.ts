@@ -4,7 +4,7 @@ import { Pool, PoolState } from '../types'
 import { errorHandler } from '../helpers/errorHandler'
 import { EpochEvent, LoanEvent, NavDetails, PoolDetails } from '../helpers/types'
 import { createEpoch } from './epochs'
-import { createTranche, updateTranchePrice } from './tranches'
+import { createTranche, updateTranchePrice, updateTrancheSupply } from './tranches'
 
 export const updatePoolState = errorHandler(_updatePoolState)
 async function _updatePoolState(poolId: string) {
@@ -82,6 +82,7 @@ async function _handlePoolCreated(event: SubstrateEvent): Promise<void> {
     logger.info(`Creating trancheId: ${trancheId}`)
     await createTranche(trancheId, pool.id, trancheData)
     await updateTranchePrice(pool.id, trancheId, currentEpoch)
+    await updateTrancheSupply(pool.id, trancheId)
   }
   await createEpoch(pool.id, currentEpoch, event.block)
 }

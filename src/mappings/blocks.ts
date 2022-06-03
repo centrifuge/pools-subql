@@ -4,7 +4,7 @@ import { getPeriodStart, MemTimekeeper } from '../helpers/timeKeeping'
 import { errorHandler } from '../helpers/errorHandler'
 import { stateSnapshotter } from '../helpers/stateSnapshot'
 import { updatePoolNav, updatePoolState } from './pools'
-import { updateTranchePrice } from './tranches'
+import { updateTranchePrice, updateTrancheSupply } from './tranches'
 
 const memTimekeeper = initialiseMemTimekeeper()
 
@@ -27,6 +27,7 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
       const tranches = await Tranche.getByPoolId(pool.id)
       for (const tranche of tranches) {
         await updateTranchePrice(pool.id, tranche.trancheId, pool.currentEpoch)
+        await updateTrancheSupply(pool.id, tranche.trancheId)
       }
     }
 
