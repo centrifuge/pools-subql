@@ -27,6 +27,7 @@
   "devDependencies": {
     "@polkadot/typegen": "^8",
     "@polkadot/types": "^8",
+    "@polkadot/util": "^8",
     "@subql/cli": "latest",
     "ts-node": "^8.6.2",
     "typescript": "^4.4.4"

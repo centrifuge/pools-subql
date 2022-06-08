@@ -110,6 +110,7 @@ type TrancheState @entity {
   yield30Days: BigInt
   yield90Days: BigInt
   yieldSinceInception: BigInt
+  yieldSinceLastPeriod: BigInt
 }
 
 type TrancheSnapshot @entity {
@@ -129,6 +130,7 @@ type TrancheSnapshot @entity {
   yield30Days: BigInt
   yield90Days: BigInt
   yieldSinceInception: BigInt
+  yieldSinceLastPeriod: BigInt
 }
 
 type Epoch @entity {

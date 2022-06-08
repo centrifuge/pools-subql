@@ -2,7 +2,7 @@ import { SubstrateEvent, SubstrateBlock } from '@subql/types'
 import { EpochEvent } from 'centrifuge-subql/helpers/types'
 import { errorHandler } from '../helpers/errorHandler'
 import { Epoch, OutstandingOrder, PoolState, Tranche } from '../types'
-import { updateTranchePrice } from './tranches'
+import { updateTranchePrice, updateTrancheSupply } from './tranches'
 
 export const createEpoch = errorHandler(_createEpoch)
 async function _createEpoch(poolId: string, epochId: number, block: SubstrateBlock): Promise<Epoch> {
@@ -55,6 +55,7 @@ async function _handleEpochExecuted(event: SubstrateEvent): Promise<void> {
   const tranches = await Tranche.getByPoolId(poolId.toString())
   for (const tranche of tranches) {
     await updateTranchePrice(poolId.toString(), tranche.trancheId, epochId.toNumber())
+    await updateTrancheSupply(poolId.toString(), tranche.trancheId)
   }
 
   // TODO: loop over OutstandingOrder, apply fulfillment from epoch, create InvestorTransactions, optionally remove orders
