@@ -24,7 +24,6 @@ interface GenericSnapshot {
   save(): Promise<void>
 }
 
-export const stateSnapshotter = errorHandler(_stateSnapshotter)
 /**
  * Creates a snapshot of a generic stateModel to a snapshotModel.
  * A snapshotModel has the same fields as the originating stateModel, however a timestamp and a blockNumber are added.
@@ -35,6 +34,7 @@ export const stateSnapshotter = errorHandler(_stateSnapshotter)
  * @param fkReferenceName (optional) name of the foreignKey to save a reference to the originating entity.
  * @returns A promise resolving when all state manipulations in the DB is completed
  */
+export const stateSnapshotter = errorHandler(_stateSnapshotter)
 async function _stateSnapshotter<
   T extends Constructor<GenericState> & TypeGetter<GenericState>,
   U extends Constructor<GenericSnapshot>
