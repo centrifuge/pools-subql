@@ -34,7 +34,7 @@ async function _updatePoolNav(poolId: string) {
 
 export const handlePoolCreated = errorHandler(_handlePoolCreated)
 async function _handlePoolCreated(event: SubstrateEvent): Promise<void> {
-  const [poolId, metadata] = event.event.data
+  const [poolId, admin] = event.event.data
   const poolData = (await api.query.pools.pool<Option<PoolDetails>>(poolId)).unwrap()
   const currentEpoch = 1
 
@@ -68,7 +68,7 @@ async function _handlePoolCreated(event: SubstrateEvent): Promise<void> {
   pool.createdAtBlockNumber = event.block.block.header.number.toNumber()
 
   pool.currency = poolData.currency.toString()
-  pool.metadata = metadata.toString()
+  pool.metadata = poolData.metadata.isSome ? poolData.metadata.unwrap().toUtf8() : 'NA'
 
   pool.minEpochTime = poolData.parameters.minEpochTime.toNumber()
   pool.maxNavAge = poolData.parameters.maxNavAge.toNumber()

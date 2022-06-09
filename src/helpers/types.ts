@@ -1,4 +1,18 @@
-import { Enum, Null, Struct, Tuple, u128, u32, u64, U8aFixed, Option, U128, Vec, createType } from '@polkadot/types'
+import {
+  Enum,
+  Null,
+  Struct,
+  Tuple,
+  u128,
+  u32,
+  u64,
+  U8aFixed,
+  Option,
+  U128,
+  Vec,
+  createType,
+  Bytes,
+} from '@polkadot/types'
 import { AccountId32, Perquintill } from '@polkadot/types/interfaces'
 import { ITuple } from '@polkadot/types/types'
 
@@ -8,6 +22,7 @@ export interface PoolDetails extends Struct {
   parameters: { minEpochTime: u64; maxNavAge: u64 }
   tranches: { tranches: TrancheDetails[]; ids: Vec<U8aFixed>; salt: ITuple<[u64, u64]> }
   epoch: { current: u32; lastClosed: u64; lastExecuted: u32 }
+  metadata: Option<Bytes>
 }
 
 export interface TrancheDetails extends Struct {
