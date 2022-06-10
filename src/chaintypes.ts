@@ -65,14 +65,30 @@ const definitions: OverrideBundleDefinition = {
           {
             name: 'pool_id',
             type: 'u64',
-            isHistoric: true,
+            //            isHistoric: true,
             isOptional: false,
           },
         ],
-        type: 'Vec<BalanceRatio>',
+        type: 'Option<Vec<BalanceRatio>>',
+      },
+      trancheTokenPrice: {
+        description: 'Retrieve prices for a tranche',
+        params: [
+          {
+            name: 'pool_id',
+            type: 'u64',
+            isOptional: false,
+          },
+          {
+            name: 'tranche',
+            type: '(u64,[u8;16])',
+            isOptional: false,
+          },
+        ],
+        type: 'Option<BalanceRatio>',
       },
     },
   },
 }
 
-export default { typesBundle: { spec: { altair: definitions } } }
+export default { typesBundle: { spec: { 'centrifuge-devel': definitions, altair: definitions } } }
