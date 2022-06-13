@@ -47,6 +47,7 @@ async function _stateSnapshotter<
   let entitySaves = []
   if (!stateModel.hasOwnProperty('getByType')) throw new Error('stateModel has no method .hasOwnProperty()')
   const stateEntities = await stateModel.getByType('ALL')
+  logger.info(`Performing snapshots of ${stateModel.name}`)
   for (const stateEntity of stateEntities) {
     const blockNumber = block.block.header.number.toNumber()
     const { id, type, ...copyStateEntity } = stateEntity
@@ -59,11 +60,10 @@ async function _stateSnapshotter<
     if (fkReferenceName) snapshotEntity[fkReferenceName] = stateEntity.id
 
     const propNamesToReset = Object.getOwnPropertyNames(stateEntity).filter((propName) => propName.endsWith('_'))
+    logger.info(`Resetting ${stateModel.name} entities: [${propNamesToReset.concat(',')}]`)
     for (const propName of propNamesToReset) {
-      logger.info(`Resetting entity: ${propName}`)
       stateEntity[propName] = BigInt(0)
     }
-
     entitySaves.push(stateEntity.save())
     entitySaves.push(snapshotEntity.save())
   }

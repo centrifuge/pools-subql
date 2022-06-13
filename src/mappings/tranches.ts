@@ -82,3 +82,35 @@ async function _computeTrancheYield(
   await trancheState.save()
   return trancheState
 }
+
+export const computeAnnualizedTrancheYield = errorHandler(_computeAnnualizedTrancheYield)
+async function _computeAnnualizedTrancheYield(
+  poolId: string,
+  trancheId: string,
+  yieldField: string,
+  currentPeriodStart: Date,
+  referencePeriodStart: Date
+): Promise<TrancheState> {
+  logger.info(
+    `Computing annualized yield for tranche ${trancheId} of pool ${poolId} with reference date ${referencePeriodStart}`
+  )
+  const trancheState = await TrancheState.get(`${poolId}-${trancheId}`)
+  const trancheSnapshots = await TrancheSnapshot.getByPeriodStart(referencePeriodStart)
+  if (!trancheSnapshots) return trancheState
+  const trancheSnapshot = trancheSnapshots.find((snapshot) => snapshot.trancheId === `${poolId}-${trancheId}`)
+  if (!trancheSnapshot) return trancheState
+  const annualizationFactor = bnToBn(365 * 24 * 3600 * 1000).div(
+    bnToBn(currentPeriodStart.valueOf() - referencePeriodStart.valueOf())
+  )
+  const priceCurrent = bnToBn(trancheState.price)
+  const priceOld = bnToBn(trancheSnapshot.price)
+  trancheState[yieldField] = nToBigInt(
+    priceCurrent
+      .mul(bnToBn(10).pow(bnToBn(27)))
+      .div(priceOld)
+      .sub(bnToBn(10).pow(bnToBn(27)))
+      .mul(annualizationFactor)
+  )
+  await trancheState.save()
+  return trancheState
+}

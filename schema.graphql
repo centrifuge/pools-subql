@@ -107,8 +107,8 @@ type TrancheState @entity {
   outstandingInvestOrders: BigInt
   outstandingRedeemOrders: BigInt
 
-  yield30Days: BigInt
-  yield90Days: BigInt
+  yield30DaysAnnualized: BigInt
+  yield90DaysAnnualized: BigInt
   yieldSinceInception: BigInt
   yieldSinceLastPeriod: BigInt
 }
@@ -127,8 +127,8 @@ type TrancheSnapshot @entity {
   outstandingInvestOrders: BigInt
   outstandingRedeemOrders: BigInt
 
-  yield30Days: BigInt
-  yield90Days: BigInt
+  yield30DaysAnnualized: BigInt
+  yield90DaysAnnualized: BigInt
   yieldSinceInception: BigInt
   yieldSinceLastPeriod: BigInt
 }

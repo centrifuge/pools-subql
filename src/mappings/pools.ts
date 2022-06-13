@@ -79,7 +79,7 @@ async function _handlePoolCreated(event: SubstrateEvent): Promise<void> {
   const tranches = poolData.tranches.tranches
   for (const [index, trancheData] of tranches.entries()) {
     const trancheId = poolData.tranches.ids.toArray()[index].toHex()
-    logger.info(`Creating trancheId: ${trancheId}`)
+    logger.info(`Creating tranche with id: ${trancheId}`)
     await createTranche(trancheId, pool.id, trancheData)
     await updateTranchePrice(pool.id, trancheId, currentEpoch)
     await updateTrancheSupply(pool.id, trancheId)
