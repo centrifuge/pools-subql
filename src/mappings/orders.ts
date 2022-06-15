@@ -17,13 +17,13 @@ async function _handleRedeemOrderUpdated(event: SubstrateEvent): Promise<void> {
 
 const handleOrderUpdated = errorHandler(_handleOrderUpdate)
 async function _handleOrderUpdate(event: SubstrateEvent, type: InvestorTransactionType) {
-  const [poolId, trancheId, _address, _oldOrder, newOrder] = event.event.data as unknown as OrderEvent
+  const [poolId, trancheId, newOrder] = event.event.data as unknown as OrderEvent
 
   const pool = await Pool.get(poolId.toString())
 
   // const account = await loadOrCreateAccount(address.toString())
 
-  let tx = new InvestorTransaction(event.hash.toString())
+  const tx = new InvestorTransaction(event.hash.toString())
 
   // tx.accountId = account.id
   tx.poolId = poolId.toString()
@@ -39,6 +39,7 @@ async function _handleOrderUpdate(event: SubstrateEvent, type: InvestorTransacti
   await tx.save()
 
   // Create outstanding order so we can check which were fulfilled in the epoch execute handler
+  // eslint-disable-next-line max-len
   // let outstandingOrder = await loadOrCreateOutstandingOrder(poolId.toString(), trancheId.toString(), address.toString())
   // outstandingOrder.invest = BigInt(
   //   type === InvestorTransactionType.INVEST_ORDER_UPDATE ? BigInt(amount.toString()) : outstandingOrder.invest
@@ -50,12 +51,13 @@ async function _handleOrderUpdate(event: SubstrateEvent, type: InvestorTransacti
   // await outstandingOrder.save()
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function loadOrCreateAccount(address: string) {
   try {
     const account = await Account.get(address)
 
     if (!account) {
-      let account = new Account(address)
+      const account = new Account(address)
       account.publicAddress = address
       await account.save()
       return account
@@ -67,6 +69,7 @@ async function loadOrCreateAccount(address: string) {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function loadOrCreateOutstandingOrder(poolId: string, trancheId: string, address: string) {
   try {
     const id = `${poolId.toString()}-${trancheId.toString()}-${address}`
@@ -74,7 +77,7 @@ async function loadOrCreateOutstandingOrder(poolId: string, trancheId: string, a
     const order = await OutstandingOrder.get(id)
 
     if (!order) {
-      let order = new OutstandingOrder(id)
+      const order = new OutstandingOrder(id)
       order.poolId = poolId
       order.trancheId = `${poolId}-${trancheId}`
 

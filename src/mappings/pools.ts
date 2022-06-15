@@ -34,7 +34,7 @@ async function _updatePoolNav(poolId: string) {
 
 export const handlePoolCreated = errorHandler(_handlePoolCreated)
 async function _handlePoolCreated(event: SubstrateEvent): Promise<void> {
-  const [poolId, admin] = event.event.data
+  const [poolId] = event.event.data
   const poolData = (await api.query.pools.pool<Option<PoolDetails>>(poolId)).unwrap()
   const currentEpoch = 1
 
@@ -89,6 +89,7 @@ async function _handlePoolCreated(event: SubstrateEvent): Promise<void> {
 
 export const computeTotalBorrowings = errorHandler(_computeTotalBorrowings)
 async function _computeTotalBorrowings(event: SubstrateEvent): Promise<void> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [poolId, loanId, amount] = event.event.data as unknown as LoanEvent
   const poolState = await PoolState.get(poolId.toString())
 

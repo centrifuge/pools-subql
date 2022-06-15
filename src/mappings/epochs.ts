@@ -1,7 +1,7 @@
 import { SubstrateEvent, SubstrateBlock } from '@subql/types'
 import { EpochEvent } from 'centrifuge-subql/helpers/types'
 import { errorHandler } from '../helpers/errorHandler'
-import { Epoch, OutstandingOrder, PoolState, Tranche } from '../types'
+import { Epoch, OutstandingOrder, Tranche } from '../types'
 import { updateTranchePrice, updateTrancheSupply } from './tranches'
 
 export const createEpoch = errorHandler(_createEpoch)
@@ -49,6 +49,7 @@ export const handleEpochExecuted = errorHandler(_handleEpochExecuted)
 async function _handleEpochExecuted(event: SubstrateEvent): Promise<void> {
   const [poolId, epochId] = event.event.data as unknown as EpochEvent
   logger.info(
+    // eslint-disable-next-line max-len
     `Epoch ${epochId.toString()} executed for pool ${poolId.toString()} at block ${event.block.block.header.number.toString()}`
   )
   await executeEpoch(poolId.toString(), epochId.toNumber(), event.block)
@@ -58,6 +59,7 @@ async function _handleEpochExecuted(event: SubstrateEvent): Promise<void> {
     await updateTrancheSupply(poolId.toString(), tranche.trancheId)
   }
 
+  // eslint-disable-next-line max-len
   // TODO: loop over OutstandingOrder, apply fulfillment from epoch, create InvestorTransactions, optionally remove orders
   const orders = await OutstandingOrder.getByPoolId(poolId.toString())
   logger.info(`Orders: ${JSON.stringify(orders)}`)
