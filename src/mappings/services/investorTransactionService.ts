@@ -29,6 +29,7 @@ export class InvestorTransactionService {
     tx.tokenAmount = type === InvestorTransactionType.REDEEM_ORDER_UPDATE ? amount : BigInt(0)
 
     // Create outstanding order so we can check which were fulfilled in the epoch execute handler
+    // eslint-disable-next-line max-len
     // let outstandingOrder = await loadOrCreateOutstandingOrder(poolId.toString(), trancheId.toString(), address.toString())
     // outstandingOrder.invest = BigInt(
     //   type === InvestorTransactionType.INVEST_ORDER_UPDATE ? BigInt(amount.toString()) : outstandingOrder.invest
