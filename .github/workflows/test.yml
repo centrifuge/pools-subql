@@ -8,7 +8,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  'Run Linter Test':
+  'Run Linter':
     runs-on: ubuntu-latest
     steps:
       - name: 'Checkout Repository'
