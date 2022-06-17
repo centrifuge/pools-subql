@@ -17,7 +17,7 @@ export async function handleProxyAdded(event: SubstrateEvent): Promise<void> {
 export async function handleProxyAnonymousCreated(event: SubstrateEvent): Promise<void> {
   logger.info(`Anonymous proxy created: ${event.toString()}`)
 
-  const [account, createdBy, proxyType] = event.event.data
+  const [account, createdBy, proxyType, _index] = event.event.data
 
   const anonymousProxy = new AnonymousProxy(`${account.toString()}`)
   anonymousProxy.account = account.toString()
@@ -35,6 +35,6 @@ export async function handleProxyAnonymousCreated(event: SubstrateEvent): Promis
 export async function handleProxyRemoved(event: SubstrateEvent): Promise<void> {
   logger.info(`Proxy removed: ${event.toString()}`)
 
-  const [delegator, delegatee, proxyType] = event.event.data
+  const [delegator, delegatee, proxyType, delay] = event.event.data
   await Proxy.remove(`${delegator.toString()}-${delegatee.toString()}-${proxyType.toString()}}`)
 }

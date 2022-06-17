@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 type InferArgs<T> = T extends (...t: [...infer Arg]) => any ? Arg : never
 type InferReturn<T> = T extends (...t: [...infer Arg]) => infer Res ? Res : never
 
