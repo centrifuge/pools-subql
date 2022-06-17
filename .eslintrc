@@ -33,5 +33,6 @@
         "functions": "never"
       }
     ]
-  }
+  },
+  "ignorePatterns": ["src/types/**/*.*"]
 }
