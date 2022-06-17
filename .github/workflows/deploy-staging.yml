@@ -1,4 +1,4 @@
-name: 'Deploy to Staging'
+name: 'Test'
 on:
   pull_request:
 
@@ -8,7 +8,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  Lint:
+  'Run Linter Test':
     runs-on: ubuntu-latest
     steps:
       - name: 'Checkout Repository'
