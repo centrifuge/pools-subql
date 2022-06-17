@@ -1,0 +1,15 @@
+name: deploy-staging
+on:
+  push:
+    branches:
+      - 32-provide-staging-deployment-backend
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+      - run: yarn install
+      - run: yarn lint
