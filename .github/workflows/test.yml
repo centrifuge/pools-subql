@@ -1,6 +1,9 @@
 name: 'Test'
 on:
   pull_request:
+  push:
+    branches:
+      - main
 
 # This allows a subsequently queued workflow run to interrupt previous runs
 concurrency:
