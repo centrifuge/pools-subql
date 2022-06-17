@@ -1,5 +1,5 @@
 import { SubstrateEvent } from '@subql/types'
-import { Proxy, AnonymousProxy } from '../types'
+import { Proxy, AnonymousProxy } from '../../types'
 
 export async function handleProxyAdded(event: SubstrateEvent): Promise<void> {
   logger.info(`Proxy added: ${event.toString()}`)

@@ -20,9 +20,15 @@ export interface PoolDetails extends Struct {
   reserve: { total: u128; available: u128; max: u128 }
   currency: Enum
   parameters: { minEpochTime: u64; maxNavAge: u64 }
-  tranches: { tranches: TrancheDetails[]; ids: Vec<U8aFixed>; salt: ITuple<[u64, u64]> }
+  tranches: TrancheData
   epoch: { current: u32; lastClosed: u64; lastExecuted: u32 }
   metadata: Option<Bytes>
+}
+
+export interface TrancheData extends Struct {
+  tranches: TrancheDetails[]
+  ids: Vec<U8aFixed>
+  salt: ITuple<[u64, u64]>
 }
 
 export interface TrancheDetails extends Struct {

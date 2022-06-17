@@ -1,11 +1,11 @@
 import { SubstrateBlock } from '@subql/types'
-import { PoolState, PoolSnapshot, TrancheState, TrancheSnapshot, Timekeeper, Pool, Tranche } from '../types'
-import { getPeriodStart, MemTimekeeper } from '../helpers/timeKeeping'
-import { errorHandler } from '../helpers/errorHandler'
-import { stateSnapshotter } from '../helpers/stateSnapshot'
-import { updatePoolNav, updatePoolState } from './pools'
-import { computeAnnualizedTrancheYield, computeTrancheYield, updateTranchePrice, updateTrancheSupply } from './tranches'
-import { SNAPSHOT_INTERVAL_SECONDS } from '../config'
+import { PoolState, PoolSnapshot, TrancheState, TrancheSnapshot, Timekeeper } from '../../types'
+import { getPeriodStart, MemTimekeeper } from '../../helpers/timeKeeping'
+import { errorHandler } from '../../helpers/errorHandler'
+import { stateSnapshotter } from '../../helpers/stateSnapshot'
+import { SNAPSHOT_INTERVAL_SECONDS } from '../../config'
+import { PoolService } from '../services/poolService'
+import { TrancheService } from '../services/trancheService'
 
 const memTimekeeper = initialiseMemTimekeeper()
 
@@ -22,33 +22,25 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
     const daysAgo90 = new Date(blockPeriodStart.valueOf() - 90 * 24 * 3600 * 1000)
 
     // Update Pool States
-    const pools = await Pool.getByType('ALL')
+    const pools = await PoolService.getAll()
     for (const pool of pools) {
-      await updatePoolState(pool.id)
-      await updatePoolNav(pool.id)
+      await pool.updateState()
+      await pool.updateNav()
+      await pool.save()
 
       // Update tranche states
-      const firstSnapshotDate = new Date(getPeriodStart(pool.createdAt).valueOf() + SNAPSHOT_INTERVAL_SECONDS * 1000)
-      const tranches = await Tranche.getByPoolId(pool.id)
+      const firstSnapshotDate = new Date(
+        getPeriodStart(pool.pool.createdAt).valueOf() + SNAPSHOT_INTERVAL_SECONDS * 1000
+      )
+      const tranches = await TrancheService.getByPoolId(pool.pool.id)
       for (const tranche of tranches) {
-        await updateTranchePrice(pool.id, tranche.trancheId, pool.currentEpoch)
-        await updateTrancheSupply(pool.id, tranche.trancheId)
-        await computeTrancheYield(pool.id, tranche.trancheId, 'yieldSinceLastPeriod', lastPeriodStart)
-        await computeTrancheYield(pool.id, tranche.trancheId, 'yieldSinceInception', firstSnapshotDate)
-        await computeAnnualizedTrancheYield(
-          pool.id,
-          tranche.trancheId,
-          'yield30DaysAnnualized',
-          blockPeriodStart,
-          daysAgo30
-        )
-        await computeAnnualizedTrancheYield(
-          pool.id,
-          tranche.trancheId,
-          'yield90DaysAnnualized',
-          blockPeriodStart,
-          daysAgo90
-        )
+        await tranche.updateTranchePrice(pool.pool.currentEpoch)
+        await tranche.updateTrancheSupply()
+        await tranche.computeTrancheYield('yieldSinceLastPeriod', lastPeriodStart)
+        await tranche.computeTrancheYield('yieldSinceInception', firstSnapshotDate)
+        await tranche.computeTrancheYieldAnnualized('yield30DaysAnnualized', blockPeriodStart, daysAgo30)
+        await tranche.computeTrancheYieldAnnualized('yield90DaysAnnualized', blockPeriodStart, daysAgo90)
+        await tranche.save()
       }
     }
 

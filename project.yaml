@@ -28,18 +28,7 @@ dataSources:
           filter:
             module: pools
             method: EpochClosed
-        - handler: updateEpochReferences
-          kind: substrate/EventHandler
-          filter:
-            module: pools
-            method: EpochClosed
-        
         - handler: handleEpochExecuted
-          kind: substrate/EventHandler
-          filter:
-            module: pools
-            method: EpochExecuted
-        - handler: updateEpochReferences
           kind: substrate/EventHandler
           filter:
             module: pools
@@ -69,7 +58,7 @@ dataSources:
           filter:
             module: proxy
             method: AnonymousCreated
-        - handler: computeTotalBorrowings
+        - handler: handleBorrowings
           kind: substrate/EventHandler
           filter:
             module: loans
