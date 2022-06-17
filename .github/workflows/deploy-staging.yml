@@ -1,8 +1,12 @@
 name: 'Deploy to Staging'
 on:
-  push:
-    branches:
-      - 32-provide-staging-deployment-backend
+  pull_request:
+
+# This allows a subsequently queued workflow run to interrupt previous runs
+concurrency:
+  group: '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}'
+  cancel-in-progress: true
+
 jobs:
   Lint:
     runs-on: ubuntu-latest
