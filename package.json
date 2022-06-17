@@ -10,7 +10,10 @@
     "codegen": "./node_modules/.bin/subql codegen",
     "generate:defs": "ts-node --skip-project node_modules/.bin/polkadot-types-from-defs --package centrifuge-subql/src/api-interfaces --endpoint 'wss://fullnode-collator-2.development.cntrfg.com' --input ./src/api-interfaces",
     "generate:meta": "ts-node --skip-project node_modules/.bin/polkadot-types-from-chain --endpoint 'wss://fullnode-collator-2.development.cntrfg.com' --output ./src/api-interfaces --strict",
-    "interface-build": "yarn generate:defs && yarn generate:meta && yarn build"
+    "interface-build": "yarn generate:defs && yarn generate:meta && yarn build",
+    "lint": "eslint --max-warnings 0 'src/**/*.{ts,tsx,js,jsx}'",
+    "lint:fix": "eslint --fix --max-warnings 0 'src/**/*.{ts,tsx,js,jsx}'",
+    "prepare": "husky install"
   },
   "homepage": "https://github.com/centrifuge/pools-subql",
   "repository": "github:centrifuge/pools-subql",
@@ -25,12 +28,28 @@
     "@polkadot/api": "^8"
   },
   "devDependencies": {
+    "@commitlint/cli": "^17.0.2",
+    "@commitlint/config-conventional": "^17.0.2",
     "@polkadot/typegen": "^8",
     "@polkadot/types": "^8",
     "@polkadot/util": "^8",
     "@subql/cli": "latest",
+    "@typescript-eslint/eslint-plugin": "^5.28.0",
+    "@typescript-eslint/parser": "^5.28.0",
+    "eslint": "^8.17.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-prettier": "^4.0.0",
+    "husky": "^7.0.0",
+    "lint-staged": "^13.0.1",
+    "prettier": "^2.7.0",
+    "prettier-eslint": "^15.0.1",
     "ts-node": "^8.6.2",
     "typescript": "^4.4.4"
+  },
+  "lint-staged": {
+    "src/**/*.{js,ts}": [
+      "eslint --max-warnings 0"
+    ]
   },
   "exports": {
     "chaintypes": "./src/chaintypes.ts"

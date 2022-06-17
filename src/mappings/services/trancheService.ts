@@ -81,7 +81,8 @@ export class TrancheService {
 
   private _computeTrancheYield = async (yieldField: string, referencePeriodStart: Date) => {
     logger.info(
-      `Computing yield for tranche ${this.tranche.trancheId} of pool ${this.tranche.poolId} with reference date ${referencePeriodStart}`
+      `Computing yield for tranche ${this.tranche.trancheId} of\
+       pool ${this.tranche.poolId} with reference date ${referencePeriodStart}`
     )
     const trancheSnapshots = await TrancheSnapshot.getByPeriodStart(referencePeriodStart)
     if (trancheSnapshots.length === 0) {
@@ -93,7 +94,8 @@ export class TrancheService {
     )
     if (trancheSnapshot === undefined) {
       logger.warn(
-        `No tranche snapshot found tranche ${this.tranche.poolId}-${this.tranche.poolId} with reference date ${referencePeriodStart}`
+        `No tranche snapshot found tranche ${this.tranche.poolId}-${this.tranche.poolId} with\
+         reference date ${referencePeriodStart}`
       )
       return this
     }
@@ -115,7 +117,8 @@ export class TrancheService {
     referencePeriodStart: Date
   ) => {
     logger.info(
-      `Computing annualized yield for tranche ${this.tranche.trancheId} of pool ${this.tranche.poolId} with reference date ${referencePeriodStart}`
+      `Computing annualized yield for tranche ${this.tranche.trancheId} of\
+       pool ${this.tranche.poolId} with reference date ${referencePeriodStart}`
     )
     const trancheSnapshots = await TrancheSnapshot.getByPeriodStart(referencePeriodStart)
     if (trancheSnapshots.length === 0) {
@@ -127,7 +130,8 @@ export class TrancheService {
     )
     if (trancheSnapshot === undefined) {
       logger.warn(
-        `No tranche snapshot found tranche ${this.tranche.poolId}-${this.tranche.poolId} with reference date ${referencePeriodStart}`
+        `No tranche snapshot found tranche ${this.tranche.poolId}-${this.tranche.poolId} with\
+         reference date ${referencePeriodStart}`
       )
       return this
     }

@@ -10,7 +10,7 @@ import { InvestorTransactionService } from '../services/investorTransactionServi
 
 export const handlePoolCreated = errorHandler(_handlePoolCreated)
 async function _handlePoolCreated(event: SubstrateEvent): Promise<void> {
-  const [poolId, _admin] = event.event.data
+  const [poolId] = event.event.data
   logger.info(`Pool ${poolId.toString()} created in block ${event.block.block.header.number}`)
 
   // Initialise Pool
@@ -60,7 +60,8 @@ export const handleEpochExecuted = errorHandler(_handleEpochExecuted)
 async function _handleEpochExecuted(event: SubstrateEvent): Promise<void> {
   const [poolId, epochId] = event.event.data as unknown as EpochEvent
   logger.info(
-    `Epoch ${epochId.toString()} executed for pool ${poolId.toString()} at block ${event.block.block.header.number.toString()}`
+    `Epoch ${epochId.toString()} executed for pool ${poolId.toString()} at\
+     block ${event.block.block.header.number.toString()}`
   )
 
   const epochService = await EpochService.getById(`${poolId.toString()}-${epochId.toString()}`)
@@ -78,7 +79,8 @@ async function _handleEpochExecuted(event: SubstrateEvent): Promise<void> {
   await poolService.executeEpoch(epochId.toNumber())
   await poolService.save()
 
-  // TODO: loop over OutstandingOrder, apply fulfillment from epoch, create InvestorTransactions, optionally remove orders
+  // TODO: loop over OutstandingOrder, apply fulfillment from epoch, create InvestorTransactions,
+  // optionally remove orders
   //const orders = await OutstandingOrder.getByPoolId(poolId.toString())
   //logger.info(`Orders: ${JSON.stringify(orders)}`)
 }
@@ -97,7 +99,7 @@ async function _handleRedeemOrderUpdated(event: SubstrateEvent): Promise<void> {
 
 const handleOrderUpdated = errorHandler(_handleOrderUpdate)
 async function _handleOrderUpdate(event: SubstrateEvent, type: InvestorTransactionType) {
-  const [poolId, trancheId, _address, _oldOrder, newOrder] = event.event.data as unknown as OrderEvent
+  const [poolId, trancheId, , , newOrder] = event.event.data as unknown as OrderEvent
 
   const pool = await PoolService.getById(poolId.toString())
 

@@ -27,11 +27,13 @@ interface GenericSnapshot {
 /**
  * Creates a snapshot of a generic stateModel to a snapshotModel.
  * A snapshotModel has the same fields as the originating stateModel, however a timestamp and a blockNumber are added.
- * Fields ending with an _ underscore are reset to 0 at the end of a period. All such resettable fields must be of type BigInt.
- * @param stateModel the data model to be snapshotted
- * @param snapshotModel the data model where the snapshot is saved. (must have additional timestamp and blockNumber fields)
- * @param block the correspondint substrateBlock to provide additional state values to the snapshot
- * @param fkReferenceName (optional) name of the foreignKey to save a reference to the originating entity.
+ * Fields ending with an _ underscore are reset to 0 at the end of a period. All such resettable fields must be of type
+ * BigInt.
+ * @param stateModel - the data model to be snapshotted
+ * @param snapshotModel - the data model where the snapshot is saved. (must have additional timestamp and
+ * blockNumber fields)
+ * @param block - the correspondint substrateBlock to provide additional state values to the snapshot
+ * @param fkReferenceName - (optional) name of the foreignKey to save a reference to the originating entity.
  * @returns A promise resolving when all state manipulations in the DB is completed
  */
 export const stateSnapshotter = errorHandler(_stateSnapshotter)
@@ -44,12 +46,14 @@ async function _stateSnapshotter<
   block: SubstrateBlock,
   fkReferenceName: string = undefined
 ): Promise<Promise<void>[]> {
-  let entitySaves = []
+  const entitySaves = []
+  // eslint-disable-next-line no-prototype-builtins
   if (!stateModel.hasOwnProperty('getByType')) throw new Error('stateModel has no method .hasOwnProperty()')
   const stateEntities = await stateModel.getByType('ALL')
   logger.info(`Performing snapshots of ${stateModel.name}`)
   for (const stateEntity of stateEntities) {
     const blockNumber = block.block.header.number.toNumber()
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { id, type, ...copyStateEntity } = stateEntity
     const snapshotEntity = new snapshotModel(`${id}-${blockNumber.toString()}`)
     Object.assign(snapshotEntity, copyStateEntity)
