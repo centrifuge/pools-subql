@@ -7,7 +7,7 @@ import { SNAPSHOT_INTERVAL_SECONDS } from '../../config'
 import { PoolService } from '../services/poolService'
 import { TrancheService } from '../services/trancheService'
 
-const memTimekeeper = initialiseMemTimekeeper()
+const memTimekeeper = MemTimekeeper.init()
 
 export const handleBlock = errorHandler(_handleBlock)
 async function _handleBlock(block: SubstrateBlock): Promise<void> {
@@ -34,12 +34,11 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
       )
       const tranches = await TrancheService.getByPoolId(pool.pool.id)
       for (const tranche of tranches) {
-        await tranche.updateTranchePrice(pool.pool.currentEpoch)
-        await tranche.updateTrancheSupply()
-        await tranche.computeTrancheYield('yieldSinceLastPeriod', lastPeriodStart)
-        await tranche.computeTrancheYield('yieldSinceInception', firstSnapshotDate)
-        await tranche.computeTrancheYieldAnnualized('yield30DaysAnnualized', blockPeriodStart, daysAgo30)
-        await tranche.computeTrancheYieldAnnualized('yield90DaysAnnualized', blockPeriodStart, daysAgo90)
+        await tranche.updateSupply()
+        await tranche.computeYield('yieldSinceLastPeriod', lastPeriodStart)
+        await tranche.computeYield('yieldSinceInception', firstSnapshotDate)
+        await tranche.computeYieldAnnualized('yield30DaysAnnualized', blockPeriodStart, daysAgo30)
+        await tranche.computeYieldAnnualized('yield90DaysAnnualized', blockPeriodStart, daysAgo90)
         await tranche.save()
       }
     }
@@ -53,14 +52,4 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
     timekeeper.lastPeriodStart = blockPeriodStart
     await timekeeper.save()
   }
-}
-
-async function initialiseMemTimekeeper(): Promise<MemTimekeeper> {
-  let lastPeriodStart: Date
-  try {
-    lastPeriodStart = (await Timekeeper.get('global')).lastPeriodStart
-  } catch (error) {
-    lastPeriodStart = new Date(0)
-  }
-  return new MemTimekeeper(lastPeriodStart)
 }

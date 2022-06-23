@@ -7,7 +7,7 @@ export class InvestorTransactionService {
     this.investorTransaction = investorTransaction
   }
 
-  static init = async (
+  static init = (
     poolId: string,
     trancheId: string,
     epochId: number,
@@ -28,19 +28,29 @@ export class InvestorTransactionService {
     tx.currencyAmount = type === InvestorTransactionType.INVEST_ORDER_UPDATE ? amount : BigInt(0)
     tx.tokenAmount = type === InvestorTransactionType.REDEEM_ORDER_UPDATE ? amount : BigInt(0)
 
-    // Create outstanding order so we can check which were fulfilled in the epoch execute handler
-    // eslint-disable-next-line max-len
-    // let outstandingOrder = await loadOrCreateOutstandingOrder(poolId.toString(), trancheId.toString(), address.toString())
-    // outstandingOrder.invest = BigInt(
-    //   type === InvestorTransactionType.INVEST_ORDER_UPDATE ? BigInt(amount.toString()) : outstandingOrder.invest
-    // )
-    // outstandingOrder.redeem = BigInt(
-    //   type === InvestorTransactionType.REDEEM_ORDER_UPDATE ? BigInt(amount.toString()) : outstandingOrder.redeem
-    // )
-    // outstandingOrder.epochId = pool.currentEpoch.toString()
-    // await outstandingOrder.save(
-
     return new InvestorTransactionService(tx)
+  }
+
+  static initInvestOrder = (
+    poolId: string,
+    trancheId: string,
+    epochId: number,
+    hash: string,
+    amount: bigint,
+    timestamp: Date
+  ) => {
+    return this.init(poolId, trancheId, epochId, hash, InvestorTransactionType.INVEST_ORDER_UPDATE, amount, timestamp)
+  }
+
+  static initRedeemOrder = (
+    poolId: string,
+    trancheId: string,
+    epochId: number,
+    hash: string,
+    amount: bigint,
+    timestamp: Date
+  ) => {
+    return this.init(poolId, trancheId, epochId, hash, InvestorTransactionType.REDEEM_ORDER_UPDATE, amount, timestamp)
   }
 
   save = async () => {

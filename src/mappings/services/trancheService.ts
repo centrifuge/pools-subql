@@ -1,7 +1,7 @@
-import { Option, u128 } from '@polkadot/types'
+import { u128 } from '@polkadot/types'
 import { bnToBn, nToBigInt } from '@polkadot/util'
 import { errorHandler } from '../../helpers/errorHandler'
-import { EpochDetails, TrancheDetails } from '../../helpers/types'
+import { TrancheDetails } from '../../helpers/types'
 import { Tranche, TrancheSnapshot, TrancheState } from '../../types'
 
 export class TrancheService {
@@ -16,6 +16,11 @@ export class TrancheService {
   static init = async (trancheId: string, poolId: string, trancheData: TrancheDetails) => {
     const trancheState = new TrancheState(`${poolId}-${trancheId}`)
     trancheState.type = 'ALL'
+
+    trancheState.outstandingInvestOrders_ = BigInt(0)
+    trancheState.outstandingRedeemOrders_ = BigInt(0)
+    trancheState.fulfilledInvestOrders_ = BigInt(0)
+    trancheState.fulfilledRedeemOrders_ = BigInt(0)
 
     const tranche = new Tranche(`${poolId}-${trancheId}`)
     tranche.type = 'ALL'
@@ -50,36 +55,26 @@ export class TrancheService {
     return result
   }
 
-  save = async () => {
+  public save = async () => {
     await this.trancheState.save()
     await this.tranche.save()
-    return this
   }
 
-  private _updateTranchePrice = async (epochId: number) => {
-    logger.info(
-      `Updating price for tranche ${this.tranche.trancheId} of pool ${this.tranche.poolId} on epoch ${epochId}`
-    )
-    const epochResponse = await api.query.pools.epoch<Option<EpochDetails>>(this.tranche.trancheId, epochId)
-    logger.info(`EpochResponse: ${JSON.stringify(epochResponse)}`)
-    if (epochResponse.isSome) {
-      const epochDetails = epochResponse.unwrap()
-      this.trancheState.price = epochDetails.tokenPrice.toBigInt()
-    }
-    return this
-  }
-  public updateTranchePrice = errorHandler(this._updateTranchePrice)
-
-  private _updateTrancheSupply = async () => {
+  private _updateSupply = async () => {
     const requestPayload = { Tranche: [this.tranche.poolId, this.tranche.trancheId] }
     const supplyResponse = await api.query.ormlTokens.totalIssuance<u128>(requestPayload)
     logger.info(`SupplyResponse: ${JSON.stringify(supplyResponse)}`)
     this.trancheState.supply = supplyResponse.toBigInt()
     return this
   }
-  public updateTrancheSupply = errorHandler(this._updateTrancheSupply)
+  public updateSupply = errorHandler(this._updateSupply)
 
-  private _computeTrancheYield = async (yieldField: string, referencePeriodStart: Date) => {
+  public updatePrice = (price: bigint) => {
+    this.trancheState.price = price
+    return this
+  }
+
+  private _computeYield = async (yieldField: string, referencePeriodStart: Date) => {
     logger.info(
       `Computing yield for tranche ${this.tranche.trancheId} of\
        pool ${this.tranche.poolId} with reference date ${referencePeriodStart}`
@@ -99,6 +94,10 @@ export class TrancheService {
       )
       return this
     }
+    if (typeof this.trancheState.price !== 'bigint') {
+      logger.warn('Price information missing')
+      return this
+    }
     const priceCurrent = bnToBn(this.trancheState.price)
     const priceOld = bnToBn(trancheSnapshot.price)
     this.trancheState[yieldField] = nToBigInt(
@@ -109,9 +108,9 @@ export class TrancheService {
     )
     return this
   }
-  public computeTrancheYield = errorHandler(this._computeTrancheYield)
+  public computeYield = errorHandler(this._computeYield)
 
-  private _computeTrancheYieldAnnualized = async (
+  private _computeYieldAnnualized = async (
     yieldField: string,
     currentPeriodStart: Date,
     referencePeriodStart: Date
@@ -135,6 +134,10 @@ export class TrancheService {
       )
       return this
     }
+    if (typeof this.trancheState.price !== 'bigint') {
+      logger.warn('Price information missing')
+      return this
+    }
     const annualizationFactor = bnToBn(365 * 24 * 3600 * 1000).div(
       bnToBn(currentPeriodStart.valueOf() - referencePeriodStart.valueOf())
     )
@@ -147,6 +150,17 @@ export class TrancheService {
         .sub(bnToBn(10).pow(bnToBn(27)))
         .mul(annualizationFactor)
     )
+    return this
   }
-  public computeTrancheYieldAnnualized = errorHandler(this._computeTrancheYieldAnnualized)
+  public computeYieldAnnualized = errorHandler(this._computeYieldAnnualized)
+
+  public updateOutstandingInvestOrders = (newAmount: bigint, oldAmount: bigint) => {
+    this.trancheState.outstandingInvestOrders_ = this.trancheState.outstandingInvestOrders_ + newAmount - oldAmount
+    return this
+  }
+
+  public updateOutstandingRedeemOrders = (newAmount: bigint, oldAmount: bigint) => {
+    this.trancheState.outstandingRedeemOrders_ = this.trancheState.outstandingRedeemOrders_ + newAmount - oldAmount
+    return this
+  }
 }

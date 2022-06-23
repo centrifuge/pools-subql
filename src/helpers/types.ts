@@ -73,7 +73,7 @@ export interface EpochSolution extends Enum {
 }
 
 export interface EpochDetails extends Struct {
-  investmentFulfillment: Perquintill
+  investFulfillment: Perquintill
   redeemFulfillment: Perquintill
   tokenPrice: u128
 }

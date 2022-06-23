@@ -40,15 +40,10 @@ export const stateSnapshotter = errorHandler(_stateSnapshotter)
 async function _stateSnapshotter<
   T extends Constructor<GenericState> & TypeGetter<GenericState>,
   U extends Constructor<GenericSnapshot>
->(
-  stateModel: T,
-  snapshotModel: U,
-  block: SubstrateBlock,
-  fkReferenceName: string = undefined
-): Promise<Promise<void>[]> {
-  const entitySaves = []
-  // eslint-disable-next-line no-prototype-builtins
-  if (!stateModel.hasOwnProperty('getByType')) throw new Error('stateModel has no method .hasOwnProperty()')
+>(stateModel: T, snapshotModel: U, block: SubstrateBlock, fkReferenceName: string = undefined): Promise<void> {
+  const entitySaves: Promise<void>[] = []
+  const stateModelHasGetByType = Object.prototype.hasOwnProperty.call(stateModel, 'getByType')
+  if (!stateModelHasGetByType) throw new Error('stateModel has no method .hasOwnProperty()')
   const stateEntities = await stateModel.getByType('ALL')
   logger.info(`Performing snapshots of ${stateModel.name}`)
   for (const stateEntity of stateEntities) {
@@ -71,5 +66,5 @@ async function _stateSnapshotter<
     entitySaves.push(stateEntity.save())
     entitySaves.push(snapshotEntity.save())
   }
-  return Promise.all(entitySaves)
+  await Promise.all(entitySaves)
 }

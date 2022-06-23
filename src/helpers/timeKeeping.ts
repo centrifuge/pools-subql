@@ -1,4 +1,5 @@
 import { SubstrateBlock } from '@subql/types'
+import { Timekeeper } from '../types'
 import { SNAPSHOT_INTERVAL_SECONDS } from '../config'
 
 /**
@@ -8,6 +9,17 @@ export class MemTimekeeper {
   constructor(lastPeriodStart: Date) {
     this._currentPeriodStart = lastPeriodStart
   }
+
+  static init = async function (): Promise<MemTimekeeper> {
+    let lastPeriodStart: Date
+    try {
+      lastPeriodStart = (await Timekeeper.get('global')).lastPeriodStart
+    } catch (error) {
+      lastPeriodStart = new Date(0)
+    }
+    return new MemTimekeeper(lastPeriodStart)
+  }
+
   private _currentPeriodStart: Date = null
   public getCurrentPeriod = (): Date => this._currentPeriodStart
   public processBlock = (block: SubstrateBlock): boolean => {
