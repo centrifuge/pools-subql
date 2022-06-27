@@ -1,19 +1,19 @@
 import { SubstrateBlock } from '@subql/types'
-import { PoolState, PoolSnapshot, TrancheState, TrancheSnapshot, Timekeeper } from '../../types'
-import { getPeriodStart, MemTimekeeper } from '../../helpers/timeKeeping'
+import { PoolState, PoolSnapshot, TrancheState, TrancheSnapshot } from '../../types'
+import { getPeriodStart, TimekeeperService } from '../../helpers/timekeeperService'
 import { errorHandler } from '../../helpers/errorHandler'
 import { stateSnapshotter } from '../../helpers/stateSnapshot'
 import { SNAPSHOT_INTERVAL_SECONDS } from '../../config'
 import { PoolService } from '../services/poolService'
 import { TrancheService } from '../services/trancheService'
 
-const memTimekeeper = initialiseMemTimekeeper()
+const timekeeper = TimekeeperService.init()
 
 export const handleBlock = errorHandler(_handleBlock)
 async function _handleBlock(block: SubstrateBlock): Promise<void> {
   const blockPeriodStart = getPeriodStart(block.timestamp)
   const blockNumber = block.block.header.number.toNumber()
-  const newPeriod = (await memTimekeeper).processBlock(block)
+  const newPeriod = (await timekeeper).processBlock(block)
 
   if (newPeriod) {
     logger.info(`It's a new period on block ${blockNumber}: ${block.timestamp.toISOString()}`)
@@ -34,33 +34,20 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
       )
       const tranches = await TrancheService.getByPoolId(pool.pool.id)
       for (const tranche of tranches) {
-        await tranche.updateTranchePrice(pool.pool.currentEpoch)
-        await tranche.updateTrancheSupply()
-        await tranche.computeTrancheYield('yieldSinceLastPeriod', lastPeriodStart)
-        await tranche.computeTrancheYield('yieldSinceInception', firstSnapshotDate)
-        await tranche.computeTrancheYieldAnnualized('yield30DaysAnnualized', blockPeriodStart, daysAgo30)
-        await tranche.computeTrancheYieldAnnualized('yield90DaysAnnualized', blockPeriodStart, daysAgo90)
+        await tranche.updateSupply()
+        await tranche.computeYield('yieldSinceLastPeriod', lastPeriodStart)
+        await tranche.computeYield('yieldSinceInception', firstSnapshotDate)
+        await tranche.computeYieldAnnualized('yield30DaysAnnualized', blockPeriodStart, daysAgo30)
+        await tranche.computeYieldAnnualized('yield90DaysAnnualized', blockPeriodStart, daysAgo90)
         await tranche.save()
       }
     }
 
-    //Perform Snapshots and reset
+    //Perform Snapshots and reset accumulators
     await stateSnapshotter(PoolState, PoolSnapshot, block, 'poolId')
     await stateSnapshotter(TrancheState, TrancheSnapshot, block, 'trancheId')
 
-    //Update Timekeeper
-    const timekeeper = new Timekeeper('global')
-    timekeeper.lastPeriodStart = blockPeriodStart
-    await timekeeper.save()
+    //Update tracking of period and continue
+    await (await timekeeper).update(blockPeriodStart)
   }
-}
-
-async function initialiseMemTimekeeper(): Promise<MemTimekeeper> {
-  let lastPeriodStart: Date
-  try {
-    lastPeriodStart = (await Timekeeper.get('global')).lastPeriodStart
-  } catch (error) {
-    lastPeriodStart = new Date(0)
-  }
-  return new MemTimekeeper(lastPeriodStart)
 }
