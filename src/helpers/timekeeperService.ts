@@ -5,19 +5,19 @@ import { SNAPSHOT_INTERVAL_SECONDS } from '../config'
 /**
  * Manages the in memory tracking of time and indexing of periods
  */
-export class MemTimekeeper {
+export class TimekeeperService {
   constructor(lastPeriodStart: Date) {
     this._currentPeriodStart = lastPeriodStart
   }
 
-  static init = async function (): Promise<MemTimekeeper> {
+  static init = async function (): Promise<TimekeeperService> {
     let lastPeriodStart: Date
     try {
       lastPeriodStart = (await Timekeeper.get('global')).lastPeriodStart
     } catch (error) {
       lastPeriodStart = new Date(0)
     }
-    return new MemTimekeeper(lastPeriodStart)
+    return new TimekeeperService(lastPeriodStart)
   }
 
   private _currentPeriodStart: Date = null
@@ -27,6 +27,11 @@ export class MemTimekeeper {
     const isNewPeriod = blockPeriodStart.valueOf() > this._currentPeriodStart.valueOf()
     if (isNewPeriod) this._currentPeriodStart = blockPeriodStart
     return isNewPeriod
+  }
+  public update = async (blockPeriodStart: Date) => {
+    const timekeeper = new Timekeeper('global')
+    timekeeper.lastPeriodStart = blockPeriodStart
+    await timekeeper.save()
   }
 }
 

@@ -1,19 +1,19 @@
 import { SubstrateBlock } from '@subql/types'
-import { PoolState, PoolSnapshot, TrancheState, TrancheSnapshot, Timekeeper } from '../../types'
-import { getPeriodStart, MemTimekeeper } from '../../helpers/timeKeeping'
+import { PoolState, PoolSnapshot, TrancheState, TrancheSnapshot } from '../../types'
+import { getPeriodStart, TimekeeperService } from '../../helpers/timekeeperService'
 import { errorHandler } from '../../helpers/errorHandler'
 import { stateSnapshotter } from '../../helpers/stateSnapshot'
 import { SNAPSHOT_INTERVAL_SECONDS } from '../../config'
 import { PoolService } from '../services/poolService'
 import { TrancheService } from '../services/trancheService'
 
-const memTimekeeper = MemTimekeeper.init()
+const timekeeper = TimekeeperService.init()
 
 export const handleBlock = errorHandler(_handleBlock)
 async function _handleBlock(block: SubstrateBlock): Promise<void> {
   const blockPeriodStart = getPeriodStart(block.timestamp)
   const blockNumber = block.block.header.number.toNumber()
-  const newPeriod = (await memTimekeeper).processBlock(block)
+  const newPeriod = (await timekeeper).processBlock(block)
 
   if (newPeriod) {
     logger.info(`It's a new period on block ${blockNumber}: ${block.timestamp.toISOString()}`)
@@ -43,13 +43,11 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
       }
     }
 
-    //Perform Snapshots and reset
+    //Perform Snapshots and reset accumulators
     await stateSnapshotter(PoolState, PoolSnapshot, block, 'poolId')
     await stateSnapshotter(TrancheState, TrancheSnapshot, block, 'trancheId')
 
-    //Update Timekeeper
-    const timekeeper = new Timekeeper('global')
-    timekeeper.lastPeriodStart = blockPeriodStart
-    await timekeeper.save()
+    //Update tracking of period and continue
+    await (await timekeeper).update(blockPeriodStart)
   }
 }

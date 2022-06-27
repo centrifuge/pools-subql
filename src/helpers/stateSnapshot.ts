@@ -1,6 +1,6 @@
 import { SubstrateBlock } from '@subql/types'
 import { errorHandler } from './errorHandler'
-import { getPeriodStart } from './timeKeeping'
+import { getPeriodStart } from './timekeeperService'
 
 interface Constructor<C> {
   new (id: string): C
