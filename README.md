@@ -64,7 +64,7 @@ This repository uses commitlint to enforce commit message conventions. You have 
 
     git commit -m "[type]: foo bar"
 
-## Data Model
+## :file_cabinet: Data Model
 
 !!! Data fields ending with an underscore `_` are automatically reset at the end of a period and bust be of type `BigInt`!!!
 
