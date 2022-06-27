@@ -1,13 +1,21 @@
-specVersion: 0.2.0
+specVersion: 1.0.0
 name: centrifuge-pools
 version: 1.0.0
-description: ''
-repository: ''
+runner:
+  node:
+    name: '@subql/node'
+    version: 1.2.1
+  query:
+    name: '@subql/query'
+    version: 1.2.0
+description: 'SubQuery API powered by EMBRIO.tech to query Centrifuge chain data for analytics insights on how Centrifuge is unlocking economic opportunity for all by connecting people to borrow and lend money transparently and cost-effectively.'
+repository: https://github.com/embrio-tech/centrifuge-subql
 schema:
   file: ./schema.graphql
 network:
   endpoint: wss://fullnode.development.cntrfg.com
   genesisHash: '0x31eae49488ddf60b2ae2829e5bb9e2ae67aef01756fd8ee0e6c63fe85b603774'
+  dictionary: ''
   chaintypes:
     file: ./dist/chaintypes.js
 dataSources:
