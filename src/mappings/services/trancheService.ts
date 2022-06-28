@@ -163,4 +163,14 @@ export class TrancheService {
     this.trancheState.outstandingRedeemOrders_ = this.trancheState.outstandingRedeemOrders_ + newAmount - oldAmount
     return this
   }
+
+  public updateFulfilledInvestOrders = (amount: bigint) => {
+    this.trancheState.fulfilledInvestOrders_ = this.trancheState.fulfilledInvestOrders_ + amount
+    return this
+  }
+
+  public updateFulfilledRedeemOrders = (amount: bigint) => {
+    this.trancheState.fulfilledRedeemOrders_ = this.trancheState.fulfilledRedeemOrders_ + amount
+    return this
+  }
 }

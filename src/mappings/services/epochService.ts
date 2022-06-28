@@ -65,14 +65,26 @@ export class EpochService {
       epochState.fulfilledInvestOrders = nToBigInt(
         bnToBn(epochState.outstandingInvestOrders)
           .mul(epochDetails.investFulfillment.toBn())
-          .div(bnToBn(10).pow(bnToBn(27)))
+          .div(bnToBn(10).pow(bnToBn(18)))
       )
       epochState.fulfilledRedeemOrders = nToBigInt(
         bnToBn(epochState.outstandingRedeemOrders)
           .mul(epochDetails.redeemFulfillment.toBn())
-          .div(bnToBn(10).pow(bnToBn(27)))
+          .div(bnToBn(10).pow(bnToBn(18)))
       )
     }
+    return this
+  }
+
+  public updateOutstandingInvestOrders = (trancheId: string, newAmount: bigint, oldAmount: bigint) => {
+    const trancheState = this.epochStates.find((trancheState) => trancheState.trancheId === trancheId)
+    trancheState.outstandingInvestOrders = trancheState.outstandingInvestOrders + newAmount - oldAmount
+    return this
+  }
+
+  public updateOutstandingRedeemOrders = (trancheId: string, newAmount: bigint, oldAmount: bigint) => {
+    const trancheState = this.epochStates.find((trancheState) => trancheState.trancheId === trancheId)
+    trancheState.outstandingRedeemOrders = trancheState.outstandingRedeemOrders + newAmount - oldAmount
     return this
   }
 }
