@@ -1,11 +1,10 @@
 type Timekeeper @entity {
-  id: ID!
+  id: ID! # "global"
   lastPeriodStart: Date!
 }
 
 type Pool @entity {
-  id: ID!
-
+  id: ID! #poolId
   # It's not possible to simply retrieve all entities, but it is supported
   # to get all entities by a field. Hence we add the same type field to all
   # pools, so we can do Pool.getByType("POOL").
@@ -81,7 +80,7 @@ type PoolSnapshot @entity {
 }
 
 type Tranche @entity {
-  id: ID! #poolId-index
+  id: ID! #poolId-trancheId
   type: String! @index
   pool: Pool! @index
 
@@ -96,7 +95,7 @@ type Tranche @entity {
 }
 
 type TrancheState @entity {
-  id: ID! #poolId-index
+  id: ID! #poolId-trancheId
   type: String! @index
 
   supply: BigInt
@@ -115,7 +114,7 @@ type TrancheState @entity {
 }
 
 type TrancheSnapshot @entity {
-  id: ID! #poolId-index-blockNumber
+  id: ID! #poolId-trancheId-blockNumber
   tranche: Tranche!
 
   timestamp: Date!
@@ -138,7 +137,7 @@ type TrancheSnapshot @entity {
 }
 
 type Epoch @entity {
-  id: ID! #poolId-index
+  id: ID! #poolId-epochIndex
   pool: Pool!
 
   index: Int!
@@ -155,7 +154,7 @@ type Epoch @entity {
 }
 
 type EpochState @entity {
-  id: ID! #poolId-index-trancheId
+  id: ID! #poolId-epochIndex-trancheId
   epoch: Epoch! @index
   trancheId: String!
 
