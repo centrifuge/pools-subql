@@ -1391,20 +1391,22 @@
   resolved "https://registry.yarnpkg.com/@scure/base/-/base-1.0.0.tgz#109fb595021de285f05a7db6806f2f48296fcee7"
   integrity sha512-gIVaYhUsy+9s58m/ETjSJVKHhKTBMmcRb9cEV5/5dwvfDlfORjKrFsDeDHWRrm6RjcPvCLZFwGJjAjLj1gg4HA==
 
-"@subql/cli@latest":
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/@subql/cli/-/cli-1.0.1.tgz#04d9935d49f37b76839bebe8f88005bf7985e0f0"
-  integrity sha512-QZSAl5sU+FB6WF1pOlmFdrGcz+UuaPr9DCfaRD9q5se0utSosBbAERhMTXl0u9lF/bq3mJdlAN7QJLVOfQjalQ==
+"@subql/cli@^1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@subql/cli/-/cli-1.1.0.tgz#06b1fca91fc2e667fe79daa3de4838bc17f2ddc9"
+  integrity sha512-tm5kIqG9vN8t7GnopZBlHbELKw04FpvVGNxXbVubL7kE0vGbta8hvWk0xjvUd5zpAQKd96wzFBiUSrhg8GF8iA==
   dependencies:
     "@oclif/command" "^1.8.16"
     "@oclif/config" "^1.18.3"
     "@oclif/core" "^1.3.3"
     "@oclif/plugin-help" "^3.2.3"
-    "@subql/common" "1.1.0"
+    "@subql/common" "1.2.0"
+    "@subql/common-avalanche" "^0.0.3-2"
+    "@subql/common-cosmos" latest
     "@subql/common-substrate" "1.1.0"
-    "@subql/common-terra" "0.6.0"
+    "@subql/common-terra" "^0.6.0"
     "@subql/utils" "1.0.0"
-    "@subql/validator" "1.1.0"
+    "@subql/validator" "1.2.0"
     "@types/ejs" "^3.1.0"
     "@types/inquirer" "^8.2.0"
     cli-ux "^6.0.9"
@@ -1423,6 +1425,58 @@
     websocket "^1.0.34"
     yaml-loader "^0.6.0"
 
+"@subql/common-avalanche@^0.0.3-2":
+  version "0.0.3-2"
+  resolved "https://registry.yarnpkg.com/@subql/common-avalanche/-/common-avalanche-0.0.3-2.tgz#4075e36221176eabf0cd829584e83de74985c4e7"
+  integrity sha512-PnQELzqdXNSx8VVWiDZOwPE24/1kprT4AXDdUFBpyWFObomCj923tRP9+SUASi1hB/qEL3OJzwTogGM8iJJieg==
+  dependencies:
+    "@polkadot/util" "^8"
+    "@subql/common" "1.0.1-0"
+    "@subql/types-avalanche" "0.0.3-4"
+    bn.js "4.11.6"
+    class-transformer "0.4.0"
+    class-validator "^0.13.2"
+    flatted "^3.2.2"
+    graphql "^15.7.2"
+    graphql-tag "^2.12.5"
+    js-yaml "^4.1.0"
+    pino "^6.13.3"
+    reflect-metadata "^0.1.13"
+    sequelize "^6.6.2"
+    vm2 "^3.9.9"
+
+"@subql/common-avalanche@latest":
+  version "0.1.1"
+  resolved "https://registry.yarnpkg.com/@subql/common-avalanche/-/common-avalanche-0.1.1.tgz#d0d8a029b5156421da5ecb0f6dc9a689d7a6888a"
+  integrity sha512-/synIDH69m0n3gZkGGV1+xBg1cY/f0p9ndy70TIJefHY/Nz2Ov5jnT6wxylvscJaVVNw7cEgOANiFtp+Q/m7gA==
+  dependencies:
+    "@polkadot/util" "^8"
+    "@subql/common" "1.0.1-0"
+    "@subql/types-avalanche" "0.1.1"
+    bn.js "4.11.6"
+    class-transformer "0.4.0"
+    class-validator "^0.13.2"
+    flatted "^3.2.2"
+    graphql "^15.7.2"
+    graphql-tag "^2.12.5"
+    js-yaml "^4.1.0"
+    pino "^6.13.3"
+    reflect-metadata "^0.1.13"
+    sequelize "^6.6.2"
+    vm2 "^3.9.9"
+
+"@subql/common-cosmos@^0.0.6", "@subql/common-cosmos@latest":
+  version "0.0.6"
+  resolved "https://registry.yarnpkg.com/@subql/common-cosmos/-/common-cosmos-0.0.6.tgz#f05b62a55663da3a73b7039510d5da4602617037"
+  integrity sha512-B/RoKFQ73MgauKRK0grpxKtlocJ62Ck2MkQrjop7OmQ2PdOj9KYl+CorbD0IRWpWVDLtdnD5pAlzHVLxSYRT5Q==
+  dependencies:
+    "@subql/common" latest
+    "@subql/types-cosmos" "0.0.6"
+    class-transformer "0.4.0"
+    class-validator "^0.13.2"
+    js-yaml "^4.1.0"
+    reflect-metadata "^0.1.13"
+
 "@subql/common-substrate@1.1.0":
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/@subql/common-substrate/-/common-substrate-1.1.0.tgz#8496a16a2893c1ea3c73f33fd714c8bb7c7e2a09"
@@ -1435,7 +1489,7 @@
     js-yaml "^4.1.0"
     reflect-metadata "^0.1.13"
 
-"@subql/common-terra@0.6.0":
+"@subql/common-terra@^0.6.0", "@subql/common-terra@latest":
   version "0.6.0"
   resolved "https://registry.yarnpkg.com/@subql/common-terra/-/common-terra-0.6.0.tgz#0dfe0f25df02d7643c530283cafab46d660b4b99"
   integrity sha512-kJkR61bkKBc6Ng/xg+BHQj5wG9iHHW3aR0uBNGEz8a2ibcb2S0UqwxVV3hLUP7Zyj5cz2creDN0GcMGpmY0Ikg==
@@ -1445,6 +1499,18 @@
     class-validator "^0.13.2"
     js-yaml "^4.1.0"
     reflect-metadata "^0.1.13"
+
+"@subql/common@1.0.1-0":
+  version "1.0.1-0"
+  resolved "https://registry.yarnpkg.com/@subql/common/-/common-1.0.1-0.tgz#1600fa87f963386e497df7c0550b191d56e238b6"
+  integrity sha512-I0Q3ZvM7U5AVjzvqN1z/spGj83rqiy1TtXezVvSG+k7PS/acq6lU0tQ0RnjiNtQWoYnw2e7fVnZ74oCoak0WAQ==
+  dependencies:
+    axios "^0.27.2"
+    class-transformer "0.5.1"
+    class-validator "^0.13.2"
+    js-yaml "^4.1.0"
+    reflect-metadata "^0.1.13"
+    semver "^7.3.5"
 
 "@subql/common@1.1.0":
   version "1.1.0"
@@ -1457,6 +1523,33 @@
     js-yaml "^4.1.0"
     reflect-metadata "^0.1.13"
     semver "^7.3.5"
+
+"@subql/common@1.2.0", "@subql/common@latest":
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/@subql/common/-/common-1.2.0.tgz#31cab4f3e7f6792acb1fa201cf3156dff020ca9c"
+  integrity sha512-oFf9YWPHe5M+iBVVPWxeLD26kVzxPhmKJp9K3tY8sAbJdgVTuq4sWHhrF8zGvBzFNIwWduzovx/F2ooGWlEmxg==
+  dependencies:
+    axios "^0.27.2"
+    class-transformer "0.5.1"
+    class-validator "^0.13.2"
+    js-yaml "^4.1.0"
+    reflect-metadata "^0.1.13"
+    semver "^7.3.5"
+
+"@subql/types-avalanche@0.0.3-4":
+  version "0.0.3-4"
+  resolved "https://registry.yarnpkg.com/@subql/types-avalanche/-/types-avalanche-0.0.3-4.tgz#7fc6f35b1b08bb5a0b2e3be2ed8d62030d619377"
+  integrity sha512-abZMh+pca+NBsLcIQ/dGsb5D3wWsS01cy+o62EdOIXTKTKLK0J9ZpLPddiM/DFD54DtARS9Y2Ru6A0Vusch4aA==
+
+"@subql/types-avalanche@0.1.1":
+  version "0.1.1"
+  resolved "https://registry.yarnpkg.com/@subql/types-avalanche/-/types-avalanche-0.1.1.tgz#ae73f092b6903ff8dcaa251e925d17a0fc35b5bb"
+  integrity sha512-WhZ4Ca6gYwDpK5GNJKOf3f/jJS50nAdocKMM/RfTxVstaHSRCWYYgX94XpkiH5gFvo/ItD5Bg4yNZlrsALGUrg==
+
+"@subql/types-cosmos@0.0.6":
+  version "0.0.6"
+  resolved "https://registry.yarnpkg.com/@subql/types-cosmos/-/types-cosmos-0.0.6.tgz#c8a85d1c1a758227715f2853c398fe62378b6105"
+  integrity sha512-g9OEfksOr3E/riXf0U4lNIixG06RzvbOOLBfzBIWqZxFk0MJWyFafR+zYROs8BTcuAc9aTsTMLtzuWHgs3s6Ug==
 
 "@subql/types-terra@0.4.0":
   version "0.4.0"
@@ -1488,13 +1581,16 @@
     sequelize "^6.15.0"
     tar "^6.1.11"
 
-"@subql/validator@1.1.0":
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/@subql/validator/-/validator-1.1.0.tgz#1d023c59f86ea3bd597ada1733eaeeba71014996"
-  integrity sha512-8A5/qM4N1zN78+O9TmRSXmn0IVYmGDFGUe9EekkwetMxP+oaBJNkK78LDiBr0DMYMbqMR/L0YtL3by/CYgIO9Q==
+"@subql/validator@1.2.0":
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/@subql/validator/-/validator-1.2.0.tgz#975ab695ff8de6a663904502143db04b4a0d3b8a"
+  integrity sha512-97XGmsif1ccVg9omtYvEodCrJ823yOclM4YLWnHmBtNMEzmKTCk5n0BZw9Nls0WDYqRF/0n05Uq+WJteeowfyA==
   dependencies:
-    "@subql/common" "1.1.0"
+    "@subql/common" "1.2.0"
+    "@subql/common-avalanche" latest
+    "@subql/common-cosmos" "^0.0.6"
     "@subql/common-substrate" "1.1.0"
+    "@subql/common-terra" latest
     axios "^0.24.0"
     ipfs-http-client "^52.0.3"
     js-yaml "^4.1.0"
@@ -1950,12 +2046,12 @@ acorn-jsx@^5.3.2:
   resolved "https://registry.yarnpkg.com/acorn-jsx/-/acorn-jsx-5.3.2.tgz#7ed5bb55908b3b2f1bc55c6af1653bada7f07937"
   integrity sha512-rq9s+JNhf0IChjtDXxllJ7g41oZk5SlXtp0LHwyA5cejwn7vKmKp4pPri6YEePv2PU65sAsegbXtIinmDFDXgQ==
 
-acorn-walk@^8.1.1:
+acorn-walk@^8.1.1, acorn-walk@^8.2.0:
   version "8.2.0"
   resolved "https://registry.yarnpkg.com/acorn-walk/-/acorn-walk-8.2.0.tgz#741210f2e2426454508853a2f44d0ab83b7f69c1"
   integrity sha512-k+iyHEuPgSw6SbuDpGQM+06HQUa04DZ3o+F6CSzXMvvI5KMvnaEqXe+YVe555R9nn6GPt404fos4wcgpw12SDA==
 
-acorn@^8.4.1, acorn@^8.5.0, acorn@^8.7.1:
+acorn@^8.4.1, acorn@^8.5.0, acorn@^8.7.0, acorn@^8.7.1:
   version "8.7.1"
   resolved "https://registry.yarnpkg.com/acorn/-/acorn-8.7.1.tgz#0197122c843d1bf6d0a5e83220a788f278f63c30"
   integrity sha512-Xx54uLJQZ19lKygFXOWsscKUbsBZW0CPykPhVQdhIeIwrbPmJzqeASDInc8nKBnp/JT6igTs82qPXz069H8I/A==
@@ -2248,6 +2344,11 @@ blob-to-it@^1.0.1:
   integrity sha512-iCmk0W4NdbrWgRRuxOriU8aM5ijeVLI61Zulsmg/lUHNr7pYjoj+U77opLefNagevtrrbMt3JQ5Qip7ar178kA==
   dependencies:
     browser-readablestream-to-it "^1.0.3"
+
+bn.js@4.11.6:
+  version "4.11.6"
+  resolved "https://registry.yarnpkg.com/bn.js/-/bn.js-4.11.6.tgz#53344adb14617a13f6e8dd2ce28905d1c0ba3215"
+  integrity sha512-XWwnNNFCuuSQ0m3r3C4LE3EiORltHd9M05pq6FOlVeiophzRbMo50Sbz1ehl8K3Z+jw9+vmgnXefY1hz8X+2wA==
 
 bn.js@^5.2.0, bn.js@^5.2.1:
   version "5.2.1"
@@ -3535,6 +3636,11 @@ flatted@^3.1.0, flatted@^3.2.5:
   resolved "https://registry.yarnpkg.com/flatted/-/flatted-3.2.5.tgz#76c8584f4fc843db64702a6bd04ab7a8bd666da3"
   integrity sha512-WIWGi2L3DyTUvUrwRKgGi9TwxQMUEqPOPQBVi71R96jZXJdFskXEmf54BoZaS1kknGODoIGASGEzBUYdyMCBJg==
 
+flatted@^3.2.2:
+  version "3.2.6"
+  resolved "https://registry.yarnpkg.com/flatted/-/flatted-3.2.6.tgz#022e9218c637f9f3fc9c35ab9c9193f05add60b2"
+  integrity sha512-0sQoMh9s0BYsm+12Huy/rkKxVu4R1+r96YX5cG44rHV0pQ6iC3Q+mkoMFaGWObMFYQxCVT+ssG1ksneA2MI9KQ==
+
 follow-redirects@^1.14.4, follow-redirects@^1.14.9:
   version "1.15.1"
   resolved "https://registry.yarnpkg.com/follow-redirects/-/follow-redirects-1.15.1.tgz#0ca6a452306c9b276e4d3127483e29575e207ad5"
@@ -3813,14 +3919,14 @@ graceful-fs@^4.1.15, graceful-fs@^4.1.2, graceful-fs@^4.1.5, graceful-fs@^4.1.6,
   resolved "https://registry.yarnpkg.com/graceful-fs/-/graceful-fs-4.2.10.tgz#147d3a006da4ca3ce14728c7aefc287c367d7a6c"
   integrity sha512-9ByhssR2fPVsNZj478qUUbKfmL0+t5BDVyjShtyZZLiK7ZDAArFFfopyOTj0M05wE2tJPisA4iTnnXl2YoPvOA==
 
-graphql-tag@^2.12.6:
+graphql-tag@^2.12.5, graphql-tag@^2.12.6:
   version "2.12.6"
   resolved "https://registry.yarnpkg.com/graphql-tag/-/graphql-tag-2.12.6.tgz#d441a569c1d2537ef10ca3d1633b48725329b5f1"
   integrity sha512-FdSNcu2QQcWnM2VNvSCCDCVS5PpPqpzgFT8+GXzqJuoDd0CBncxCY278u4mhRO7tMgo2JjgJA5aZ+nWSQ/Z+xg==
   dependencies:
     tslib "^2.1.0"
 
-graphql@^15.8.0:
+graphql@^15.7.2, graphql@^15.8.0:
   version "15.8.0"
   resolved "https://registry.yarnpkg.com/graphql/-/graphql-15.8.0.tgz#33410e96b012fa3bdb1091cc99a94769db212b38"
   integrity sha512-5gghUc24tP9HRznNpV2+FIoq3xKkj5dTQqf4v0CpdPbFVwFkWoxOM+o+2OC9ZSvjEMTjfmG9QT+gcvggTwW1zw==
@@ -6221,6 +6327,28 @@ sequelize@^6.15.0:
     validator "^13.7.0"
     wkx "^0.5.0"
 
+sequelize@^6.6.2:
+  version "6.21.1"
+  resolved "https://registry.yarnpkg.com/sequelize/-/sequelize-6.21.1.tgz#91d3030c42e0a31125b501686e348bf4bd73a963"
+  integrity sha512-vbRreGOdBFLoGUrSINaNVLnaGZGSjhLq2b80tBezuqxbumMG3V2QkCnsvgggQ+LoRVYxERwWin1BL7YO4b5PSQ==
+  dependencies:
+    "@types/debug" "^4.1.7"
+    "@types/validator" "^13.7.1"
+    debug "^4.3.3"
+    dottie "^2.0.2"
+    inflection "^1.13.2"
+    lodash "^4.17.21"
+    moment "^2.29.1"
+    moment-timezone "^0.5.34"
+    pg-connection-string "^2.5.0"
+    retry-as-promised "^5.0.0"
+    semver "^7.3.5"
+    sequelize-pool "^7.1.0"
+    toposort-class "^1.0.1"
+    uuid "^8.3.2"
+    validator "^13.7.0"
+    wkx "^0.5.0"
+
 serialize-javascript@^6.0.0:
   version "6.0.0"
   resolved "https://registry.yarnpkg.com/serialize-javascript/-/serialize-javascript-6.0.0.tgz#efae5d88f45d7924141da8b5c3a7a7e663fefeb8"
@@ -7042,6 +7170,14 @@ vinyl@^2.0.1:
     cloneable-readable "^1.0.0"
     remove-trailing-separator "^1.0.1"
     replace-ext "^1.0.0"
+
+vm2@^3.9.9:
+  version "3.9.9"
+  resolved "https://registry.yarnpkg.com/vm2/-/vm2-3.9.9.tgz#c0507bc5fbb99388fad837d228badaaeb499ddc5"
+  integrity sha512-xwTm7NLh/uOjARRBs8/95H0e8fT3Ukw5D/JJWhxMbhKzNh1Nu981jQKvkep9iKYNxzlVrdzD0mlBGkDKZWprlw==
+  dependencies:
+    acorn "^8.7.0"
+    acorn-walk "^8.2.0"
 
 vue-eslint-parser@^8.0.1:
   version "8.3.0"
