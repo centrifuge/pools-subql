@@ -26,6 +26,8 @@ jobs:
         with:
           node-version: 16.x
           cache: npm
+      - name: 'Install Dependencies'
+        run: yarn install
       - name: Run script
         run: |
           node_modules/@subql/cli/bin/run deployment:deploy \
