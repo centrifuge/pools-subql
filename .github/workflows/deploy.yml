@@ -32,15 +32,15 @@ jobs:
         run: |
           node_modules/@subql/cli/bin/run project:create-project \
           --apiVersion=2 \
-          --description="SubQuery API powered by EMBRIO.tech to query Centrifuge chain data for analytics insights on how Centrifuge is unlocking economic opportunity for all by connecting people to borrow and lend money transparently and cost-effectively."
-          --gitRepo="https://github.com/embrio-tech/centrifuge-subql"
-          --org=embrio-tech
+          --description="SubQuery API powered by EMBRIO.tech to query Centrifuge chain data for analytics insights on how Centrifuge is unlocking economic opportunity for all by connecting people to borrow and lend money transparently and cost-effectively." \
+          --gitRepo="https://github.com/embrio-tech/centrifuge-subql" \
+          --org=embrio-tech \
           --project_name=centrifuge-test
       - name: Deploy Version
         run: |
           node_modules/@subql/cli/bin/run deployment:deploy \
-          --indexerVersion=1.2.1
-          --org=embrio-tech
-          --project_name=centrifuge-test
-          --queryVersion=1.2.0
+          --indexerVersion=1.2.1 \
+          --org=embrio-tech \
+          --project_name=centrifuge-test \
+          --queryVersion=1.2.0 \
           --type=primary
