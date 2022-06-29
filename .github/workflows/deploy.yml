@@ -28,7 +28,7 @@ jobs:
           cache: npm
       - name: Run script
         run: |
-          ./node_modules/@subql/cli/bin/run deployment:deploy \
+          node_modules/@subql/cli/bin/run deployment:deploy \
           --org=embrio-tech \
           --project_name=centriguge-subql
           --type=primary
