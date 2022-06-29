@@ -1,0 +1,34 @@
+name: SubQL Deploy
+
+# **What it does**: This action deploys to subql
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  subql_deploy:
+    name: Deploy to SubQL
+    runs-on: ubuntu-latest
+    env:
+      SUBQL_ACCESS_TOKEN: ${{ secrets.SUBQL_ACCESS_TOKEN }}
+    steps:
+      - name: Check out repo's default branch
+        uses: actions/checkout@v3
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16.x
+          cache: npm
+      - name: Run script
+        run: |
+          subql deployment:deploy \
+          --org=embrio-tech \
+          --project_name=centriguge-subql
+          --type=primary
