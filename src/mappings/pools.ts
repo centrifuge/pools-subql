@@ -1,60 +1,126 @@
 import { SubstrateEvent } from '@subql/types'
-import { Epoch, Pool, PoolState, Tranche } from '../types'
+import { Option } from '@polkadot/types'
+import { Pool, PoolState } from '../types'
+import { errorHandler } from '../helpers/errorHandler'
+import { EpochEvent, LoanEvent, NavDetails, PoolDetails } from '../helpers/types'
+import { createEpoch } from './epochs'
+import { createTranche, updateTranchePrice } from './tranches'
 
-export async function handlePoolCreated(event: SubstrateEvent): Promise<void> {
-  logger.info(`Pool created: ${event.toString()}`)
+export const updatePoolState = errorHandler(_updatePoolState)
+async function _updatePoolState(poolId: string) {
+  const poolState = await PoolState.get(poolId)
+  const poolResponse = await api.query.pools.pool<Option<PoolDetails>>(poolState.id)
+  if (poolResponse.isSome) {
+    const poolData = poolResponse.unwrap()
+    poolState.totalReserve = poolData.reserve.total.toBigInt()
+    poolState.availableReserve = poolData.reserve.available.toBigInt()
+    poolState.maxReserve = poolData.reserve.max.toBigInt()
+    await poolState.save()
+  }
+  return poolState
+}
 
+export const updatePoolNav = errorHandler(_updatePoolNav)
+async function _updatePoolNav(poolId: string) {
+  const poolState = await PoolState.get(poolId)
+  const navResponse = await api.query.loans.poolNAV<Option<NavDetails>>(poolId)
+  if (navResponse.isSome) {
+    const navData = navResponse.unwrap()
+    poolState.netAssetValue = navData.latest.toBigInt()
+    await poolState.save()
+  }
+  return poolState
+}
+
+export const handlePoolCreated = errorHandler(_handlePoolCreated)
+async function _handlePoolCreated(event: SubstrateEvent): Promise<void> {
   const [poolId, metadata] = event.event.data
-  const result = await api.query.pools.pool(poolId)
-  const poolData = result.toJSON() as any
+  const poolData = (await api.query.pools.pool<Option<PoolDetails>>(poolId)).unwrap()
+  const currentEpoch = 1
+
+  logger.info(`Pool ${poolId.toString()} created in block ${event.block.block.header.number}`)
 
   // Save the current pool state
-  let poolState = new PoolState(`${poolId.toString()}-${new Date().getTime().toString()}`)
+  const poolState = new PoolState(`${poolId.toString()}`)
+  poolState.type = 'ALL'
   poolState.netAssetValue = BigInt(0)
-  poolState.totalReserve = BigInt(0)
-  poolState.availableReserve = BigInt(0)
-  poolState.maxReserve = BigInt(poolData.reserve.max.toString())
+  poolState.totalReserve = poolData.reserve.total.toBigInt()
+  poolState.availableReserve = poolData.reserve.available.toBigInt()
+  poolState.maxReserve = poolData.reserve.max.toBigInt()
+  poolState.totalDebt = BigInt(0)
+
+  poolState.totalBorrowed_ = BigInt(0)
+  poolState.totalRepaid_ = BigInt(0)
+  poolState.totalInvested_ = BigInt(0)
+  poolState.totalRedeemed_ = BigInt(0)
+  poolState.totalNumberOfLoans_ = BigInt(0)
+
+  poolState.totalEverBorrowed = BigInt(0)
+  poolState.totalEverNumberOfLoans = BigInt(0)
 
   await poolState.save()
 
   // Create the pool
-  let pool = new Pool(poolId.toString())
-
-  pool.type = 'POOL'
+  const pool = new Pool(poolId.toString())
+  pool.stateId = poolId.toString()
+  pool.type = 'ALL'
   pool.createdAt = event.block.timestamp
+  pool.createdAtBlockNumber = event.block.block.header.number.toNumber()
+
+  pool.currency = poolData.currency.toString()
   pool.metadata = metadata.toString()
-  pool.currency = Object.keys(poolData.currency)[0].toString()
 
-  pool.minEpochTime = Number(poolData.parameters.minEpochTime.toString())
-  pool.maxNavAge = Number(poolData.parameters.maxNavAge.toString())
-
-  pool.currentEpoch = 1
-
-  pool.currentStateId = poolState.id
-
+  pool.minEpochTime = poolData.parameters.minEpochTime.toNumber()
+  pool.maxNavAge = poolData.parameters.maxNavAge.toNumber()
+  pool.currentEpoch = currentEpoch
   await pool.save()
 
-  // Create the first epoch
-  let epoch = new Epoch(`${poolId.toString()}-1`)
-  epoch.index = 1
-  epoch.poolId = poolId.toString()
-  epoch.openedAt = event.block.timestamp
-  await epoch.save()
-
   // Create the tranches
-  await poolData.tranches.tranches.map(async (trancheData: any, index: number) => {
-    const trancheId = trancheData.currency['tranche'][1]
-    let tranche = new Tranche(`${pool.id}-${trancheId.toString()}`)
-    tranche.poolId = pool.id
-    tranche.trancheId = trancheId
-    tranche.isResidual = index === 0 // only the first tranche is a residual tranche
-    tranche.seniority = Number(trancheData.seniority.toString())
+  const tranches = poolData.tranches.tranches
+  for (const [index, trancheData] of tranches.entries()) {
+    const trancheId = poolData.tranches.ids.toArray()[index].toHex()
+    logger.info(`Creating trancheId: ${trancheId}`)
+    await createTranche(trancheId, pool.id, trancheData)
+    await updateTranchePrice(pool.id, trancheId, currentEpoch)
+  }
+  await createEpoch(pool.id, currentEpoch, event.block)
+}
 
-    if (!tranche.isResidual) {
-      tranche.interestRatePerSec = BigInt(trancheData.trancheType.nonResidual.interestRatePerSec.toString())
-      tranche.minRiskBuffer = BigInt(trancheData.trancheType.nonResidual.minRiskBuffer.toString())
-    }
+export const computeTotalBorrowings = errorHandler(_computeTotalBorrowings)
+async function _computeTotalBorrowings(event: SubstrateEvent): Promise<void> {
+  const [poolId, loanId, amount] = event.event.data as unknown as LoanEvent
+  const poolState = await PoolState.get(poolId.toString())
 
-    await tranche.save()
-  })
+  logger.info(`Pool: ${poolId.toString()} borrowed ${amount.toString()}`)
+
+  poolState.totalBorrowed_ = poolState.totalBorrowed_ + amount.toBigInt()
+  poolState.totalEverBorrowed = poolState.totalEverBorrowed + amount.toBigInt()
+
+  poolState.totalNumberOfLoans_ = poolState.totalNumberOfLoans_ + BigInt(1)
+  poolState.totalEverNumberOfLoans = poolState.totalEverNumberOfLoans + BigInt(1)
+
+  await poolState.save()
+}
+
+export const updateEpochReferences = errorHandler(_updateEpochReferences)
+async function _updateEpochReferences(event: SubstrateEvent) {
+  const [poolId, epochId] = event.event.data as unknown as EpochEvent
+  const newIndex = epochId.toNumber() + 1
+  const pool = await Pool.get(poolId.toString())
+
+  switch (event.event.method) {
+    case 'EpochClosed':
+      pool.lastEpochClosed = epochId.toNumber()
+      pool.currentEpoch = newIndex
+      await pool.save()
+      break
+
+    case 'EpochExecuted':
+      pool.lastEpochExecuted = epochId.toNumber()
+      await pool.save()
+      break
+
+    default:
+      break
+  }
 }
