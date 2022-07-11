@@ -75,23 +75,38 @@ async function _handleEpochExecuted(event: SubstrateEvent): Promise<void> {
      block ${event.block.block.header.number.toString()}`
   )
 
-  const epochService = await EpochService.getById(`${poolId.toString()}-${epochId.toString()}`)
-  await epochService.executeEpoch(event.block.timestamp)
-  await epochService.save()
+  const epoch = await EpochService.getById(`${poolId.toString()}-${epochId.toString()}`)
+  await epoch.executeEpoch(event.block.timestamp)
+  await epoch.save()
 
   const poolService = await PoolService.getById(poolId.toString())
   await poolService.executeEpoch(epochId.toNumber())
   await poolService.save()
 
+  // Compute and save order fulfillment
   const tranches = await TrancheService.getByPoolId(poolId.toString())
+  const nextEpoch = await EpochService.getById(`${poolId.toString()}-${(epochId.toNumber() + 1).toString()}`)
   for (const tranche of tranches) {
-    const epochState = epochService.epochStates.find((epochState) => epochState.trancheId === tranche.tranche.trancheId)
+    const epochState = epoch.epochStates.find((epochState) => epochState.trancheId === tranche.tranche.trancheId)
     await tranche.updateSupply()
     await tranche.updatePrice(epochState.price)
     await tranche.updateFulfilledInvestOrders(epochState.fulfilledInvestOrders)
     await tranche.updateFulfilledRedeemOrders(epochState.fulfilledRedeemOrders)
     await tranche.save()
+
+    // Carry over unfulfilled orders to next epoch
+    await nextEpoch.updateOutstandingInvestOrders(
+      tranche.tranche.trancheId,
+      epochState.outstandingInvestOrders - epochState.fulfilledInvestOrders,
+      BigInt(0)
+    )
+    await nextEpoch.updateOutstandingRedeemOrders(
+      tranche.tranche.trancheId,
+      epochState.outstandingRedeemOrders - epochState.fulfilledRedeemOrders,
+      BigInt(0)
+    )
   }
+  await nextEpoch.save()
 
   // TODO: loop over OutstandingOrder, apply fulfillment from epoch, create InvestorTransactions,
   // optionally remove orders
