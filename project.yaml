@@ -4,7 +4,7 @@ version: 1.0.0
 runner:
   node:
     name: '@subql/node'
-    version: 1.3.0
+    version: 1.4.1
   query:
     name: '@subql/query'
     version: 1.2.1
@@ -14,7 +14,7 @@ schema:
   file: ./schema.graphql
 network:
   endpoint: wss://fullnode.development.cntrfg.com
-  genesisHash: '0x31eae49488ddf60b2ae2829e5bb9e2ae67aef01756fd8ee0e6c63fe85b603774'
+  genesisHash: '0x1e7c3b278ebb36a77f38b9aae03d7c903d62ebf41c6320dd7acffb7959c866d0'
   dictionary: ''
   chaintypes:
     file: ./dist/chaintypes.js
