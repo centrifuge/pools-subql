@@ -33,6 +33,15 @@ Open your browser and head to `http://localhost:3000`.
 
 Finally, you should see a GraphQL playground is showing in the explorer and the schemas that are ready to query.
 
+#### Publish
+Make sure the `SUBQL_ACCESS_TOKEN` environment variable is configured. Then, to publish a specific manifest file (one for each network), run:
+
+```
+yarn run subql publish -f manifests/altair.yaml
+```
+
+The printed IPFS hash can then be used to deploy this pinned version of the Subquery.
+
 ## Data Model
 
 !!! Data fields ending with an underscore `_` are automatically reset at the end of a period and bust be of type `BigInt`!!!
