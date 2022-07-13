@@ -1,13 +1,21 @@
-specVersion: 0.2.0
+specVersion: 1.0.0
 name: centrifuge-pools
 version: 1.0.0
-description: ''
-repository: ''
+runner:
+  node:
+    name: '@subql/node'
+    version: 1.4.1
+  query:
+    name: '@subql/query'
+    version: 1.2.1
+description: 'SubQuery API powered by EMBRIO.tech to query Centrifuge chain data for analytics insights on how Centrifuge is unlocking economic opportunity for all by connecting people to borrow and lend money transparently and cost-effectively.'
+repository: https://github.com/embrio-tech/centrifuge-subql
 schema:
   file: ./schema.graphql
 network:
   endpoint: wss://fullnode.demo.cntrfg.com
   genesisHash: '0x1e7c3b278ebb36a77f38b9aae03d7c903d62ebf41c6320dd7acffb7959c866d0'
+  dictionary: ''
   chaintypes:
     file: ./dist/chaintypes.js
 dataSources:
@@ -28,18 +36,7 @@ dataSources:
           filter:
             module: pools
             method: EpochClosed
-        - handler: updateEpochReferences
-          kind: substrate/EventHandler
-          filter:
-            module: pools
-            method: EpochClosed
-        
         - handler: handleEpochExecuted
-          kind: substrate/EventHandler
-          filter:
-            module: pools
-            method: EpochExecuted
-        - handler: updateEpochReferences
           kind: substrate/EventHandler
           filter:
             module: pools
@@ -69,7 +66,7 @@ dataSources:
           filter:
             module: proxy
             method: AnonymousCreated
-        - handler: computeTotalBorrowings
+        - handler: handleBorrowings
           kind: substrate/EventHandler
           filter:
             module: loans

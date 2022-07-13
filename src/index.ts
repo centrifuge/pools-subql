@@ -1,8 +1,6 @@
 import '@polkadot/api-augment'
 
-export * from './mappings/blocks'
-export * from './mappings/pools'
-export * from './mappings/orders'
-export * from './mappings/epochs'
-export * from './mappings/proxies'
-export * from './mappings/tranches'
+export * from './mappings/handlers/blockHandlers'
+export * from './mappings/handlers/poolsHandlers'
+export * from './mappings/handlers/loansHandlers'
+export * from './mappings/handlers/proxyHandlers'
