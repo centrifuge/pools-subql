@@ -1,4 +1,4 @@
-import { Enum, Null, Struct, Tuple, u128, u32, u64, U8aFixed, Option, U128, Vec, createType } from '@polkadot/types'
+import { Enum, Null, Struct, u128, u32, u64, U8aFixed, Option, Vec, Bytes } from '@polkadot/types'
 import { AccountId32, Perquintill } from '@polkadot/types/interfaces'
 import { ITuple } from '@polkadot/types/types'
 
@@ -6,8 +6,15 @@ export interface PoolDetails extends Struct {
   reserve: { total: u128; available: u128; max: u128 }
   currency: Enum
   parameters: { minEpochTime: u64; maxNavAge: u64 }
-  tranches: { tranches: TrancheDetails[]; ids: Vec<U8aFixed>; salt: ITuple<[u64, u64]> }
+  tranches: TrancheData
   epoch: { current: u32; lastClosed: u64; lastExecuted: u32 }
+  metadata: Option<Bytes>
+}
+
+export interface TrancheData extends Struct {
+  tranches: TrancheDetails[]
+  ids: Vec<U8aFixed>
+  salt: ITuple<[u64, u64]>
 }
 
 export interface TrancheDetails extends Struct {
@@ -66,7 +73,7 @@ export interface EpochSolution extends Enum {
 }
 
 export interface EpochDetails extends Struct {
-  investmentFulfillment: Perquintill
+  investFulfillment: Perquintill
   redeemFulfillment: Perquintill
   tokenPrice: u128
 }
@@ -76,7 +83,7 @@ export interface TrancheSolution extends Struct {
   redeemFulfillment: Perquintill
 }
 
-export interface LoanEvent extends ITuple<[u64, u128, u128]> {}
-export interface EpochEvent extends ITuple<[u64, u32]> {}
-export interface OrderEvent extends ITuple<[u64, U8aFixed, AccountId32, u128, u128]> {}
-export interface EpochSolutionEvent extends ITuple<[u64, u32, EpochSolution]> {}
+export type LoanEvent = ITuple<[u64, u128, u128]>
+export type EpochEvent = ITuple<[u64, u32]>
+export type OrderEvent = ITuple<[u64, U8aFixed, AccountId32, u128, u128]>
+export type EpochSolutionEvent = ITuple<[u64, u32, EpochSolution]>
