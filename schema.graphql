@@ -1,11 +1,10 @@
 type Timekeeper @entity {
-  id: ID!
+  id: ID! # "global"
   lastPeriodStart: Date!
 }
 
 type Pool @entity {
-  id: ID!
-
+  id: ID! #poolId
   # It's not possible to simply retrieve all entities, but it is supported
   # to get all entities by a field. Hence we add the same type field to all
   # pools, so we can do Pool.getByType("POOL").
@@ -73,8 +72,6 @@ type PoolSnapshot @entity {
   # Aggregated transaction data over the last period
   totalBorrowed_: BigInt
   totalRepaid_: BigInt
-  totalInvested_: BigInt
-  totalRedeemed_: BigInt
   totalNumberOfLoans_: BigInt
 
   # Cumulated transaction data since pool creation
@@ -83,11 +80,10 @@ type PoolSnapshot @entity {
 }
 
 type Tranche @entity {
-  id: ID! #poolId-index
+  id: ID! #poolId-trancheId
   type: String! @index
   pool: Pool! @index
 
-  # id cannot be the tranche id as it's not globally unique, so we store it separately
   trancheId: String!
 
   isResidual: Boolean!
@@ -99,21 +95,26 @@ type Tranche @entity {
 }
 
 type TrancheState @entity {
-  id: ID! #poolId-index
+  id: ID! #poolId-trancheId
   type: String! @index
+
   supply: BigInt
   price: BigInt
 
-  outstandingInvestOrders: BigInt
-  outstandingRedeemOrders: BigInt
+  outstandingInvestOrders_: BigInt!
+  outstandingRedeemOrders_: BigInt!
 
-  yield30Days: BigInt
-  yield90Days: BigInt
+  fulfilledInvestOrders_: BigInt!
+  fulfilledRedeemOrders_: BigInt!
+
+  yield30DaysAnnualized: BigInt
+  yield90DaysAnnualized: BigInt
   yieldSinceInception: BigInt
+  yieldSinceLastPeriod: BigInt
 }
 
 type TrancheSnapshot @entity {
-  id: ID! #poolId-index-blockNumber
+  id: ID! #poolId-trancheId-blockNumber
   tranche: Tranche!
 
   timestamp: Date!
@@ -123,36 +124,49 @@ type TrancheSnapshot @entity {
   supply: BigInt
   price: BigInt
 
-  outstandingInvestOrders: BigInt
-  outstandingRedeemOrders: BigInt
+  outstandingInvestOrders_: BigInt!
+  outstandingRedeemOrders_: BigInt!
 
-  yield30Days: BigInt
-  yield90Days: BigInt
+  fulfilledInvestOrders_: BigInt!
+  fulfilledRedeemOrders_: BigInt!
+
+  yield30DaysAnnualized: BigInt
+  yield90DaysAnnualized: BigInt
   yieldSinceInception: BigInt
+  yieldSinceLastPeriod: BigInt
 }
 
 type Epoch @entity {
-  id: ID! #poolId-index
+  id: ID! #poolId-epochIndex
   pool: Pool!
 
   index: Int!
 
-  openedAt: Date
+  openedAt: Date!
   closedAt: Date
   executedAt: Date
 
-  # openPoolState: PoolState!
-  # closePoolState: PoolState
-  # executePoolState: PoolState
-
-  investorTransactions: [InvestorTransaction] @derivedFrom(field: "epoch")
-  borrowerActions: [BorrowerTransaction] @derivedFrom(field: "epoch")
-
   # Aggregated data during this epoch
-  totalBorrowed: BigInt
-  totalRepaid: BigInt
-  totalInvested: BigInt
-  totalRedeemed: BigInt
+  totalBorrowed: BigInt!
+  totalRepaid: BigInt!
+
+  epochStates: [EpochState] @derivedFrom(field: "epoch")
+}
+
+type EpochState @entity {
+  id: ID! #poolId-epochIndex-trancheId
+  epoch: Epoch! @index
+  trancheId: String!
+
+  #investorTransactions: [InvestorTransaction] @derivedFrom(field: "epochState")
+  #borrowerTransctions: [BorrowerTransaction] @derivedFrom(field: "epochState")
+
+  price: BigInt
+
+  outstandingInvestOrders: BigInt!
+  outstandingRedeemOrders: BigInt!
+  fulfilledInvestOrders: BigInt
+  fulfilledRedeemOrders: BigInt
 }
 
 enum InvestorTransactionType {
@@ -183,13 +197,13 @@ type InvestorTransaction @entity {
 #UNUSED
 type OutstandingOrder @entity {
   id: ID! # pool id - tranche id - investor address
+  epoch: Epoch @index
   account: Account @index
   pool: Pool! @index
   tranche: Tranche! @index
 
   invest: BigInt!
   redeem: BigInt!
-  epoch: Epoch @index
 }
 
 type Account @entity {
