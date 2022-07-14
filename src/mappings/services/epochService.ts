@@ -62,6 +62,8 @@ export class EpochService {
 
       const epochDetails = epochResponse.unwrap()
       epochState.price = epochDetails.tokenPrice.toBigInt()
+      epochState.investFulfillment = epochDetails.investFulfillment.toBigInt()
+      epochState.redeemFulfillment = epochDetails.redeemFulfillment.toBigInt()
       epochState.fulfilledInvestOrders = nToBigInt(
         bnToBn(epochState.outstandingInvestOrders)
           .mul(epochDetails.investFulfillment.toBn())

@@ -167,6 +167,9 @@ type EpochState @entity {
   outstandingRedeemOrders: BigInt!
   fulfilledInvestOrders: BigInt
   fulfilledRedeemOrders: BigInt
+
+  investFulfillment: BigInt
+  redeemFulfillment: BigInt
 }
 
 enum InvestorTransactionType {
@@ -182,11 +185,13 @@ enum InvestorTransactionType {
 
 type InvestorTransaction @entity {
   id: ID! # transaction hash
-  account: Account @index
+  hash: String!
+  accountId: String #Account @index
   pool: Pool! @index
   tranche: Tranche! @index
-  epoch: Epoch! @index
+  epochNumber: Int! @index
   timestamp: Date!
+
   type: InvestorTransactionType!
   tokenAmount: BigInt
   currencyAmount: BigInt
@@ -194,13 +199,14 @@ type InvestorTransaction @entity {
   transactionFee: BigInt
 }
 
-#UNUSED
 type OutstandingOrder @entity {
   id: ID! # pool id - tranche id - investor address
-  epoch: Epoch @index
-  account: Account @index
+  hash: String!
+  accountId: String #Account @index
   pool: Pool! @index
   tranche: Tranche! @index
+  epochNumber: Int! @index
+  timestamp: Date!
 
   invest: BigInt!
   redeem: BigInt!
@@ -261,7 +267,7 @@ type BorrowerTransaction @entity {
   id: ID!
 
   account: Account!
-  epoch: Epoch!
+  epochNumber: Int!
   loan: Loan!
   type: BorrowerTransactionType!
 
