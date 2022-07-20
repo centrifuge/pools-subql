@@ -51,6 +51,11 @@ dataSources:
           filter:
             module: pools
             method: RedeemOrderUpdated
+        - handler: handleOrdersCollected
+          kind: substrate/EventHandler
+          filter:
+            module: pools
+            method: OrdersCollected
         - handler: handleProxyAdded
           kind: substrate/EventHandler
           filter:

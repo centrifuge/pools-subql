@@ -83,7 +83,18 @@ export interface TrancheSolution extends Struct {
   redeemFulfillment: Perquintill
 }
 
+export interface OutstandingCollections extends Struct {
+  payoutCurrencyAmount: u128
+  payoutTokenAmount: u128
+  remainingInvestCurrency: u128
+  remainingRedeemToken: u128
+}
+
+export type PoolEvent = ITuple<[u64]>
 export type LoanEvent = ITuple<[u64, u128, u128]>
 export type EpochEvent = ITuple<[u64, u32]>
 export type OrderEvent = ITuple<[u64, U8aFixed, AccountId32, u128, u128]>
 export type EpochSolutionEvent = ITuple<[u64, u32, EpochSolution]>
+
+// poolId, trancheId, endEpochId, account, outstandingCollections
+export type OrdersCollectedEvent = ITuple<[u64, U8aFixed, u32, AccountId32, OutstandingCollections]>
