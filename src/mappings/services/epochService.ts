@@ -4,8 +4,8 @@ import { EpochDetails } from '../../helpers/types'
 import { Epoch, EpochState } from '../../types'
 
 export class EpochService {
-  epoch: Epoch
-  epochStates: EpochState[]
+  readonly epoch: Epoch
+  readonly epochStates: EpochState[]
 
   constructor(epoch: Epoch, epochStates: EpochState[]) {
     this.epoch = epoch
@@ -36,6 +36,7 @@ export class EpochService {
 
   static getById = async (epochId: string) => {
     const epoch = await Epoch.get(epochId)
+    if (epoch === undefined) return undefined
     const epochStates = await EpochState.getByEpochId(epochId)
     return new EpochService(epoch, epochStates)
   }
@@ -50,11 +51,12 @@ export class EpochService {
   }
 
   public executeEpoch = async (timestamp: Date) => {
-    logger.info(`Updating EpochExecutionDetails for tranche ${this.epoch.poolId} on epoch ${this.epoch.index}`)
+    logger.info(`Updating EpochExecutionDetails for pool ${this.epoch.poolId} on epoch ${this.epoch.index}`)
 
     this.epoch.executedAt = timestamp
 
     for (const epochState of this.epochStates) {
+      logger.info(`Querying execution information for tranche :${epochState.trancheId}`)
       const epochResponse = await api.query.pools.epoch<Option<EpochDetails>>(epochState.trancheId, this.epoch.index)
       logger.info(`EpochResponse: ${JSON.stringify(epochResponse)}`)
 
@@ -80,12 +82,14 @@ export class EpochService {
 
   public updateOutstandingInvestOrders = (trancheId: string, newAmount: bigint, oldAmount: bigint) => {
     const trancheState = this.epochStates.find((trancheState) => trancheState.trancheId === trancheId)
+    if (trancheState === undefined) throw new Error(`No epochState with could be found for tranche: ${trancheId}`)
     trancheState.outstandingInvestOrders = trancheState.outstandingInvestOrders + newAmount - oldAmount
     return this
   }
 
   public updateOutstandingRedeemOrders = (trancheId: string, newAmount: bigint, oldAmount: bigint) => {
     const trancheState = this.epochStates.find((trancheState) => trancheState.trancheId === trancheId)
+    if (trancheState === undefined) throw new Error(`No epochState with could be found for tranche: ${trancheId}`)
     trancheState.outstandingRedeemOrders = trancheState.outstandingRedeemOrders + newAmount - oldAmount
     return this
   }

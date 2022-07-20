@@ -2,7 +2,7 @@ import { bnToBn, nToBigInt } from '@polkadot/util'
 import { OutstandingOrder } from '../../types'
 
 export class OutstandingOrderService {
-  outstandingOrder: OutstandingOrder
+  readonly outstandingOrder: OutstandingOrder
 
   constructor(outstandingOrder: OutstandingOrder) {
     this.outstandingOrder = outstandingOrder
@@ -73,18 +73,20 @@ export class OutstandingOrderService {
   }
 
   updateUnfulfilledInvest = (investFulfillment: bigint) => {
+    const unfulfilledRatio = bnToBn(10).pow(bnToBn(18)).sub(bnToBn(investFulfillment))
     this.outstandingOrder.invest = nToBigInt(
       bnToBn(this.outstandingOrder.invest)
-        .mul(bnToBn(10).pow(bnToBn(18)).sub(bnToBn(investFulfillment)))
+        .mul(unfulfilledRatio)
         .div(bnToBn(10).pow(bnToBn(18)))
     )
     return this
   }
 
   updateUnfulfilledRedeem = (redeemFulfillment: bigint) => {
+    const unfulfilledRatio = bnToBn(10).pow(bnToBn(18)).sub(bnToBn(redeemFulfillment))
     this.outstandingOrder.redeem = nToBigInt(
       bnToBn(this.outstandingOrder.redeem)
-        .mul(bnToBn(10).pow(bnToBn(18)).sub(bnToBn(redeemFulfillment)))
+        .mul(unfulfilledRatio)
         .div(bnToBn(10).pow(bnToBn(18)))
     )
     return this

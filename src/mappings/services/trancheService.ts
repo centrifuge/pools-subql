@@ -5,8 +5,8 @@ import { TrancheDetails } from '../../helpers/types'
 import { Tranche, TrancheSnapshot, TrancheState } from '../../types'
 
 export class TrancheService {
-  tranche: Tranche
-  trancheState: TrancheState
+  readonly tranche: Tranche
+  readonly trancheState: TrancheState
 
   constructor(tranche: Tranche, trancheState: TrancheState) {
     this.tranche = tranche
@@ -42,6 +42,7 @@ export class TrancheService {
   static getById = async (trancheId: string) => {
     const tranche = await Tranche.get(trancheId)
     const trancheState = await TrancheState.get(trancheId)
+    if (tranche === undefined || trancheState === undefined) return undefined
     return new TrancheService(tranche, trancheState)
   }
 
@@ -81,7 +82,9 @@ export class TrancheService {
     )
     const trancheSnapshots = await TrancheSnapshot.getByPeriodStart(referencePeriodStart)
     if (trancheSnapshots.length === 0) {
-      logger.warn(`No tranche snapshot found pool ${this.tranche.poolId} with reference date ${referencePeriodStart}`)
+      logger.warn(
+        `No tranche snapshot exist for pool ${this.tranche.poolId} with reference date ${referencePeriodStart}`
+      )
       return this
     }
     const trancheSnapshot = trancheSnapshots.find(
@@ -89,7 +92,7 @@ export class TrancheService {
     )
     if (trancheSnapshot === undefined) {
       logger.warn(
-        `No tranche snapshot found tranche ${this.tranche.poolId}-${this.tranche.poolId} with\
+        `No tranche snapshot found tranche ${this.tranche.poolId}-${this.tranche.trancheId} with\
          reference date ${referencePeriodStart}`
       )
       return this

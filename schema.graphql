@@ -184,7 +184,7 @@ enum InvestorTransactionType {
 }
 
 type InvestorTransaction @entity {
-  id: ID! # transaction hash
+  id: ID! # extrinsic hash - epoch number - transaction type
   hash: String!
   accountId: String #Account @index
   pool: Pool! @index

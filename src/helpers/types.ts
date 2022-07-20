@@ -90,6 +90,7 @@ export interface OutstandingCollections extends Struct {
   remainingRedeemToken: u128
 }
 
+export type PoolEvent = ITuple<[u64]>
 export type LoanEvent = ITuple<[u64, u128, u128]>
 export type EpochEvent = ITuple<[u64, u32]>
 export type OrderEvent = ITuple<[u64, U8aFixed, AccountId32, u128, u128]>
