@@ -93,7 +93,7 @@ export class InvestorTransactionService {
       nToBigInt(
         bnToBn(amount)
           .mul(bnToBn(fulfillmentRate))
-          .div(bnToBn(10).pow(bnToBn(27)))
+          .div(bnToBn(10).pow(bnToBn(18)))
       ),
       timestamp
     )
@@ -103,7 +103,7 @@ export class InvestorTransactionService {
     tx.investorTransaction.currencyAmount = nToBigInt(
       bnToBn(amount)
         .mul(bnToBn(price))
-        .div(bnToBn(10).pow(bnToBn(18)))
+        .div(bnToBn(10).pow(bnToBn(27)))
     )
     return tx
   }
