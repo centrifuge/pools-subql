@@ -21,6 +21,7 @@ export class TrancheService {
     trancheState.outstandingRedeemOrders_ = BigInt(0)
     trancheState.fulfilledInvestOrders_ = BigInt(0)
     trancheState.fulfilledRedeemOrders_ = BigInt(0)
+    trancheState.price = nToBigInt(bnToBn(10).pow(bnToBn(27)))
 
     const tranche = new Tranche(`${poolId}-${trancheId}`)
     tranche.type = 'ALL'
