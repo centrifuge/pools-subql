@@ -29,6 +29,7 @@ async function _handlePoolCreated(event: SubstrateEvent): Promise<void> {
     logger.info(`Creating tranche with id: ${trancheId}`)
     const trancheService = await TrancheService.init(trancheId, poolId.toString(), trancheData)
     await trancheService.updateSupply()
+    await trancheService.updateDebt(trancheData.debt.toBigInt())
     await trancheService.save()
   }
 

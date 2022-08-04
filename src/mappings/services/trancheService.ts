@@ -72,7 +72,14 @@ export class TrancheService {
   public updateSupply = errorHandler(this._updateSupply)
 
   public updatePrice = (price: bigint) => {
+    logger.info(`Updating price for tranche ${this.tranche.id} to :${price}`)
     this.trancheState.price = price
+    return this
+  }
+
+  public updateDebt = (debt: bigint) => {
+    logger.info(`Updating debt for tranche ${this.tranche.id} to :${debt}`)
+    this.trancheState.debt = debt
     return this
   }
 
