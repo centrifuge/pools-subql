@@ -153,6 +153,8 @@ type Epoch @entity {
   totalRepaid: BigInt!
 
   epochStates: [EpochState] @derivedFrom(field: "epoch")
+
+  investorTransactions: [InvestorTransaction] @derivedFrom(field: "epoch")
 }
 
 type EpochState @entity {
@@ -193,6 +195,7 @@ type InvestorTransaction @entity {
   tranche: Tranche! @index
   epochNumber: Int! @index
   timestamp: Date!
+  epoch: Epoch!
 
   type: InvestorTransactionType!
   tokenAmount: BigInt

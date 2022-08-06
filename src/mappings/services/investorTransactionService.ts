@@ -23,6 +23,7 @@ export class InvestorTransactionService {
     tx.accountId = address
     tx.poolId = poolId.toString()
     tx.epochNumber = epochNumber
+    tx.epochId = `${poolId}-${epochNumber.toString()}`
     tx.trancheId = `${poolId}-${trancheId}`
     tx.timestamp = timestamp
     tx.type = type
