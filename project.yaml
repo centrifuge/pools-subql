@@ -4,10 +4,10 @@ version: 1.0.0
 runner:
   node:
     name: '@subql/node'
-    version: 1.4.1
+    version: 1.6.1
   query:
     name: '@subql/query'
-    version: 1.2.1
+    version: 1.4.0
 description: 'SubQuery API powered by EMBRIO.tech to query Centrifuge chain data for analytics insights on how Centrifuge is unlocking economic opportunity for all by connecting people to borrow and lend money transparently and cost-effectively.'
 repository: https://github.com/embrio-tech/centrifuge-subql
 schema:
@@ -26,6 +26,8 @@ dataSources:
       handlers:
         - handler: handleBlock
           kind: substrate/BlockHandler
+          filter:
+            modulo: 100
         - handler: handlePoolCreated
           kind: substrate/EventHandler
           filter:
