@@ -39,6 +39,7 @@ type PoolState @entity {
   availableReserve: BigInt!
   maxReserve: BigInt!
   totalDebt: BigInt!
+  value: BigInt!
 
   # Aggregated transaction data over the last period
   totalBorrowed_: BigInt
@@ -68,6 +69,7 @@ type PoolSnapshot @entity {
   availableReserve: BigInt!
   maxReserve: BigInt!
   totalDebt: BigInt!
+  value: BigInt!
 
   # Aggregated transaction data over the last period
   totalBorrowed_: BigInt

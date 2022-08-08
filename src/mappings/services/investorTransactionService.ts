@@ -1,4 +1,5 @@
 import { bnToBn, nToBigInt } from '@polkadot/util'
+import { RAY, WAD } from '../../config'
 import { InvestorTransaction, InvestorTransactionType } from '../../types'
 
 export class InvestorTransactionService {
@@ -54,21 +55,13 @@ export class InvestorTransactionService {
       address,
       hash,
       InvestorTransactionType.INVEST_EXECUTION,
-      nToBigInt(
-        bnToBn(amount)
-          .mul(bnToBn(fulfillmentRate))
-          .div(bnToBn(10).pow(bnToBn(18)))
-      ),
+      nToBigInt(bnToBn(amount).mul(bnToBn(fulfillmentRate)).div(WAD)),
       timestamp
     )
 
     tx.investorTransaction.tokenPrice = price
     tx.investorTransaction.transactionFee = fee
-    tx.investorTransaction.tokenAmount = nToBigInt(
-      bnToBn(amount)
-        .mul(bnToBn(10).pow(bnToBn(27)))
-        .div(bnToBn(price))
-    )
+    tx.investorTransaction.tokenAmount = nToBigInt(bnToBn(amount).mul(RAY).div(bnToBn(price)))
     return tx
   }
 
@@ -91,21 +84,13 @@ export class InvestorTransactionService {
       address,
       hash,
       InvestorTransactionType.REDEEM_EXECUTION,
-      nToBigInt(
-        bnToBn(amount)
-          .mul(bnToBn(fulfillmentRate))
-          .div(bnToBn(10).pow(bnToBn(18)))
-      ),
+      nToBigInt(bnToBn(amount).mul(bnToBn(fulfillmentRate)).div(WAD)),
       timestamp
     )
 
     tx.investorTransaction.tokenPrice = price
     tx.investorTransaction.transactionFee = fee
-    tx.investorTransaction.currencyAmount = nToBigInt(
-      bnToBn(amount)
-        .mul(bnToBn(price))
-        .div(bnToBn(10).pow(bnToBn(27)))
-    )
+    tx.investorTransaction.currencyAmount = nToBigInt(bnToBn(amount).mul(bnToBn(price)).div(WAD))
     return tx
   }
 

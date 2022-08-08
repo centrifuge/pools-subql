@@ -1,5 +1,6 @@
 import { u128 } from '@polkadot/types'
 import { bnToBn, nToBigInt } from '@polkadot/util'
+import { RAY } from '../../config'
 import { errorHandler } from '../../helpers/errorHandler'
 import { TrancheDetails } from '../../helpers/types'
 import { Tranche, TrancheSnapshot, TrancheState } from '../../types'
@@ -21,7 +22,7 @@ export class TrancheService {
     trancheState.outstandingRedeemOrders_ = BigInt(0)
     trancheState.fulfilledInvestOrders_ = BigInt(0)
     trancheState.fulfilledRedeemOrders_ = BigInt(0)
-    trancheState.price = nToBigInt(bnToBn(10).pow(bnToBn(27)))
+    trancheState.price = nToBigInt(RAY)
 
     const tranche = new Tranche(`${poolId}-${trancheId}`)
     tranche.type = 'ALL'
@@ -111,12 +112,7 @@ export class TrancheService {
     }
     const priceCurrent = bnToBn(this.trancheState.price)
     const priceOld = bnToBn(trancheSnapshot.price)
-    this.trancheState[yieldField] = nToBigInt(
-      priceCurrent
-        .mul(bnToBn(10).pow(bnToBn(27)))
-        .div(priceOld)
-        .sub(bnToBn(10).pow(bnToBn(27)))
-    )
+    this.trancheState[yieldField] = nToBigInt(priceCurrent.mul(RAY).div(priceOld).sub(RAY))
     return this
   }
   public computeYield = errorHandler(this._computeYield)
@@ -154,13 +150,7 @@ export class TrancheService {
     )
     const priceCurrent = bnToBn(this.trancheState.price)
     const priceOld = bnToBn(trancheSnapshot.price)
-    this.trancheState[yieldField] = nToBigInt(
-      priceCurrent
-        .mul(bnToBn(10).pow(bnToBn(27)))
-        .div(priceOld)
-        .sub(bnToBn(10).pow(bnToBn(27)))
-        .mul(annualizationFactor)
-    )
+    this.trancheState[yieldField] = nToBigInt(priceCurrent.mul(RAY).div(priceOld).sub(RAY).mul(annualizationFactor))
     return this
   }
   public computeYieldAnnualized = errorHandler(this._computeYieldAnnualized)

@@ -1,4 +1,5 @@
 import { Option } from '@polkadot/types'
+import { bnToBn, nToBigInt } from '@polkadot/util'
 import { errorHandler } from '../../helpers/errorHandler'
 import { NavDetails, PoolDetails, TrancheData } from '../../helpers/types'
 import { Pool, PoolState } from '../../types'
@@ -27,6 +28,7 @@ export class PoolService {
     poolState.availableReserve = BigInt(0)
     poolState.maxReserve = BigInt(0)
     poolState.totalDebt = BigInt(0)
+    poolState.value = BigInt(0)
 
     poolState.totalBorrowed_ = BigInt(0)
     poolState.totalRepaid_ = BigInt(0)
@@ -116,5 +118,11 @@ export class PoolService {
 
   public executeEpoch = (epochId: number) => {
     this.pool.lastEpochExecuted = epochId
+  }
+
+  public computePoolValue = () => {
+    const nav = bnToBn(this.poolState.netAssetValue)
+    const totalReserve = bnToBn(this.poolState.totalReserve)
+    this.poolState.value = nToBigInt(nav.add(totalReserve))
   }
 }

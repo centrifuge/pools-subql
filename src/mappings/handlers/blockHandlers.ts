@@ -26,6 +26,7 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
     for (const pool of pools) {
       await pool.updateState()
       await pool.updateNav()
+      await pool.computePoolValue()
       await pool.save()
 
       const { ids, tranches: trancheData } = pool.tranches
