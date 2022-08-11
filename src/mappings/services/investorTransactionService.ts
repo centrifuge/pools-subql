@@ -29,9 +29,23 @@ export class InvestorTransactionService {
     tx.timestamp = timestamp
     tx.type = type
 
-    // Invest orders are submitted in the currency amount, while redeem orders are submitted in the token amount
-    tx.currencyAmount = type.startsWith('INVEST') ? amount : BigInt(0)
-    tx.tokenAmount = type.startsWith('REDEEM') ? amount : BigInt(0)
+    const currencyTypes = [
+      InvestorTransactionType.INVEST_ORDER_UPDATE,
+      InvestorTransactionType.INVEST_ORDER_CANCEL,
+      InvestorTransactionType.INVEST_EXECUTION,
+      InvestorTransactionType.REDEEM_COLLECT,
+    ]
+    tx.currencyAmount = currencyTypes.includes(type) ? amount : BigInt(0)
+
+    const tokenTypes = [
+      InvestorTransactionType.REDEEM_ORDER_UPDATE,
+      InvestorTransactionType.REDEEM_ORDER_CANCEL,
+      InvestorTransactionType.REDEEM_EXECUTION,
+      InvestorTransactionType.INVEST_COLLECT,
+      InvestorTransactionType.TRANSFER_IN,
+      InvestorTransactionType.TRANSFER_OUT,
+    ]
+    tx.tokenAmount = tokenTypes.includes(type) ? amount : BigInt(0)
 
     return new InvestorTransactionService(tx)
   }
@@ -173,6 +187,90 @@ export class InvestorTransactionService {
       address,
       hash,
       InvestorTransactionType.REDEEM_ORDER_CANCEL,
+      amount,
+      timestamp
+    )
+  }
+
+  static collectInvestOrder = (
+    poolId: string,
+    trancheId: string,
+    epochNumber: number,
+    address: string,
+    hash: string,
+    amount: bigint,
+    timestamp: Date
+  ) => {
+    return this.init(
+      poolId,
+      trancheId,
+      epochNumber,
+      address,
+      hash,
+      InvestorTransactionType.INVEST_COLLECT,
+      amount,
+      timestamp
+    )
+  }
+
+  static collectRedeemOrder = (
+    poolId: string,
+    trancheId: string,
+    epochNumber: number,
+    address: string,
+    hash: string,
+    amount: bigint,
+    timestamp: Date
+  ) => {
+    return this.init(
+      poolId,
+      trancheId,
+      epochNumber,
+      address,
+      hash,
+      InvestorTransactionType.REDEEM_COLLECT,
+      amount,
+      timestamp
+    )
+  }
+
+  static transferIn = (
+    poolId: string,
+    trancheId: string,
+    epochNumber: number,
+    address: string,
+    hash: string,
+    amount: bigint,
+    timestamp: Date
+  ) => {
+    return this.init(
+      poolId,
+      trancheId,
+      epochNumber,
+      address,
+      hash,
+      InvestorTransactionType.TRANSFER_IN,
+      amount,
+      timestamp
+    )
+  }
+
+  static transferOut = (
+    poolId: string,
+    trancheId: string,
+    epochNumber: number,
+    address: string,
+    hash: string,
+    amount: bigint,
+    timestamp: Date
+  ) => {
+    return this.init(
+      poolId,
+      trancheId,
+      epochNumber,
+      address,
+      hash,
+      InvestorTransactionType.TRANSFER_OUT,
       amount,
       timestamp
     )

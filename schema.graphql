@@ -187,6 +187,8 @@ enum InvestorTransactionType {
   REDEEM_EXECUTION
   TRANSFER_IN
   TRANSFER_OUT
+  INVEST_COLLECT
+  REDEEM_COLLECT
 }
 
 type InvestorTransaction @entity {

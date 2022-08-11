@@ -78,3 +78,8 @@ dataSources:
           filter:
             module: loans
             method: Borrowed
+        - handler: handleTokenTransfer
+          kind: substrate/EventHandler
+          filter:
+            module: ormlTokens
+            method: Transfer

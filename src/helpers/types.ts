@@ -4,7 +4,7 @@ import { ITuple } from '@polkadot/types/types'
 
 export interface PoolDetails extends Struct {
   reserve: { total: u128; available: u128; max: u128 }
-  currency: Enum
+  currency: TokensCurrencyId
   parameters: { minEpochTime: u64; maxNavAge: u64 }
   tranches: TrancheData
   epoch: { current: u32; lastClosed: u64; lastExecuted: u32 }
@@ -20,7 +20,7 @@ export interface TrancheData extends Struct {
 export interface TrancheDetails extends Struct {
   trancheType: TrancheTypeEnum
   seniority: u32
-  currency: Enum
+  currency: TokensCurrencyId
   outstandingInvestOrders: u128
   outstandingRedeemOrders: u128
   debt: u128
@@ -72,6 +72,19 @@ export interface EpochSolution extends Enum {
   }
 }
 
+export interface TokensCurrencyId extends Enum {
+  isNative: boolean
+  asNative: null
+  isTranche: boolean
+  asTranche: ITuple<[u64, U8aFixed]> //poolId, trancheId
+  isKSM: boolean
+  asKSM: null
+  isAUSD: boolean
+  asAUSD: null
+  isForeignAsset: boolean
+  asForeignAsset: u32
+}
+
 export interface EpochDetails extends Struct {
   investFulfillment: Perquintill
   redeemFulfillment: Perquintill
@@ -98,3 +111,6 @@ export type EpochSolutionEvent = ITuple<[u64, u32, EpochSolution]>
 
 // poolId, trancheId, endEpochId, account, outstandingCollections
 export type OrdersCollectedEvent = ITuple<[u64, U8aFixed, u32, AccountId32, OutstandingCollections]>
+
+// currencyId: 'CommonTypesTokensCurrencyId'from,to,amount
+export type RestrictedTokensEvent = ITuple<[TokensCurrencyId, AccountId32, AccountId32, u128]>

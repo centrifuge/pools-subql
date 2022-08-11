@@ -263,8 +263,37 @@ async function _handleRedeemOrderUpdated(event: SubstrateEvent): Promise<void> {
 
 export const handleOrdersCollected = errorHandler(_handleOrdersCollected)
 async function _handleOrdersCollected(event: SubstrateEvent): Promise<void> {
-  const [poolId, trancheId, endEpochId, account] = event.event.data as unknown as OrdersCollectedEvent
+  const [poolId, trancheId, endEpochId, account, outstandingCollections] = event.event
+    .data as unknown as OrdersCollectedEvent
   logger.info(`Orders collected for tranche ${poolId.toString()}-${trancheId.toString()}. 
   Address: ${account.toString()} endEpoch: ${endEpochId.toNumber()} at\
   block ${event.block.block.header.number.toString()} hash:${event.extrinsic.extrinsic.hash.toString()}`)
+
+  const { payoutTokenAmount, payoutCurrencyAmount } = outstandingCollections
+
+  const orderData: [string, string, number, string, string] = [
+    poolId.toString(),
+    trancheId.toString(),
+    endEpochId.toNumber(),
+    account.toString(),
+    event.extrinsic.extrinsic.hash.toString(),
+  ]
+
+  if (payoutTokenAmount.toBigInt() > 0) {
+    const it = InvestorTransactionService.collectInvestOrder(
+      ...orderData,
+      payoutTokenAmount.toBigInt(),
+      event.block.timestamp
+    )
+    await it.save()
+  }
+
+  if (payoutCurrencyAmount.toBigInt() > 0) {
+    const it = InvestorTransactionService.collectRedeemOrder(
+      ...orderData,
+      payoutCurrencyAmount.toBigInt(),
+      event.block.timestamp
+    )
+    await it.save()
+  }
 }
