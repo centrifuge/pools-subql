@@ -55,9 +55,7 @@ jobs:
           --logoURL="$SUBQL_PROJ_IMAGE"
       - name: Deploy Version
         run: |
-          IPFS_OUTPUT=$(npx subql publish)
-          IPFSCID=$(echo "$IPFS_OUTPUT" | awk '{print $NF}')
-          echo $IPFSCID
+          IPFSCID=$(npx subql publish | tail -n 1 | awk '{ print $NF }')
           npx subql deployment:deploy \
           --indexerVersion=1.6.1 \
           --org="$SUBQL_PROJ_ORG" \
