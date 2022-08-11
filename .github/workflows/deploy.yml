@@ -42,7 +42,7 @@ jobs:
         run: |
           npx subql project:delete-project \
           --org="$SUBQL_PROJ_ORG" \
-          --project_name="$SUBQL_PROJ_NAME"
+          --projectName="$SUBQL_PROJ_NAME"
         continue-on-error: true
       - name: Create Project
         run: |
@@ -51,7 +51,7 @@ jobs:
           --description="$SUBQL_PROJ_DESCRIPTION" \
           --gitRepo="https://github.com/$GITHUB_REPOSITORY" \
           --org="$SUBQL_PROJ_ORG" \
-          --project_name="$SUBQL_PROJ_NAME" \
+          --projectName="$SUBQL_PROJ_NAME" \
           --logoURL="$SUBQL_PROJ_IMAGE"
       - name: Deploy Version
         run: |
@@ -60,7 +60,7 @@ jobs:
           --endpoint="$SUBQL_ENDPOINT" \
           --indexerVersion=1.6.1 \
           --org="$SUBQL_PROJ_ORG" \
-          --project_name="$SUBQL_PROJ_NAME" \
+          --projectName="$SUBQL_PROJ_NAME" \
           --queryVersion=1.4.0 \
           --ipfsCID="$IPFSCID" \
           --type=primary
