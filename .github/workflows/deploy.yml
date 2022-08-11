@@ -60,6 +60,7 @@ jobs:
           -d \
           --org="$SUBQL_PROJ_ORG" \
           --endpoint="$SUBQL_ENDPOINT" \
+          --dict="" \
           --projectName="$SUBQL_PROJ_NAME" \
           --ipfsCID="$IPFSCID" \
           --type=primary
