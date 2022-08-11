@@ -57,10 +57,8 @@ jobs:
         run: |
           IPFSCID=$(npx subql publish -o -f .)
           npx subql deployment:deploy \
-          --endpoint="$SUBQL_ENDPOINT" \
-          --indexerVersion=1.6.1 \
+          -d \
           --org="$SUBQL_PROJ_ORG" \
           --projectName="$SUBQL_PROJ_NAME" \
-          --queryVersion=1.4.0 \
           --ipfsCID="$IPFSCID" \
           --type=primary
