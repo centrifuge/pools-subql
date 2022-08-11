@@ -59,6 +59,7 @@ jobs:
           npx subql deployment:deploy \
           -d \
           --org="$SUBQL_PROJ_ORG" \
+          --endpoint="SUBQL_ENDPOINT" \
           --projectName="$SUBQL_PROJ_NAME" \
           --ipfsCID="$IPFSCID" \
           --type=primary
