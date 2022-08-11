@@ -36,17 +36,17 @@ jobs:
         run: |
           node_modules/@subql/cli/bin/run project:create-project \
           --apiVersion=2 \
-          --description="SUBQL_PROJ_DESCRIPTION" \
+          --description="$SUBQL_PROJ_DESCRIPTION" \
           --gitRepo="https://github.com/$GITHUB_REPOSITORY" \
-          --org="SUBQL_PROJ_ORG" \
-          --project_name="SUBQL_PROJ_NAME"
+          --org="$SUBQL_PROJ_ORG" \
+          --project_name="$SUBQL_PROJ_NAME"
       - name: Deploy Version
         run: |
           IPFSCID=$(subql publish -o -f .)
           node_modules/@subql/cli/bin/run deployment:deploy \
           --indexerVersion=1.6.1 \
-          --org="SUBQL_PROJ_ORG" \
-          --project_name="SUBQL_PROJ_NAME" \
+          --org="$SUBQL_PROJ_ORG" \
+          --project_name="$SUBQL_PROJ_NAME" \
           --queryVersion=1.4.0 \
           --ipfsCID="$IPFSCID" \
           --type=primary
