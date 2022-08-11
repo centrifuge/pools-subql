@@ -57,6 +57,7 @@ jobs:
         run: |
           IPFS_OUTPUT=$(npx subql publish)
           IPFSCID=$(echo "$IPFS_OUTPUT" | awk '{print $NF}')
+          echo $IPFSCID
           npx subql deployment:deploy \
           --indexerVersion=1.6.1 \
           --org="$SUBQL_PROJ_ORG" \
