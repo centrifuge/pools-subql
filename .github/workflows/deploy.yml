@@ -36,6 +36,11 @@ jobs:
         run: yarn codegen
       - name: Version
         run: npx subql --version
+      - name: Delete Project
+        run: |
+          npx subql project:delete-project \
+          --org="$SUBQL_PROJ_ORG" \
+          --project_name="$SUBQL_PROJ_NAME"
       - name: Create Project
         run: |
           npx subql project:create-project \
@@ -44,9 +49,10 @@ jobs:
           --gitRepo="https://github.com/$GITHUB_REPOSITORY" \
           --org="$SUBQL_PROJ_ORG" \
           --project_name="$SUBQL_PROJ_NAME"
+#          --logoURL=logoURL
       - name: Deploy Version
         run: |
-          IPFSCID=$(npx subql publish -o -f .)
+          IPFSCID=$(npx subql publish -f .)
           npx subql deployment:deploy \
           --indexerVersion=1.6.1 \
           --org="$SUBQL_PROJ_ORG" \
