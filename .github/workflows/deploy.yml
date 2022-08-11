@@ -60,7 +60,7 @@ jobs:
           --indexerVersion=1.6.1 \
           --org="$SUBQL_PROJ_ORG" \
           --project_name="$SUBQL_PROJ_NAME" \
-          --endpoint="SUBQL_ENDPOINT" \
+          --endpoint="$SUBQL_ENDPOINT" \
           --queryVersion=1.4.0 \
           --ipfsCID="$IPFSCID" \
           --type=primary
