@@ -20,7 +20,7 @@ jobs:
     env:
       SUBQL_ACCESS_TOKEN: ${{ secrets.SUBQL_ACCESS_TOKEN }}
       SUBQL_PROJ_ORG: embrio-tech
-      SUBQL_PROJ_NAME: centrifuge-test
+      SUBQL_PROJ_NAME: centrifuge-subql
       SUBQL_PROJ_DESCRIPTION: "SubQuery API powered by EMBRIO.tech to query Centrifuge chain data for analytics insights on how Centrifuge is unlocking economic opportunity for all by connecting people to borrow and lend money transparently and cost-effectively."
       SUBQL_PROJ_IMAGE: "https://explorer.subquery.network/uploads/1660216119964.png"
       SUBQL_ENDPOINT: wss://fullnode.development.cntrfg.com
