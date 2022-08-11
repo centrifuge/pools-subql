@@ -28,8 +28,14 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
-          node-version: 16.x
+          node-version: 16
           cache: npm
+      - name: Setup Yarn
+        run: yarn
+      - name: Codegen
+        run: yarn codegen
+      - name: Version
+        run: npx subql --version
       - name: Create Project
         run: |
           npx subql project:create-project \
