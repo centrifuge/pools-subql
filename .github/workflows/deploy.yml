@@ -30,11 +30,9 @@ jobs:
         with:
           node-version: 16.x
           cache: npm
-      - name: 'Install Dependencies'
-        run: yarn install
       - name: Create Project
         run: |
-          node_modules/@subql/cli/bin/run project:create-project \
+          npx subql project:create-project \
           --apiVersion=2 \
           --description="$SUBQL_PROJ_DESCRIPTION" \
           --gitRepo="https://github.com/$GITHUB_REPOSITORY" \
@@ -42,8 +40,8 @@ jobs:
           --project_name="$SUBQL_PROJ_NAME"
       - name: Deploy Version
         run: |
-          IPFSCID=$(subql publish -o -f .)
-          node_modules/@subql/cli/bin/run deployment:deploy \
+          IPFSCID=$(npx subql publish -o -f .)
+          npx subql deployment:deploy \
           --indexerVersion=1.6.1 \
           --org="$SUBQL_PROJ_ORG" \
           --project_name="$SUBQL_PROJ_NAME" \
