@@ -6,7 +6,6 @@ on:
   push:
     branches:
       - main
-  pull_request:
   workflow_dispatch:
   
 permissions:
@@ -56,6 +55,7 @@ jobs:
       - name: Deploy Version
         run: |
           IPFSCID=$(npx subql publish -o -f .)
+          sleep 5
           npx subql deployment:deploy \
           -d \
           --org="$SUBQL_PROJ_ORG" \
