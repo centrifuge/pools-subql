@@ -6,6 +6,7 @@ import { TrancheService } from '../services/trancheService'
 import { EpochEvent, OrderEvent, OrdersCollectedEvent, PoolEvent } from '../../helpers/types'
 import { OutstandingOrderService } from '../services/outstandingOrderService'
 import { InvestorTransactionService } from '../services/investorTransactionService'
+import { CurrencyService } from '../services/currencyService'
 
 export const handlePoolCreated = errorHandler(_handlePoolCreated)
 async function _handlePoolCreated(event: SubstrateEvent): Promise<void> {
@@ -16,7 +17,8 @@ async function _handlePoolCreated(event: SubstrateEvent): Promise<void> {
   const poolService = await PoolService.init(
     poolId.toString(),
     event.block.timestamp,
-    event.block.block.header.number.toNumber()
+    event.block.block.header.number.toNumber(),
+    async (ticker) => (await CurrencyService.getOrInit(ticker)).currency.id
   )
   await poolService.save()
 
@@ -129,6 +131,8 @@ async function _handleEpochExecuted(event: SubstrateEvent): Promise<void> {
         oo.outstandingOrder.hash,
       ]
 
+      const digits = (await CurrencyService.getById(poolService.pool.currencyId)).currency.decimals
+
       if (oo.outstandingOrder.invest > BigInt(0)) {
         const it = InvestorTransactionService.executeInvestOrder(
           ...orderData,
@@ -136,7 +140,8 @@ async function _handleEpochExecuted(event: SubstrateEvent): Promise<void> {
           epochState.investFulfillment,
           epochState.price,
           BigInt(0), //TODO: Decorate transaction fee
-          event.block.timestamp
+          event.block.timestamp,
+          digits
         )
         await it.save()
         await oo.updateUnfulfilledInvest(epochState.investFulfillment)
@@ -149,7 +154,8 @@ async function _handleEpochExecuted(event: SubstrateEvent): Promise<void> {
           epochState.redeemFulfillment,
           epochState.price,
           BigInt(0), //TODO: Decorate transaction fee
-          event.block.timestamp
+          event.block.timestamp,
+          digits
         )
         await it.save()
         await oo.updateUnfulfilledRedeem(epochState.redeemFulfillment)

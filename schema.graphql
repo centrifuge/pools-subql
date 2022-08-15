@@ -13,7 +13,7 @@ type Pool @entity {
   createdAt: Date!
   createdAtBlockNumber: Int!
 
-  currency: String!
+  currency: Currency!
   metadata: String!
 
   minEpochTime: Int!
@@ -300,4 +300,9 @@ type Proxy @entity {
   proxyType: String
   removed: Boolean
   delay: Int
+}
+
+type Currency @entity {
+  id: ID!
+  decimals: Int!
 }

@@ -1,5 +1,5 @@
 import { bnToBn, nToBigInt } from '@polkadot/util'
-import { RAY, WAD } from '../../config'
+import { CPREC, RAY_DIGITS, WAD, WAD_DIGITS } from '../../config'
 import { InvestorTransaction, InvestorTransactionType } from '../../types'
 
 export class InvestorTransactionService {
@@ -60,7 +60,8 @@ export class InvestorTransactionService {
     fulfillmentRate: bigint,
     price: bigint,
     fee: bigint,
-    timestamp: Date
+    timestamp: Date,
+    digits: number
   ) => {
     const tx = this.init(
       poolId,
@@ -72,10 +73,11 @@ export class InvestorTransactionService {
       nToBigInt(bnToBn(amount).mul(bnToBn(fulfillmentRate)).div(WAD)),
       timestamp
     )
-
     tx.investorTransaction.tokenPrice = price
     tx.investorTransaction.transactionFee = fee
-    tx.investorTransaction.tokenAmount = nToBigInt(bnToBn(amount).mul(RAY).div(bnToBn(price)))
+    tx.investorTransaction.tokenAmount = nToBigInt(
+      bnToBn(amount).mul(CPREC(RAY_DIGITS + WAD_DIGITS - digits).div(bnToBn(price)))
+    )
     return tx
   }
 
@@ -89,7 +91,8 @@ export class InvestorTransactionService {
     fulfillmentRate: bigint,
     price: bigint,
     fee: bigint,
-    timestamp: Date
+    timestamp: Date,
+    digits: number
   ) => {
     const tx = this.init(
       poolId,
@@ -104,7 +107,11 @@ export class InvestorTransactionService {
 
     tx.investorTransaction.tokenPrice = price
     tx.investorTransaction.transactionFee = fee
-    tx.investorTransaction.currencyAmount = nToBigInt(bnToBn(amount).mul(bnToBn(price)).div(WAD))
+    tx.investorTransaction.currencyAmount = nToBigInt(
+      bnToBn(amount)
+        .mul(bnToBn(price))
+        .div(CPREC(RAY_DIGITS + WAD_DIGITS - digits))
+    )
     return tx
   }
 

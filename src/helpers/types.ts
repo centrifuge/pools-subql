@@ -103,6 +103,13 @@ export interface OutstandingCollections extends Struct {
   remainingRedeemToken: u128
 }
 
+export interface AssetMetadata extends Struct {
+  decimals: u32
+  name: Bytes
+  symbol: Bytes
+  existentialDeposit: u128
+}
+
 export type PoolEvent = ITuple<[u64]>
 export type LoanEvent = ITuple<[u64, u128, u128]>
 export type EpochEvent = ITuple<[u64, u32]>

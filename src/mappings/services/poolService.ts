@@ -15,7 +15,12 @@ export class PoolService {
     this.tranches = tranches
   }
 
-  static init = async (poolId: string, timestamp: Date, blockNumber: number) => {
+  static init = async (
+    poolId: string,
+    timestamp: Date,
+    blockNumber: number,
+    currencyCallback: (ticker: string) => Promise<string>
+  ) => {
     const poolReq = await api.query.pools.pool<Option<PoolDetails>>(poolId)
     if (poolReq.isNone) throw new Error('No pool data available to create teh pool')
     const poolData = poolReq.unwrap()
@@ -47,7 +52,7 @@ export class PoolService {
     pool.createdAt = timestamp
     pool.createdAtBlockNumber = blockNumber
 
-    pool.currency = poolData.currency.toString()
+    pool.currencyId = await currencyCallback(poolData.currency.toString())
     pool.metadata = poolData.metadata.isSome ? poolData.metadata.unwrap().toUtf8() : 'NA'
 
     pool.minEpochTime = poolData.parameters.minEpochTime.toNumber()
