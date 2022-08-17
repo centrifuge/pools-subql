@@ -57,11 +57,11 @@ jobs:
           IPFSCID=$(npx subql publish -o -f .)
           sleep 5
           npx subql deployment:deploy \
-          -d \
           --org="$SUBQL_PROJ_ORG" \
           --endpoint="$SUBQL_ENDPOINT" \
           --dict="" \
           --projectName="$SUBQL_PROJ_NAME" \
           --ipfsCID="$IPFSCID" \
           --type=primary \
-          --indexerVersion="1.6.1"
+          --indexerVersion="1.6.1" \
+          --queryVersion="1.5.0"
