@@ -84,34 +84,39 @@ export class TrancheService {
     return this
   }
 
-  private _computeYield = async (yieldField: string, referencePeriodStart: Date) => {
+  private _computeYield = async (yieldField: string, referencePeriodStart?: Date) => {
     logger.info(
       `Computing yield for tranche ${this.tranche.trancheId} of\
        pool ${this.tranche.poolId} with reference date ${referencePeriodStart}`
     )
-    const trancheSnapshots = await TrancheSnapshot.getByPeriodStart(referencePeriodStart)
-    if (trancheSnapshots.length === 0) {
-      logger.warn(
-        `No tranche snapshot exist for pool ${this.tranche.poolId} with reference date ${referencePeriodStart}`
+
+    let trancheSnapshot: TrancheSnapshot
+    if (referencePeriodStart) {
+      const trancheSnapshots = await TrancheSnapshot.getByPeriodStart(referencePeriodStart)
+      if (trancheSnapshots.length === 0) {
+        logger.warn(
+          `No tranche snapshot exist for pool ${this.tranche.poolId} with reference date ${referencePeriodStart}`
+        )
+        return this
+      }
+
+      trancheSnapshot = trancheSnapshots.find(
+        (snapshot) => snapshot.trancheId === `${this.tranche.poolId}-${this.tranche.trancheId}`
       )
-      return this
-    }
-    const trancheSnapshot = trancheSnapshots.find(
-      (snapshot) => snapshot.trancheId === `${this.tranche.poolId}-${this.tranche.trancheId}`
-    )
-    if (trancheSnapshot === undefined) {
-      logger.warn(
-        `No tranche snapshot found tranche ${this.tranche.poolId}-${this.tranche.trancheId} with\
+      if (trancheSnapshot === undefined) {
+        logger.warn(
+          `No tranche snapshot found tranche ${this.tranche.poolId}-${this.tranche.trancheId} with\
          reference date ${referencePeriodStart}`
-      )
-      return this
-    }
-    if (typeof this.trancheState.price !== 'bigint') {
-      logger.warn('Price information missing')
-      return this
+        )
+        return this
+      }
+      if (typeof this.trancheState.price !== 'bigint') {
+        logger.warn('Price information missing')
+        return this
+      }
     }
     const priceCurrent = bnToBn(this.trancheState.price)
-    const priceOld = bnToBn(trancheSnapshot.price)
+    const priceOld = referencePeriodStart ? bnToBn(trancheSnapshot.price) : RAY
     this.trancheState[yieldField] = nToBigInt(priceCurrent.mul(RAY).div(priceOld).sub(RAY))
     return this
   }

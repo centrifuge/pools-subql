@@ -14,6 +14,7 @@ export class EpochService {
   }
 
   static init = async (poolId: string, epochId: number, trancheIds: string[], timestamp: Date) => {
+    logger.info(`Initialising epoch ${epochId} for pool ${poolId}`)
     const epoch = new Epoch(`${poolId}-${epochId.toString()}`)
 
     epoch.index = epochId
