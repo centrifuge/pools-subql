@@ -19,7 +19,7 @@ async function _handleTokenTransfer(event: SubstrateEvent): Promise<void> {
 
     logger.info(
       `Token transfer tor tranche: ${poolId.toString()}-${trancheId.toString()}.
-      from: ${fromId} to: ${toId} amount: ${amount.toString()}
+      from: ${from.toString()} to: ${to.toString()} amount: ${amount.toString()}
       at block ${event.block.block.header.number.toString()}`
     )
 
