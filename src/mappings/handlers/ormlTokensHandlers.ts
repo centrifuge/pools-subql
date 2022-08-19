@@ -1,12 +1,12 @@
 import { SubstrateEvent } from '@subql/types'
 import { errorHandler } from '../../helpers/errorHandler'
-import { RestrictedTokensEvent } from '../../helpers/types'
+import { TokensTransferEvent } from '../../helpers/types'
 import { InvestorTransactionService } from '../services/investorTransactionService'
 import { PoolService } from '../services/poolService'
 
 export const handleTokenTransfer = errorHandler(_handleTokenTransfer)
-async function _handleTokenTransfer(event: SubstrateEvent): Promise<void> {
-  const [currency, from, to, amount] = event.event.data as unknown as RestrictedTokensEvent
+async function _handleTokenTransfer(event: SubstrateEvent<TokensTransferEvent>): Promise<void> {
+  const [currency, from, to, amount] = event.event.data
 
   if (currency.isTranche) {
     const [poolId, trancheId] = currency.asTranche

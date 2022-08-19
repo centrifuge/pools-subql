@@ -110,14 +110,22 @@ export interface AssetMetadata extends Struct {
   existentialDeposit: u128
 }
 
+export type LoanAsset = ITuple<[u64, u128]>
+
 export type PoolEvent = ITuple<[u64]>
-export type LoanEvent = ITuple<[u64, u128, u128]>
+
+// poolId, loanId, collateral
+export type LoanCreatedClosedEvent = ITuple<[u64, u128, LoanAsset]>
+// poolId, loanId, amount
+export type LoanBorrowedEvent = ITuple<[u64, u128, u128]>
+
 export type EpochEvent = ITuple<[u64, u32]>
-export type OrderEvent = ITuple<[u64, U8aFixed, AccountId32, u128, u128]>
 export type EpochSolutionEvent = ITuple<[u64, u32, EpochSolution]>
+
+export type OrderEvent = ITuple<[u64, U8aFixed, AccountId32, u128, u128]>
 
 // poolId, trancheId, endEpochId, account, outstandingCollections
 export type OrdersCollectedEvent = ITuple<[u64, U8aFixed, u32, AccountId32, OutstandingCollections]>
 
 // currencyId: 'CommonTypesTokensCurrencyId'from,to,amount
-export type RestrictedTokensEvent = ITuple<[TokensCurrencyId, AccountId32, AccountId32, u128]>
+export type TokensTransferEvent = ITuple<[TokensCurrencyId, AccountId32, AccountId32, u128]>

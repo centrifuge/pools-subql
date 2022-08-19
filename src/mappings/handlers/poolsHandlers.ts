@@ -9,8 +9,8 @@ import { InvestorTransactionService } from '../services/investorTransactionServi
 import { CurrencyService } from '../services/currencyService'
 
 export const handlePoolCreated = errorHandler(_handlePoolCreated)
-async function _handlePoolCreated(event: SubstrateEvent): Promise<void> {
-  const [poolId] = event.event.data as undefined as PoolEvent
+async function _handlePoolCreated(event: SubstrateEvent<PoolEvent>): Promise<void> {
+  const [poolId] = event.event.data
   logger.info(`Pool ${poolId.toString()} created in block ${event.block.block.header.number}`)
 
   // Initialise Pool
@@ -46,14 +46,14 @@ async function _handlePoolCreated(event: SubstrateEvent): Promise<void> {
 }
 
 export const handlePoolUpdated = errorHandler(_handlePoolUpdated)
-async function _handlePoolUpdated(event: SubstrateEvent): Promise<void> {
-  const [poolId] = event.event.data as undefined as PoolEvent
+async function _handlePoolUpdated(event: SubstrateEvent<PoolEvent>): Promise<void> {
+  const [poolId] = event.event.data
   logger.info(`Pool ${poolId.toString()} updated on block ${event.block.block.header.number}`)
 }
 
 export const handleEpochClosed = errorHandler(_handleEpochClosed)
-async function _handleEpochClosed(event: SubstrateEvent): Promise<void> {
-  const [poolId, epochId] = event.event.data as unknown as EpochEvent
+async function _handleEpochClosed(event: SubstrateEvent<EpochEvent>): Promise<void> {
+  const [poolId, epochId] = event.event.data
   logger.info(
     `Epoch ${epochId.toNumber()} closed for pool ${poolId.toString()} in block ${event.block.block.header.number}`
   )
@@ -78,8 +78,8 @@ async function _handleEpochClosed(event: SubstrateEvent): Promise<void> {
 }
 
 export const handleEpochExecuted = errorHandler(_handleEpochExecuted)
-async function _handleEpochExecuted(event: SubstrateEvent): Promise<void> {
-  const [poolId, epochId] = event.event.data as unknown as EpochEvent
+async function _handleEpochExecuted(event: SubstrateEvent<EpochEvent>): Promise<void> {
+  const [poolId, epochId] = event.event.data
   logger.info(
     `Epoch ${epochId.toString()} executed for pool ${poolId.toString()} at\
      block ${event.block.block.header.number.toString()}`
@@ -176,8 +176,8 @@ async function _handleEpochExecuted(event: SubstrateEvent): Promise<void> {
 }
 
 export const handleInvestOrderUpdated = errorHandler(_handleInvestOrderUpdated)
-async function _handleInvestOrderUpdated(event: SubstrateEvent): Promise<void> {
-  const [poolId, trancheId, address, oldAmount, newAmount] = event.event.data as unknown as OrderEvent
+async function _handleInvestOrderUpdated(event: SubstrateEvent<OrderEvent>): Promise<void> {
+  const [poolId, trancheId, address, oldAmount, newAmount] = event.event.data
   logger.info(
     `Invest order updated for tranche ${poolId.toString()}-${trancheId.toString()}. 
     New: ${newAmount.toString()} Old: ${oldAmount.toString()} at\
@@ -223,8 +223,8 @@ async function _handleInvestOrderUpdated(event: SubstrateEvent): Promise<void> {
 }
 
 export const handleRedeemOrderUpdated = errorHandler(_handleRedeemOrderUpdated)
-async function _handleRedeemOrderUpdated(event: SubstrateEvent): Promise<void> {
-  const [poolId, trancheId, address, oldAmount, newAmount] = event.event.data as unknown as OrderEvent
+async function _handleRedeemOrderUpdated(event: SubstrateEvent<OrderEvent>): Promise<void> {
+  const [poolId, trancheId, address, oldAmount, newAmount] = event.event.data
   logger.info(`Redeem order updated for tranche ${poolId.toString()}-${trancheId.toString()}. 
   New: ${newAmount.toString()} Old: ${oldAmount.toString()} at\
   block ${event.block.block.header.number.toString()}`)
@@ -268,9 +268,8 @@ async function _handleRedeemOrderUpdated(event: SubstrateEvent): Promise<void> {
 }
 
 export const handleOrdersCollected = errorHandler(_handleOrdersCollected)
-async function _handleOrdersCollected(event: SubstrateEvent): Promise<void> {
-  const [poolId, trancheId, endEpochId, account, outstandingCollections] = event.event
-    .data as unknown as OrdersCollectedEvent
+async function _handleOrdersCollected(event: SubstrateEvent<OrdersCollectedEvent>): Promise<void> {
+  const [poolId, trancheId, endEpochId, account, outstandingCollections] = event.event.data
   logger.info(`Orders collected for tranche ${poolId.toString()}-${trancheId.toString()}. 
   Address: ${account.toString()} endEpoch: ${endEpochId.toNumber()} at\
   block ${event.block.block.header.number.toString()} hash:${event.extrinsic.extrinsic.hash.toString()}`)
