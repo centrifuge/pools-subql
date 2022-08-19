@@ -14,7 +14,7 @@ schema:
   file: ./schema.graphql
 network:
   endpoint: wss://fullnode.development.cntrfg.com
-  genesisHash: '0x07f441c88c2fc42afd0f830d2940e9f3245d4297ee7f7713d3da6963fc362be7'
+  genesisHash: '0x982d9c53966ce6a8b66a5ca8d2824384b7405277dc96caad5fb4391e72769505'
   dictionary: ''
   chaintypes:
     file: ./dist/chaintypes.js
@@ -22,6 +22,7 @@ dataSources:
   - kind: substrate/Runtime
     startBlock: 1
     mapping:
+
       file: ./dist/index.js
       handlers:
         - handler: handleBlock
