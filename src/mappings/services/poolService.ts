@@ -1,7 +1,7 @@
-import { Option } from '@polkadot/types'
+import { Option, u64 } from '@polkadot/types'
 import { bnToBn, nToBigInt } from '@polkadot/util'
 import { errorHandler } from '../../helpers/errorHandler'
-import { NavDetails, PoolDetails, TrancheData } from '../../helpers/types'
+import { ExtendedRpc, NavDetails, PoolDetails, TrancheData } from '../../helpers/types'
 import { Pool, PoolState } from '../../types'
 
 export class PoolService {
@@ -130,4 +130,12 @@ export class PoolService {
     const totalReserve = bnToBn(this.poolState.totalReserve)
     this.poolState.value = nToBigInt(nav.add(totalReserve))
   }
+
+  private _getTrancheTokenPrices = async () => {
+    logger.info(`Qerying RPC tranche token prices for pool ${this.pool.id}`)
+    const poolId = new u64(api.registry, this.pool.id)
+    const tokenPrices = await (api.rpc as ExtendedRpc).pools.trancheTokenPrices(poolId)
+    return tokenPrices
+  }
+  public getTrancheTokenPrices = errorHandler(this._getTrancheTokenPrices)
 }

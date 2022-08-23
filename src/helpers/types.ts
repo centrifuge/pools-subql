@@ -1,6 +1,8 @@
+//find out types: const a = createType(api.registry, '[u8;32]', 18)
+import { AugmentedRpc, PromiseRpcResult } from '@polkadot/api/types'
 import { Enum, Null, Struct, u128, u32, u64, U8aFixed, Option, Vec, Bytes } from '@polkadot/types'
 import { AccountId32, Perquintill } from '@polkadot/types/interfaces'
-import { ITuple } from '@polkadot/types/types'
+import { ITuple, Observable } from '@polkadot/types/types'
 
 export interface PoolDetails extends Struct {
   reserve: { total: u128; available: u128; max: u128 }
@@ -129,3 +131,10 @@ export type OrdersCollectedEvent = ITuple<[u64, U8aFixed, u32, AccountId32, Outs
 
 // currencyId: 'CommonTypesTokensCurrencyId'from,to,amount
 export type TokensTransferEvent = ITuple<[TokensCurrencyId, AccountId32, AccountId32, u128]>
+
+export type ExtendedRpc = typeof api.rpc & {
+  pools: {
+    trancheTokenPrice: PromiseRpcResult<AugmentedRpc<(poolId: u64, trancheId: U8aFixed) => Observable<u128>>>
+    trancheTokenPrices: PromiseRpcResult<AugmentedRpc<(poolId: u64) => Observable<Vec<u128>>>>
+  }
+}

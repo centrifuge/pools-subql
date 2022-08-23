@@ -1,8 +1,8 @@
-import { u128 } from '@polkadot/types'
+import { u128, u64, U8aFixed } from '@polkadot/types'
 import { bnToBn, nToBigInt } from '@polkadot/util'
 import { RAY } from '../../config'
 import { errorHandler } from '../../helpers/errorHandler'
-import { TrancheDetails } from '../../helpers/types'
+import { ExtendedRpc, TrancheDetails } from '../../helpers/types'
 import { Tranche, TrancheSnapshot, TrancheState } from '../../types'
 
 export class TrancheService {
@@ -77,6 +77,17 @@ export class TrancheService {
     this.trancheState.price = price
     return this
   }
+
+  private _updatePricefromRpc = async () => {
+    logger.info(`Qerying RPC price for tranche ${this.tranche.id}`)
+    const poolId = new u64(api.registry, this.tranche.poolId)
+    const trancheId = new U8aFixed(api.registry, this.tranche.trancheId, 128)
+    logger.info(`trancheId: ${trancheId.toString()}`)
+    const tokenPrice = await (api.rpc as ExtendedRpc).pools.trancheTokenPrice(poolId, trancheId)
+    this.updatePrice(tokenPrice.toBigInt())
+    return this
+  }
+  public updatePriceFromRpc = errorHandler(this._updatePricefromRpc)
 
   public updateDebt = (debt: bigint) => {
     logger.info(`Updating debt for tranche ${this.tranche.id} to :${debt}`)
