@@ -1,5 +1,6 @@
 import { Option } from '@polkadot/types'
 import { bnToBn, nToBigInt } from '@polkadot/util'
+import { WAD } from '../../config'
 import { EpochDetails } from '../../helpers/types'
 import { Epoch, EpochState } from '../../types'
 
@@ -13,6 +14,7 @@ export class EpochService {
   }
 
   static init = async (poolId: string, epochId: number, trancheIds: string[], timestamp: Date) => {
+    logger.info(`Initialising epoch ${epochId} for pool ${poolId}`)
     const epoch = new Epoch(`${poolId}-${epochId.toString()}`)
 
     epoch.index = epochId
@@ -67,14 +69,10 @@ export class EpochService {
       epochState.investFulfillment = epochDetails.investFulfillment.toBigInt()
       epochState.redeemFulfillment = epochDetails.redeemFulfillment.toBigInt()
       epochState.fulfilledInvestOrders = nToBigInt(
-        bnToBn(epochState.outstandingInvestOrders)
-          .mul(epochDetails.investFulfillment.toBn())
-          .div(bnToBn(10).pow(bnToBn(18)))
+        bnToBn(epochState.outstandingInvestOrders).mul(epochDetails.investFulfillment.toBn()).div(WAD)
       )
       epochState.fulfilledRedeemOrders = nToBigInt(
-        bnToBn(epochState.outstandingRedeemOrders)
-          .mul(epochDetails.redeemFulfillment.toBn())
-          .div(bnToBn(10).pow(bnToBn(18)))
+        bnToBn(epochState.outstandingRedeemOrders).mul(epochDetails.redeemFulfillment.toBn()).div(WAD)
       )
     }
     return this

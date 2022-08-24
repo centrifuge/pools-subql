@@ -1,7 +1,8 @@
-import { u128 } from '@polkadot/types'
+import { u128, u64, U8aFixed } from '@polkadot/types'
 import { bnToBn, nToBigInt } from '@polkadot/util'
+import { RAY } from '../../config'
 import { errorHandler } from '../../helpers/errorHandler'
-import { TrancheDetails } from '../../helpers/types'
+import { ExtendedRpc, TrancheDetails } from '../../helpers/types'
 import { Tranche, TrancheSnapshot, TrancheState } from '../../types'
 
 export class TrancheService {
@@ -21,6 +22,7 @@ export class TrancheService {
     trancheState.outstandingRedeemOrders_ = BigInt(0)
     trancheState.fulfilledInvestOrders_ = BigInt(0)
     trancheState.fulfilledRedeemOrders_ = BigInt(0)
+    trancheState.price = nToBigInt(RAY)
 
     const tranche = new Tranche(`${poolId}-${trancheId}`)
     tranche.type = 'ALL'
@@ -71,44 +73,62 @@ export class TrancheService {
   public updateSupply = errorHandler(this._updateSupply)
 
   public updatePrice = (price: bigint) => {
+    logger.info(`Updating price for tranche ${this.tranche.id} to :${price}`)
     this.trancheState.price = price
     return this
   }
 
-  private _computeYield = async (yieldField: string, referencePeriodStart: Date) => {
+  private _updatePricefromRpc = async () => {
+    logger.info(`Qerying RPC price for tranche ${this.tranche.id}`)
+    const poolId = new u64(api.registry, this.tranche.poolId)
+    const trancheId = new U8aFixed(api.registry, this.tranche.trancheId, 128)
+    logger.info(`trancheId: ${trancheId.toString()}`)
+    const tokenPrice = await (api.rpc as ExtendedRpc).pools.trancheTokenPrice(poolId, trancheId)
+    this.updatePrice(tokenPrice.toBigInt())
+    return this
+  }
+  public updatePriceFromRpc = errorHandler(this._updatePricefromRpc)
+
+  public updateDebt = (debt: bigint) => {
+    logger.info(`Updating debt for tranche ${this.tranche.id} to :${debt}`)
+    this.trancheState.debt = debt
+    return this
+  }
+
+  private _computeYield = async (yieldField: string, referencePeriodStart?: Date) => {
     logger.info(
       `Computing yield for tranche ${this.tranche.trancheId} of\
        pool ${this.tranche.poolId} with reference date ${referencePeriodStart}`
     )
-    const trancheSnapshots = await TrancheSnapshot.getByPeriodStart(referencePeriodStart)
-    if (trancheSnapshots.length === 0) {
-      logger.warn(
-        `No tranche snapshot exist for pool ${this.tranche.poolId} with reference date ${referencePeriodStart}`
+
+    let trancheSnapshot: TrancheSnapshot
+    if (referencePeriodStart) {
+      const trancheSnapshots = await TrancheSnapshot.getByPeriodStart(referencePeriodStart)
+      if (trancheSnapshots.length === 0) {
+        logger.warn(
+          `No tranche snapshot exist for pool ${this.tranche.poolId} with reference date ${referencePeriodStart}`
+        )
+        return this
+      }
+
+      trancheSnapshot = trancheSnapshots.find(
+        (snapshot) => snapshot.trancheId === `${this.tranche.poolId}-${this.tranche.trancheId}`
       )
-      return this
-    }
-    const trancheSnapshot = trancheSnapshots.find(
-      (snapshot) => snapshot.trancheId === `${this.tranche.poolId}-${this.tranche.trancheId}`
-    )
-    if (trancheSnapshot === undefined) {
-      logger.warn(
-        `No tranche snapshot found tranche ${this.tranche.poolId}-${this.tranche.trancheId} with\
+      if (trancheSnapshot === undefined) {
+        logger.warn(
+          `No tranche snapshot found tranche ${this.tranche.poolId}-${this.tranche.trancheId} with\
          reference date ${referencePeriodStart}`
-      )
-      return this
-    }
-    if (typeof this.trancheState.price !== 'bigint') {
-      logger.warn('Price information missing')
-      return this
+        )
+        return this
+      }
+      if (typeof this.trancheState.price !== 'bigint') {
+        logger.warn('Price information missing')
+        return this
+      }
     }
     const priceCurrent = bnToBn(this.trancheState.price)
-    const priceOld = bnToBn(trancheSnapshot.price)
-    this.trancheState[yieldField] = nToBigInt(
-      priceCurrent
-        .mul(bnToBn(10).pow(bnToBn(27)))
-        .div(priceOld)
-        .sub(bnToBn(10).pow(bnToBn(27)))
-    )
+    const priceOld = referencePeriodStart ? bnToBn(trancheSnapshot.price) : RAY
+    this.trancheState[yieldField] = nToBigInt(priceCurrent.mul(RAY).div(priceOld).sub(RAY))
     return this
   }
   public computeYield = errorHandler(this._computeYield)
@@ -146,13 +166,7 @@ export class TrancheService {
     )
     const priceCurrent = bnToBn(this.trancheState.price)
     const priceOld = bnToBn(trancheSnapshot.price)
-    this.trancheState[yieldField] = nToBigInt(
-      priceCurrent
-        .mul(bnToBn(10).pow(bnToBn(27)))
-        .div(priceOld)
-        .sub(bnToBn(10).pow(bnToBn(27)))
-        .mul(annualizationFactor)
-    )
+    this.trancheState[yieldField] = nToBigInt(priceCurrent.mul(RAY).div(priceOld).sub(RAY).mul(annualizationFactor))
     return this
   }
   public computeYieldAnnualized = errorHandler(this._computeYieldAnnualized)

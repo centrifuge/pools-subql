@@ -6,8 +6,8 @@ on:
   push:
     branches:
       - main
-  pull_request:
-  
+  workflow_dispatch:
+
 permissions:
   contents: read
   issues: write
@@ -18,29 +18,50 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SUBQL_ACCESS_TOKEN: ${{ secrets.SUBQL_ACCESS_TOKEN }}
+      SUBQL_PROJ_ORG: embrio-tech
+      SUBQL_PROJ_NAME: centrifuge-subql
+      SUBQL_PROJ_DESCRIPTION: 'SubQuery API powered by EMBRIO.tech to query Centrifuge chain data for analytics insights on how Centrifuge is unlocking economic opportunity for all by connecting people to borrow and lend money transparently and cost-effectively.'
+      SUBQL_PROJ_IMAGE: 'https://explorer.subquery.network/uploads/1660216119964.png'
+      SUBQL_ENDPOINT: wss://fullnode.development.cntrfg.com
     steps:
       - name: Check out repo's default branch
         uses: actions/checkout@v3
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
-          node-version: 16.x
+          node-version: 16
           cache: npm
-      - name: 'Install Dependencies'
-        run: yarn install
+      - name: Setup Yarn
+        run: yarn
+      - name: Codegen
+        run: yarn codegen
+      - name: Version
+        run: npx subql --version
+      - name: Delete Project
+        run: |
+          npx subql project:delete-project \
+          --org="$SUBQL_PROJ_ORG" \
+          --projectName="$SUBQL_PROJ_NAME"
+        continue-on-error: true
       - name: Create Project
         run: |
-          node_modules/@subql/cli/bin/run project:create-project \
+          npx subql project:create-project \
           --apiVersion=2 \
-          --description="SubQuery API powered by EMBRIO.tech to query Centrifuge chain data for analytics insights on how Centrifuge is unlocking economic opportunity for all by connecting people to borrow and lend money transparently and cost-effectively." \
-          --gitRepo="https://github.com/embrio-tech/centrifuge-subql" \
-          --org=embrio-tech \
-          --project_name=centrifuge-test
+          --description="$SUBQL_PROJ_DESCRIPTION" \
+          --gitRepo="https://github.com/$GITHUB_REPOSITORY" \
+          --org="$SUBQL_PROJ_ORG" \
+          --projectName="$SUBQL_PROJ_NAME" \
+          --logoURL="$SUBQL_PROJ_IMAGE"
       - name: Deploy Version
         run: |
-          node_modules/@subql/cli/bin/run deployment:deploy \
-          --indexerVersion=1.2.1 \
-          --org=embrio-tech \
-          --project_name=centrifuge-test \
-          --queryVersion=1.2.0 \
-          --type=primary
+          IPFSCID=$(npx subql publish -o -f .)
+          sleep 5
+          npx subql deployment:deploy \
+          --org="$SUBQL_PROJ_ORG" \
+          --endpoint="$SUBQL_ENDPOINT" \
+          --dict=" " \
+          --projectName="$SUBQL_PROJ_NAME" \
+          --ipfsCID="$IPFSCID" \
+          --type=primary \
+          --indexerVersion="v1.6.1" \
+          --queryVersion="v1.5.0"
