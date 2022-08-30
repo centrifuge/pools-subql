@@ -59,7 +59,7 @@ async function _handleEpochClosed(event: SubstrateEvent<EpochEvent>): Promise<vo
   )
   // Close the current epoch and open a new one
   const tranches = await TrancheService.getByPoolId(poolId.toString())
-  const epoch = await EpochService.getById(`${poolId.toString()}-${epochId.toString()}`)
+  const epoch = await EpochService.getById(poolId.toString(), epochId.toNumber())
   await epoch.closeEpoch(event.block.timestamp)
   await epoch.save()
 
@@ -85,7 +85,7 @@ async function _handleEpochExecuted(event: SubstrateEvent<EpochEvent>): Promise<
      block ${event.block.block.header.number.toString()}`
   )
 
-  const epoch = await EpochService.getById(`${poolId.toString()}-${epochId.toString()}`)
+  const epoch = await EpochService.getById(poolId.toString(), epochId.toNumber())
   await epoch.executeEpoch(event.block.timestamp)
   await epoch.save()
 
@@ -95,7 +95,7 @@ async function _handleEpochExecuted(event: SubstrateEvent<EpochEvent>): Promise<
 
   // Compute and save aggregated order fulfillment
   const tranches = await TrancheService.getByPoolId(poolId.toString())
-  const nextEpoch = await EpochService.getById(`${poolId.toString()}-${(epochId.toNumber() + 1).toString()}`)
+  const nextEpoch = await EpochService.getById(poolId.toString(), epochId.toNumber() + 1)
   for (const tranche of tranches) {
     const epochState = epoch.epochStates.find((epochState) => epochState.trancheId === tranche.tranche.trancheId)
     await tranche.updateSupply()
@@ -212,12 +212,12 @@ async function _handleInvestOrderUpdated(event: SubstrateEvent<OrderEvent>): Pro
   await oo.save()
 
   // Update tranche outstanding total
-  const tranche = await TrancheService.getById(`${poolId.toString()}-${trancheId.toHex()}`)
+  const tranche = await TrancheService.getById(poolId.toString(), trancheId.toHex())
   await tranche.updateOutstandingInvestOrders(newAmount.toBigInt(), oldAmount.toBigInt())
   await tranche.save()
 
   // Update epochState outstanding total
-  const epoch = await EpochService.getById(`${poolId.toString()}-${pool.pool.currentEpoch}`)
+  const epoch = await EpochService.getById(poolId.toString(), pool.pool.currentEpoch)
   await epoch.updateOutstandingInvestOrders(trancheId.toHex(), newAmount.toBigInt(), oldAmount.toBigInt())
   await epoch.save()
 }
@@ -257,12 +257,12 @@ async function _handleRedeemOrderUpdated(event: SubstrateEvent<OrderEvent>): Pro
   await oo.save()
 
   // Update tranche outstanding total
-  const tranche = await TrancheService.getById(`${poolId.toString()}-${trancheId.toHex()}`)
+  const tranche = await TrancheService.getById(poolId.toString(), trancheId.toHex())
   await tranche.updateOutstandingRedeemOrders(newAmount.toBigInt(), oldAmount.toBigInt())
   await tranche.save()
 
   // Update epochState outstanding total
-  const epoch = await EpochService.getById(`${poolId.toString()}-${pool.pool.currentEpoch}`)
+  const epoch = await EpochService.getById(poolId.toString(), pool.pool.currentEpoch)
   await epoch.updateOutstandingRedeemOrders(trancheId.toHex(), newAmount.toBigInt(), oldAmount.toBigInt())
   await epoch.save()
 }

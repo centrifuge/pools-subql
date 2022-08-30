@@ -41,9 +41,9 @@ export class TrancheService {
     return new TrancheService(tranche, trancheState)
   }
 
-  static getById = async (trancheId: string) => {
-    const tranche = await Tranche.get(trancheId)
-    const trancheState = await TrancheState.get(trancheId)
+  static getById = async (poolId: string, trancheId: string) => {
+    const tranche = await Tranche.get(`${poolId}-${trancheId}`)
+    const trancheState = await TrancheState.get(`${poolId}-${trancheId}`)
     if (tranche === undefined || trancheState === undefined) return undefined
     return new TrancheService(tranche, trancheState)
   }

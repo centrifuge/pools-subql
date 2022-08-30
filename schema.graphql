@@ -252,12 +252,19 @@ type Loan @entity {
 
   # collateral:
   status: LoanStatus!
-  # TODO: how to store loan type data
+
+  type: String
+  spec: String
 
   interestRatePerSec: BigInt
   outstandingDebt: BigInt
 
+  totalBorrowed: BigInt
+  totalRepaid: BigInt
+
   writeOffIndex: Int
+  writtenOffPercentage: BigInt
+  penaltyInterestRatePerSec: BigInt
   adminWrittenOff: Boolean
 
   pool: Pool!

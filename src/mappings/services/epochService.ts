@@ -13,11 +13,11 @@ export class EpochService {
     this.epochStates = epochStates
   }
 
-  static init = async (poolId: string, epochId: number, trancheIds: string[], timestamp: Date) => {
-    logger.info(`Initialising epoch ${epochId} for pool ${poolId}`)
-    const epoch = new Epoch(`${poolId}-${epochId.toString()}`)
+  static init = async (poolId: string, epochNr: number, trancheIds: string[], timestamp: Date) => {
+    logger.info(`Initialising epoch ${epochNr} for pool ${poolId}`)
+    const epoch = new Epoch(`${poolId}-${epochNr.toString()}`)
 
-    epoch.index = epochId
+    epoch.index = epochNr
     epoch.poolId = poolId
     epoch.openedAt = timestamp
 
@@ -26,7 +26,7 @@ export class EpochService {
 
     const epochStates: EpochState[] = []
     for (const trancheId of trancheIds) {
-      const epochState = new EpochState(`${poolId}-${epochId}-${trancheId}`)
+      const epochState = new EpochState(`${poolId}-${epochNr}-${trancheId}`)
       epochState.epochId = epoch.id
       epochState.trancheId = trancheId
       epochState.outstandingInvestOrders = BigInt(0)
@@ -36,10 +36,10 @@ export class EpochService {
     return new EpochService(epoch, epochStates)
   }
 
-  static getById = async (epochId: string) => {
-    const epoch = await Epoch.get(epochId)
+  static getById = async (poolId: string, epochNr: number) => {
+    const epoch = await Epoch.get(`${poolId}-${epochNr.toString()}`)
     if (epoch === undefined) return undefined
-    const epochStates = await EpochState.getByEpochId(epochId)
+    const epochStates = await EpochState.getByEpochId(`${poolId}-${epochNr.toString()}`)
     return new EpochService(epoch, epochStates)
   }
 
