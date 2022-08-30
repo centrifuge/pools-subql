@@ -39,7 +39,7 @@ export class LoanService {
 
   public repay = (amount: bigint) => {
     logger.info(`Decreasing outstanding debt for loan ${this.loan.id} by ${amount}`)
-    this.loan.outstandingDebt = this.loan.totalRepaid + amount
+    this.loan.totalRepaid = this.loan.totalRepaid + amount
   }
 
   public updateInterestRate = (interestRatePerSec: bigint) => {
