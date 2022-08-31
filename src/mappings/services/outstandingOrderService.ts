@@ -1,5 +1,4 @@
 import { bnToBn, nToBigInt } from '@polkadot/util'
-import { WAD } from '../../config'
 import { OutstandingOrder } from '../../types'
 
 export class OutstandingOrderService {
@@ -74,14 +73,12 @@ export class OutstandingOrderService {
   }
 
   updateUnfulfilledInvest = (investFulfillment: bigint) => {
-    const unfulfilledRatio = WAD.sub(bnToBn(investFulfillment))
-    this.outstandingOrder.invest = nToBigInt(bnToBn(this.outstandingOrder.invest).mul(unfulfilledRatio).div(WAD))
+    this.outstandingOrder.invest = nToBigInt(bnToBn(this.outstandingOrder.invest).sub(bnToBn(investFulfillment)))
     return this
   }
 
   updateUnfulfilledRedeem = (redeemFulfillment: bigint) => {
-    const unfulfilledRatio = WAD.sub(bnToBn(redeemFulfillment))
-    this.outstandingOrder.redeem = nToBigInt(bnToBn(this.outstandingOrder.redeem).mul(unfulfilledRatio).div(WAD))
+    this.outstandingOrder.redeem = nToBigInt(bnToBn(this.outstandingOrder.redeem).sub(bnToBn(redeemFulfillment)))
     return this
   }
 }

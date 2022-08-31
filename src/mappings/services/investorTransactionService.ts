@@ -1,5 +1,5 @@
 import { bnToBn, nToBigInt } from '@polkadot/util'
-import { CPREC, RAY_DIGITS, WAD, WAD_DIGITS } from '../../config'
+import { CPREC, RAY_DIGITS, WAD_DIGITS, WAD } from '../../config'
 import { InvestorTransaction, InvestorTransactionType } from '../../types'
 
 export class InvestorTransactionService {
@@ -63,6 +63,10 @@ export class InvestorTransactionService {
     timestamp: Date,
     digits: number
   ) => {
+    logger.info(
+      `Executing invest order for address ${address} in pool ${poolId} tranche ${trancheId} ` +
+        `with amount: ${amount} fulfillmentRate: ${fulfillmentRate} price: ${price} digits: ${digits}`
+    )
     const tx = this.init(
       poolId,
       trancheId,
@@ -76,7 +80,9 @@ export class InvestorTransactionService {
     tx.investorTransaction.tokenPrice = price
     tx.investorTransaction.transactionFee = fee
     tx.investorTransaction.tokenAmount = nToBigInt(
-      bnToBn(amount).mul(CPREC(RAY_DIGITS + WAD_DIGITS - digits).div(bnToBn(price)))
+      bnToBn(amount)
+        .mul(CPREC(RAY_DIGITS + WAD_DIGITS - digits))
+        .div(bnToBn(price))
     )
     return tx
   }
@@ -94,6 +100,10 @@ export class InvestorTransactionService {
     timestamp: Date,
     digits: number
   ) => {
+    logger.info(
+      `Executing redeem order for address ${address} in pool ${poolId} tranche ${trancheId} ` +
+        `with amount: ${amount} fulfillmentRate: ${fulfillmentRate} price: ${price} digits: ${digits}`
+    )
     const tx = this.init(
       poolId,
       trancheId,
@@ -104,7 +114,6 @@ export class InvestorTransactionService {
       nToBigInt(bnToBn(amount).mul(bnToBn(fulfillmentRate)).div(WAD)),
       timestamp
     )
-
     tx.investorTransaction.tokenPrice = price
     tx.investorTransaction.transactionFee = fee
     tx.investorTransaction.currencyAmount = nToBigInt(
