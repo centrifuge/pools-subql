@@ -1,8 +1,10 @@
 import { SubstrateEvent } from '@subql/types'
 import { errorHandler } from '../../helpers/errorHandler'
 import { TokensTransferEvent } from '../../helpers/types'
+import { CurrencyService } from '../services/currencyService'
 import { InvestorTransactionService } from '../services/investorTransactionService'
 import { PoolService } from '../services/poolService'
+import { TrancheService } from '../services/trancheService'
 
 export const handleTokenTransfer = errorHandler(_handleTokenTransfer)
 async function _handleTokenTransfer(event: SubstrateEvent<TokensTransferEvent>): Promise<void> {
@@ -25,30 +27,26 @@ async function _handleTokenTransfer(event: SubstrateEvent<TokensTransferEvent>):
 
     // Get corresponding pool
     const pool = await PoolService.getById(poolId.toString())
+    const tranche = await TrancheService.getById(poolId.toString(), trancheId.toHex())
+
+    const orderData = {
+      poolId: poolId.toString(),
+      trancheId: trancheId.toString(),
+      epochNumber: pool.pool.currentEpoch,
+      hash: event.extrinsic.extrinsic.hash.toString(),
+      timestamp: event.block.timestamp,
+      digits: (await CurrencyService.getById(pool.pool.currencyId)).currency.decimals,
+      price: tranche.trancheState.price,
+      amount: amount.toBigInt(),
+    }
 
     // CREATE 2 TRANSFERS FOR FROM AND TO ADDRESS
     // with from create TRANSFER_OUT
-    const txOut = InvestorTransactionService.transferOut(
-      poolId.toString(),
-      trancheId.toString(),
-      pool.pool.currentEpoch,
-      from.toString(),
-      event.extrinsic.extrinsic.hash.toString(),
-      amount.toBigInt(),
-      event.block.timestamp
-    )
+    const txOut = InvestorTransactionService.transferOut({ ...orderData, address: from.toString() })
     await txOut.save()
 
     // with to create TRANSFER_IN
-    const txIn = InvestorTransactionService.transferIn(
-      poolId.toString(),
-      trancheId.toString(),
-      pool.pool.currentEpoch,
-      to.toString(),
-      event.extrinsic.extrinsic.hash.toString(),
-      amount.toBigInt(),
-      event.block.timestamp
-    )
+    const txIn = InvestorTransactionService.transferIn({ ...orderData, address: to.toString() })
     await txIn.save()
   }
 }

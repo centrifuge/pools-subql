@@ -146,7 +146,7 @@ export type TokensTransferEvent = ITuple<[TokensCurrencyId, AccountId32, Account
 
 export type ExtendedRpc = typeof api.rpc & {
   pools: {
-    trancheTokenPrice: PromiseRpcResult<AugmentedRpc<(poolId: u64, trancheId: U8aFixed) => Observable<u128>>>
+    trancheTokenPrice: PromiseRpcResult<AugmentedRpc<(poolId: u64, trancheId: number[]) => Observable<u128>>>
     trancheTokenPrices: PromiseRpcResult<AugmentedRpc<(poolId: u64) => Observable<Vec<u128>>>>
   }
 }

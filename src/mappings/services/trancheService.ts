@@ -1,5 +1,5 @@
-import { u128, u64, U8aFixed } from '@polkadot/types'
-import { bnToBn, nToBigInt } from '@polkadot/util'
+import { u128, u64 } from '@polkadot/types'
+import { bnToBn, hexToU8a, nToBigInt } from '@polkadot/util'
 import { RAY } from '../../config'
 import { errorHandler } from '../../helpers/errorHandler'
 import { ExtendedRpc, TrancheDetails } from '../../helpers/types'
@@ -81,8 +81,8 @@ export class TrancheService {
   private _updatePricefromRpc = async () => {
     logger.info(`Qerying RPC price for tranche ${this.tranche.id}`)
     const poolId = new u64(api.registry, this.tranche.poolId)
-    const trancheId = new U8aFixed(api.registry, this.tranche.trancheId, 128)
-    logger.info(`trancheId: ${trancheId.toString()}`)
+    const trancheId = Array.from(hexToU8a(this.tranche.trancheId, 128))
+    logger.info(`Compact trancheId: ${trancheId}`)
     const tokenPrice = await (api.rpc as ExtendedRpc).pools.trancheTokenPrice(poolId, trancheId)
     this.updatePrice(tokenPrice.toBigInt())
     return this

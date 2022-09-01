@@ -5,7 +5,7 @@ import { PoolService } from '../services/poolService'
 import { TrancheService } from '../services/trancheService'
 import { EpochEvent, OrderEvent, OrdersCollectedEvent, PoolEvent } from '../../helpers/types'
 import { OutstandingOrderService } from '../services/outstandingOrderService'
-import { InvestorTransactionService } from '../services/investorTransactionService'
+import { InvestorTransactionData, InvestorTransactionService } from '../services/investorTransactionService'
 import { CurrencyService } from '../services/currencyService'
 
 export const handlePoolCreated = errorHandler(_handlePoolCreated)
@@ -123,40 +123,34 @@ async function _handleEpochExecuted(event: SubstrateEvent<EpochEvent>): Promise<
       logger.info(
         `Outstanding invest before fulfillment: ${oo.outstandingOrder.invest} redeem:${oo.outstandingOrder.redeem}`
       )
-      const orderData: [string, string, number, string, string] = [
-        poolId.toString(),
-        tranche.tranche.trancheId,
-        epochId.toNumber(),
-        oo.outstandingOrder.accountId,
-        oo.outstandingOrder.hash,
-      ]
-
-      const digits = (await CurrencyService.getById(poolService.pool.currencyId)).currency.decimals
+      const orderData = {
+        poolId: poolId.toString(),
+        trancheId: tranche.tranche.trancheId,
+        epochNumber: epochId.toNumber(),
+        address: oo.outstandingOrder.accountId,
+        hash: oo.outstandingOrder.hash,
+        digits: (await CurrencyService.getById(poolService.pool.currencyId)).currency.decimals,
+        price: epochState.price,
+        fee: BigInt(0),
+        timestamp: event.block.timestamp,
+      }
 
       if (oo.outstandingOrder.invest > BigInt(0) && epochState.investFulfillment > BigInt(0)) {
-        const it = InvestorTransactionService.executeInvestOrder(
+        const it = InvestorTransactionService.executeInvestOrder({
           ...orderData,
-          oo.outstandingOrder.invest,
-          epochState.investFulfillment,
-          epochState.price,
-          BigInt(0), //TODO: Decorate transaction fee
-          event.block.timestamp,
-          digits
-        )
+          amount: oo.outstandingOrder.invest,
+          fulfillmentRate: epochState.investFulfillment,
+        })
         await it.save()
         await oo.updateUnfulfilledInvest(it.investorTransaction.currencyAmount)
       }
 
       if (oo.outstandingOrder.redeem > BigInt(0) && epochState.redeemFulfillment > BigInt(0)) {
-        const it = InvestorTransactionService.executeRedeemOrder(
+        const it = InvestorTransactionService.executeRedeemOrder({
           ...orderData,
-          oo.outstandingOrder.redeem,
-          epochState.redeemFulfillment,
-          epochState.price,
-          BigInt(0), //TODO: Decorate transaction fee
-          event.block.timestamp,
-          digits
-        )
+          amount: oo.outstandingOrder.redeem,
+          fulfillmentRate: epochState.redeemFulfillment,
+        })
         await it.save()
         await oo.updateUnfulfilledRedeem(it.investorTransaction.tokenAmount)
       }
@@ -185,33 +179,36 @@ async function _handleInvestOrderUpdated(event: SubstrateEvent<OrderEvent>): Pro
   )
   // Get corresponding pool
   const pool = await PoolService.getById(poolId.toString())
+  const tranche = await TrancheService.getById(poolId.toString(), trancheId.toHex())
 
-  const orderData: [string, string, number, string, string, bigint, Date] = [
-    poolId.toString(),
-    trancheId.toString(),
-    pool.pool.currentEpoch,
-    address.toString(),
-    event.extrinsic.extrinsic.hash.toString(),
-    newAmount.toBigInt(),
-    event.block.timestamp,
-  ]
+  const orderData: InvestorTransactionData = {
+    poolId: poolId.toString(),
+    trancheId: trancheId.toString(),
+    epochNumber: pool.pool.currentEpoch,
+    address: address.toString(),
+    hash: event.extrinsic.extrinsic.hash.toString(),
+    amount: newAmount.toBigInt(),
+    digits: (await CurrencyService.getById(pool.pool.currencyId)).currency.decimals,
+    price: tranche.trancheState.price,
+    fee: BigInt(0),
+    timestamp: event.block.timestamp,
+  }
 
   if (newAmount.toBigInt() > BigInt(0)) {
     // Post investor transaction
-    const it = InvestorTransactionService.updateInvestOrder(...orderData)
+    const it = InvestorTransactionService.updateInvestOrder(orderData)
     await it.save()
   } else {
     // Cancel transaction
-    const it = InvestorTransactionService.cancelInvestOrder(...orderData)
+    const it = InvestorTransactionService.cancelInvestOrder(orderData)
     await it.save()
   }
 
   // Initialise or update outstanding transaction
-  const oo = OutstandingOrderService.initInvest(...orderData)
+  const oo = OutstandingOrderService.initInvest(orderData)
   await oo.save()
 
   // Update tranche outstanding total
-  const tranche = await TrancheService.getById(poolId.toString(), trancheId.toHex())
   await tranche.updateOutstandingInvestOrders(newAmount.toBigInt(), oldAmount.toBigInt())
   await tranche.save()
 
@@ -231,33 +228,36 @@ async function _handleRedeemOrderUpdated(event: SubstrateEvent<OrderEvent>): Pro
   )
   // Get corresponding pool
   const pool = await PoolService.getById(poolId.toString())
+  const tranche = await TrancheService.getById(poolId.toString(), trancheId.toHex())
 
-  const orderData: [string, string, number, string, string, bigint, Date] = [
-    poolId.toString(),
-    trancheId.toString(),
-    pool.pool.currentEpoch,
-    address.toString(),
-    event.extrinsic.extrinsic.hash.toString(),
-    newAmount.toBigInt(),
-    event.block.timestamp,
-  ]
+  const orderData: InvestorTransactionData = {
+    poolId: poolId.toString(),
+    trancheId: trancheId.toString(),
+    epochNumber: pool.pool.currentEpoch,
+    address: address.toString(),
+    hash: event.extrinsic.extrinsic.hash.toString(),
+    amount: newAmount.toBigInt(),
+    digits: (await CurrencyService.getById(pool.pool.currencyId)).currency.decimals,
+    price: tranche.trancheState.price,
+    fee: BigInt(0),
+    timestamp: event.block.timestamp,
+  }
 
   if (newAmount.toBigInt() > BigInt(0)) {
     // Post investor transaction
-    const it = InvestorTransactionService.updateRedeemOrder(...orderData)
+    const it = InvestorTransactionService.updateRedeemOrder(orderData)
     await it.save()
   } else {
     // Cancel transaction
-    const it = InvestorTransactionService.cancelRedeemOrder(...orderData)
+    const it = InvestorTransactionService.cancelRedeemOrder(orderData)
     await it.save()
   }
 
   // Initialise outstanding transaction
-  const oo = OutstandingOrderService.initInvest(...orderData)
+  const oo = OutstandingOrderService.initInvest(orderData)
   await oo.save()
 
   // Update tranche outstanding total
-  const tranche = await TrancheService.getById(poolId.toString(), trancheId.toHex())
   await tranche.updateOutstandingRedeemOrders(newAmount.toBigInt(), oldAmount.toBigInt())
   await tranche.save()
 
@@ -276,31 +276,28 @@ async function _handleOrdersCollected(event: SubstrateEvent<OrdersCollectedEvent
       `block ${event.block.block.header.number.toString()} hash:${event.extrinsic.extrinsic.hash.toString()}`
   )
 
+  const pool = await PoolService.getById(poolId.toString())
+  const tranche = await TrancheService.getById(poolId.toString(), trancheId.toHex())
   const { payoutTokenAmount, payoutCurrencyAmount } = outstandingCollections
 
-  const orderData: [string, string, number, string, string] = [
-    poolId.toString(),
-    trancheId.toString(),
-    endEpochId.toNumber(),
-    account.toString(),
-    event.extrinsic.extrinsic.hash.toString(),
-  ]
+  const orderData = {
+    poolId: poolId.toString(),
+    trancheId: trancheId.toString(),
+    epochNumber: endEpochId.toNumber(),
+    address: account.toString(),
+    hash: event.extrinsic.extrinsic.hash.toString(),
+    timestamp: event.block.timestamp,
+    digits: (await CurrencyService.getById(pool.pool.currencyId)).currency.decimals,
+    price: tranche.trancheState.price,
+  }
 
   if (payoutTokenAmount.toBigInt() > 0) {
-    const it = InvestorTransactionService.collectInvestOrder(
-      ...orderData,
-      payoutTokenAmount.toBigInt(),
-      event.block.timestamp
-    )
+    const it = InvestorTransactionService.collectInvestOrder({ ...orderData, amount: payoutTokenAmount.toBigInt() })
     await it.save()
   }
 
   if (payoutCurrencyAmount.toBigInt() > 0) {
-    const it = InvestorTransactionService.collectRedeemOrder(
-      ...orderData,
-      payoutCurrencyAmount.toBigInt(),
-      event.block.timestamp
-    )
+    const it = InvestorTransactionService.collectRedeemOrder({ ...orderData, amount: payoutCurrencyAmount.toBigInt() })
     await it.save()
   }
 }
