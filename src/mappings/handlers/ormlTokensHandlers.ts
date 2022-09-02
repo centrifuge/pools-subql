@@ -29,6 +29,10 @@ async function _handleTokenTransfer(event: SubstrateEvent<TokensTransferEvent>):
     const pool = await PoolService.getById(poolId.toString())
     const tranche = await TrancheService.getById(poolId.toString(), trancheId.toHex())
 
+    // Update tranche price
+    await tranche.updatePriceFromRpc()
+    await tranche.save()
+
     const orderData = {
       poolId: poolId.toString(),
       trancheId: trancheId.toString(),

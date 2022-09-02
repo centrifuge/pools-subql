@@ -29,7 +29,7 @@ async function _handlePoolCreated(event: SubstrateEvent<PoolEvent>): Promise<voi
   for (const [index, trancheData] of tranches.entries()) {
     const trancheId = trancheIds[index]
     logger.info(`Creating tranche with id: ${trancheId}`)
-    const trancheService = await TrancheService.init(trancheId, poolId.toString(), trancheData)
+    const trancheService = await TrancheService.init(poolId.toString(), trancheId, index, trancheData)
     await trancheService.updateSupply()
     await trancheService.updateDebt(trancheData.debt.toBigInt())
     await trancheService.save()
@@ -181,6 +181,10 @@ async function _handleInvestOrderUpdated(event: SubstrateEvent<OrderEvent>): Pro
   const pool = await PoolService.getById(poolId.toString())
   const tranche = await TrancheService.getById(poolId.toString(), trancheId.toHex())
 
+  // Update tranche price
+  await tranche.updatePriceFromRpc()
+  await tranche.save()
+
   const orderData: InvestorTransactionData = {
     poolId: poolId.toString(),
     trancheId: trancheId.toString(),
@@ -278,6 +282,11 @@ async function _handleOrdersCollected(event: SubstrateEvent<OrdersCollectedEvent
 
   const pool = await PoolService.getById(poolId.toString())
   const tranche = await TrancheService.getById(poolId.toString(), trancheId.toHex())
+
+  // Update tranche price
+  await tranche.updatePriceFromRpc()
+  await tranche.save()
+
   const { payoutTokenAmount, payoutCurrencyAmount } = outstandingCollections
 
   const orderData = {

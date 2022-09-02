@@ -83,6 +83,7 @@ type PoolSnapshot @entity {
 
 type Tranche @entity {
   id: ID! #poolId-trancheId
+  index: Int!
   type: String! @index
   pool: Pool! @index
 
