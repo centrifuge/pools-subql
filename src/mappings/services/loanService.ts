@@ -1,5 +1,5 @@
 import { AnyJson } from '@polkadot/types/types'
-import { Loan, LoanStatus } from '../../types'
+import { Loan, LoanStatus, LoanType } from '../../types'
 
 export class LoanService {
   readonly loan: Loan
@@ -56,7 +56,7 @@ export class LoanService {
 
   public updateLoanType = (loanType: string, loanSpec?: AnyJson) => {
     logger.info(`Updating loan type for loan ${this.loan.id} to ${loanType}`)
-    this.loan.type = loanType
+    this.loan.type = loanType as LoanType
     const specBuff = Buffer.from(JSON.stringify(loanSpec))
     this.loan.spec = specBuff.toString('base64')
   }

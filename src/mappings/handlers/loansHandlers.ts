@@ -8,50 +8,98 @@ import {
 import { errorHandler } from '../../helpers/errorHandler'
 import { PoolService } from '../services/poolService'
 import { LoanService } from '../services/loanService'
+import { BorrowerTransactionService } from '../services/borrowerTransactionService'
 
 export const handleLoanCreated = errorHandler(_handleLoanCreated)
 async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedClosedEvent>) {
   const [poolId, loanId] = event.event.data
   logger.info(`Loan created event for pool: ${poolId.toString()} loan: ${loanId.toString()}`)
+  const pool = await PoolService.getById(poolId.toString())
 
   const loan = await LoanService.init(poolId.toString(), loanId.toString(), event.block.timestamp)
   await loan.save()
+
+  const bt = await BorrowerTransactionService.created({
+    poolId: poolId.toString(),
+    loanId: loanId.toString(),
+    address: event.extrinsic.extrinsic.signer.toString(),
+    epochNumber: pool.pool.currentEpoch,
+    hash: event.extrinsic.extrinsic.hash.toString(),
+    timestamp: event.block.timestamp,
+  })
+  await bt.save()
 }
 
 export const handleLoanBorrowed = errorHandler(_handleLoanBorrowed)
 async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedRepaidEvent>): Promise<void> {
   const [poolId, loanId, amount] = event.event.data
   logger.info(`Loan borrowed event for pool: ${poolId.toString()} amount: ${amount.toString()}`)
+  const pool = await PoolService.getById(poolId.toString())
 
   // Update loan amount
   const loan = await LoanService.getById(poolId.toString(), loanId.toString())
   await loan.borrow(amount.toBigInt())
   await loan.save()
 
+  const bt = await BorrowerTransactionService.borrowed({
+    poolId: poolId.toString(),
+    loanId: loanId.toString(),
+    address: event.extrinsic.extrinsic.signer.toString(),
+    epochNumber: pool.pool.currentEpoch,
+    hash: event.extrinsic.extrinsic.hash.toString(),
+    timestamp: event.block.timestamp,
+    amount: amount.toBigInt(),
+  })
+  await bt.save()
+
   // Update poolState info
-  const poolService = await PoolService.getById(poolId.toString())
-  await poolService.increaseTotalBorrowings(amount.toBigInt())
-  await poolService.save()
+  await pool.increaseTotalBorrowings(amount.toBigInt())
+  await pool.save()
 }
 
 export const handleLoanPriced = errorHandler(_handleLoanPriced)
 async function _handleLoanPriced(event: SubstrateEvent<LoanPricedEvent>) {
   const [poolId, loanId, interestRatePerSec, loanType] = event.event.data
   logger.info(`Loan priced event for pool: ${poolId.toString()} loan: ${loanId.toString()}`)
+  const pool = await PoolService.getById(poolId.toString())
+
   const loan = await LoanService.getById(poolId.toString(), loanId.toString())
   await loan.activate()
   await loan.updateInterestRate(interestRatePerSec.toBigInt())
   await loan.updateLoanType(loanType.type, loanType.inner.toJSON())
   await loan.save()
+
+  const bt = await BorrowerTransactionService.priced({
+    poolId: poolId.toString(),
+    loanId: loanId.toString(),
+    address: event.extrinsic.extrinsic.signer.toString(),
+    epochNumber: pool.pool.currentEpoch,
+    hash: event.extrinsic.extrinsic.hash.toString(),
+    timestamp: event.block.timestamp,
+  })
+  await bt.save()
 }
 
 export const handleLoanRepaid = errorHandler(_handleLoanRepaid)
 async function _handleLoanRepaid(event: SubstrateEvent<LoanBorrowedRepaidEvent>) {
   const [poolId, loanId, amount] = event.event.data
   logger.info(`Loan borrowed event for pool: ${poolId.toString()} amount: ${amount.toString()}`)
+  const pool = await PoolService.getById(poolId.toString())
+
   const loan = await LoanService.getById(poolId.toString(), loanId.toString())
   await loan.repay(amount.toBigInt())
   await loan.save()
+
+  const bt = await BorrowerTransactionService.repaid({
+    poolId: poolId.toString(),
+    loanId: loanId.toString(),
+    address: event.extrinsic.extrinsic.signer.toString(),
+    epochNumber: pool.pool.currentEpoch,
+    hash: event.extrinsic.extrinsic.hash.toString(),
+    timestamp: event.block.timestamp,
+    amount: amount.toBigInt(),
+  })
+  await bt.save()
 }
 
 export const handleLoanWrittenOff = errorHandler(_handleLoanWrittenOff)
@@ -68,7 +116,19 @@ export const handleLoanClosed = errorHandler(_handleLoanClosed)
 async function _handleLoanClosed(event: SubstrateEvent<LoanCreatedClosedEvent>) {
   const [poolId, loanId] = event.event.data
   logger.info(`Loan closed event for pool: ${poolId.toString()} loanId: ${loanId.toString()}`)
+  const pool = await PoolService.getById(poolId.toString())
+
   const loan = await LoanService.getById(poolId.toString(), loanId.toString())
   await loan.close()
   await loan.save()
+
+  const bt = await BorrowerTransactionService.repaid({
+    poolId: poolId.toString(),
+    loanId: loanId.toString(),
+    address: event.extrinsic.extrinsic.signer.toString(),
+    epochNumber: pool.pool.currentEpoch,
+    hash: event.extrinsic.extrinsic.hash.toString(),
+    timestamp: event.block.timestamp,
+  })
+  await bt.save()
 }

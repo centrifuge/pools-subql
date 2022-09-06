@@ -245,16 +245,20 @@ enum LoanStatus {
   CLOSED
 }
 
-#UNUSED
-type Loan @entity {
-  id: ID!
+enum LoanType {
+  BulletLoan
+  CreditLine
+  CreditLineWithMaturity
+}
 
+type Loan @entity {
+  id: ID! # poolId - loanId
   createdAt: Date!
 
   # collateral:
   status: LoanStatus!
 
-  type: String
+  type: LoanType
   spec: String
 
   interestRatePerSec: BigInt
@@ -279,13 +283,16 @@ enum BorrowerTransactionType {
   CLOSED
 }
 
-#UNUSED
 type BorrowerTransaction @entity {
-  id: ID!
+  id: ID! # extrinsic hash - epoch number - transaction type
+  timestamp: Date!
+  pool: Pool! @index
+  hash: String!
 
-  account: Account!
-  epochNumber: Int!
-  loan: Loan!
+  accountId: String!
+  epochNumber: Int! @index
+  epoch: Epoch!
+  loan: Loan! @index
   type: BorrowerTransactionType!
 
   # only applies to BORROWED and REPAID transactions
