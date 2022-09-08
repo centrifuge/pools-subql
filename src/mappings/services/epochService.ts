@@ -1,6 +1,6 @@
 import { Option } from '@polkadot/types'
 import { bnToBn, nToBigInt } from '@polkadot/util'
-import { WAD } from '../../config'
+import { CPREC, RAY_DIGITS, WAD, WAD_DIGITS } from '../../config'
 import { EpochDetails } from '../../helpers/types'
 import { Epoch, EpochState } from '../../types'
 
@@ -31,6 +31,7 @@ export class EpochService {
       epochState.trancheId = trancheId
       epochState.outstandingInvestOrders = BigInt(0)
       epochState.outstandingRedeemOrders = BigInt(0)
+      epochState.outstandingRedeemOrdersCurrency = BigInt(0)
       epochStates.push(epochState)
     }
     return new EpochService(epoch, epochStates)
@@ -52,7 +53,7 @@ export class EpochService {
     this.epoch.closedAt = timestamp
   }
 
-  public executeEpoch = async (timestamp: Date) => {
+  public executeEpoch = async (timestamp: Date, digits: number) => {
     logger.info(`Updating EpochExecutionDetails for pool ${this.epoch.poolId} on epoch ${this.epoch.index}`)
 
     this.epoch.executedAt = timestamp
@@ -74,6 +75,11 @@ export class EpochService {
       epochState.fulfilledRedeemOrders = nToBigInt(
         bnToBn(epochState.outstandingRedeemOrders).mul(epochDetails.redeemFulfillment.toBn()).div(WAD)
       )
+      epochState.fulfilledRedeemOrdersCurrency = this.computeCurrencyAmount(
+        epochState.fulfilledRedeemOrders,
+        epochState.price,
+        digits
+      )
     }
     return this
   }
@@ -85,10 +91,28 @@ export class EpochService {
     return this
   }
 
-  public updateOutstandingRedeemOrders = (trancheId: string, newAmount: bigint, oldAmount: bigint) => {
+  public updateOutstandingRedeemOrders = (
+    trancheId: string,
+    newAmount: bigint,
+    oldAmount: bigint,
+    tokenPrice: bigint,
+    digits: number
+  ) => {
     const trancheState = this.epochStates.find((trancheState) => trancheState.trancheId === trancheId)
     if (trancheState === undefined) throw new Error(`No epochState with could be found for tranche: ${trancheId}`)
     trancheState.outstandingRedeemOrders = trancheState.outstandingRedeemOrders + newAmount - oldAmount
+    trancheState.outstandingRedeemOrdersCurrency = this.computeCurrencyAmount(
+      trancheState.outstandingRedeemOrders,
+      tokenPrice,
+      digits
+    )
     return this
   }
+
+  private computeCurrencyAmount = (amount: bigint, price: bigint, digits: number) =>
+    nToBigInt(
+      bnToBn(amount)
+        .mul(bnToBn(price))
+        .div(CPREC(RAY_DIGITS + WAD_DIGITS - digits))
+    )
 }

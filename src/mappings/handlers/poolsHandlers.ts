@@ -85,11 +85,13 @@ async function _handleEpochExecuted(event: SubstrateEvent<EpochEvent>): Promise<
       `at block ${event.block.block.header.number.toString()}`
   )
 
+  const poolService = await PoolService.getById(poolId.toString())
   const epoch = await EpochService.getById(poolId.toString(), epochId.toNumber())
-  await epoch.executeEpoch(event.block.timestamp)
+  const digits = (await CurrencyService.getById(poolService.pool.currencyId)).currency.decimals
+
+  await epoch.executeEpoch(event.block.timestamp, digits)
   await epoch.save()
 
-  const poolService = await PoolService.getById(poolId.toString())
   await poolService.executeEpoch(epochId.toNumber())
   await poolService.save()
 
@@ -113,7 +115,9 @@ async function _handleEpochExecuted(event: SubstrateEvent<EpochEvent>): Promise<
     await nextEpoch.updateOutstandingRedeemOrders(
       tranche.tranche.trancheId,
       epochState.outstandingRedeemOrders - epochState.fulfilledRedeemOrders,
-      BigInt(0)
+      BigInt(0),
+      epochState.price,
+      digits
     )
 
     // Find single outstanding orders posted for this tranche and fulfill them to investorTransactions
@@ -183,7 +187,6 @@ async function _handleInvestOrderUpdated(event: SubstrateEvent<OrderEvent>): Pro
 
   // Update tranche price
   await tranche.updatePriceFromRpc()
-  await tranche.save()
 
   const orderData: InvestorTransactionData = {
     poolId: poolId.toString(),
@@ -233,6 +236,9 @@ async function _handleRedeemOrderUpdated(event: SubstrateEvent<OrderEvent>): Pro
   // Get corresponding pool
   const pool = await PoolService.getById(poolId.toString())
   const tranche = await TrancheService.getById(poolId.toString(), trancheId.toHex())
+  const digits = (await CurrencyService.getById(pool.pool.currencyId)).currency.decimals
+
+  await tranche.updatePriceFromRpc()
 
   const orderData: InvestorTransactionData = {
     poolId: poolId.toString(),
@@ -241,7 +247,7 @@ async function _handleRedeemOrderUpdated(event: SubstrateEvent<OrderEvent>): Pro
     address: address.toString(),
     hash: event.extrinsic.extrinsic.hash.toString(),
     amount: newAmount.toBigInt(),
-    digits: (await CurrencyService.getById(pool.pool.currencyId)).currency.decimals,
+    digits: digits,
     price: tranche.trancheState.price,
     fee: BigInt(0),
     timestamp: event.block.timestamp,
@@ -262,12 +268,18 @@ async function _handleRedeemOrderUpdated(event: SubstrateEvent<OrderEvent>): Pro
   await oo.save()
 
   // Update tranche outstanding total
-  await tranche.updateOutstandingRedeemOrders(newAmount.toBigInt(), oldAmount.toBigInt())
+  await tranche.updateOutstandingRedeemOrders(newAmount.toBigInt(), oldAmount.toBigInt(), digits)
   await tranche.save()
 
   // Update epochState outstanding total
   const epoch = await EpochService.getById(poolId.toString(), pool.pool.currentEpoch)
-  await epoch.updateOutstandingRedeemOrders(trancheId.toHex(), newAmount.toBigInt(), oldAmount.toBigInt())
+  await epoch.updateOutstandingRedeemOrders(
+    trancheId.toHex(),
+    newAmount.toBigInt(),
+    oldAmount.toBigInt(),
+    tranche.trancheState.price,
+    digits
+  )
   await epoch.save()
 }
 

@@ -107,9 +107,11 @@ type TrancheState @entity {
 
   outstandingInvestOrders_: BigInt!
   outstandingRedeemOrders_: BigInt!
+  outstandingRedeemOrdersCurrency_: BigInt!
 
   fulfilledInvestOrders_: BigInt!
   fulfilledRedeemOrders_: BigInt!
+  fulfilledRedeemOrdersCurrency_: BigInt!
 
   yield30DaysAnnualized: BigInt
   yield90DaysAnnualized: BigInt
@@ -131,9 +133,11 @@ type TrancheSnapshot @entity {
 
   outstandingInvestOrders_: BigInt!
   outstandingRedeemOrders_: BigInt!
+  outstandingRedeemOrdersCurrency_: BigInt!
 
   fulfilledInvestOrders_: BigInt!
   fulfilledRedeemOrders_: BigInt!
+  fulfilledRedeemOrdersCurrency_: BigInt!
 
   yield30DaysAnnualized: BigInt
   yield90DaysAnnualized: BigInt
@@ -172,8 +176,10 @@ type EpochState @entity {
 
   outstandingInvestOrders: BigInt!
   outstandingRedeemOrders: BigInt!
+  outstandingRedeemOrdersCurrency: BigInt!
   fulfilledInvestOrders: BigInt
   fulfilledRedeemOrders: BigInt
+  fulfilledRedeemOrdersCurrency: BigInt
 
   investFulfillment: BigInt
   redeemFulfillment: BigInt

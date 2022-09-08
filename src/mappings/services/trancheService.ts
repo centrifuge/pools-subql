@@ -1,6 +1,6 @@
 import { u128, u64 } from '@polkadot/types'
 import { bnToBn, nToBigInt } from '@polkadot/util'
-import { RAY } from '../../config'
+import { CPREC, RAY, RAY_DIGITS, WAD_DIGITS } from '../../config'
 import { errorHandler } from '../../helpers/errorHandler'
 import { ExtendedRpc, TrancheDetails } from '../../helpers/types'
 import { Tranche, TrancheSnapshot, TrancheState } from '../../types'
@@ -20,8 +20,10 @@ export class TrancheService {
 
     trancheState.outstandingInvestOrders_ = BigInt(0)
     trancheState.outstandingRedeemOrders_ = BigInt(0)
+    trancheState.outstandingRedeemOrdersCurrency_ = BigInt(0)
     trancheState.fulfilledInvestOrders_ = BigInt(0)
     trancheState.fulfilledRedeemOrders_ = BigInt(0)
+    trancheState.fulfilledRedeemOrdersCurrency_ = BigInt(0)
     trancheState.price = nToBigInt(RAY)
 
     const tranche = new Tranche(`${poolId}-${trancheId}`)
@@ -175,8 +177,12 @@ export class TrancheService {
     return this
   }
 
-  public updateOutstandingRedeemOrders = (newAmount: bigint, oldAmount: bigint) => {
+  public updateOutstandingRedeemOrders = (newAmount: bigint, oldAmount: bigint, digits: number) => {
     this.trancheState.outstandingRedeemOrders_ = this.trancheState.outstandingRedeemOrders_ + newAmount - oldAmount
+    this.trancheState.outstandingRedeemOrdersCurrency_ = this.computeCurrencyAmount(
+      this.trancheState.outstandingRedeemOrders_,
+      digits
+    )
     return this
   }
 
@@ -189,4 +195,11 @@ export class TrancheService {
     this.trancheState.fulfilledRedeemOrders_ = this.trancheState.fulfilledRedeemOrders_ + amount
     return this
   }
+
+  private computeCurrencyAmount = (amount: bigint, digits: number) =>
+    nToBigInt(
+      bnToBn(amount)
+        .mul(bnToBn(this.trancheState.price))
+        .div(CPREC(RAY_DIGITS + WAD_DIGITS - digits))
+    )
 }
