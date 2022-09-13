@@ -26,17 +26,23 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
     for (const pool of pools) {
       await pool.updateState()
       await pool.updateNav()
+      await pool.computePoolValue()
       await pool.save()
 
+      const { ids, tranches: trancheData } = pool.tranches
+      const tokenPrices = await pool.getTrancheTokenPrices()
+
       // Update tranche states
-      const firstSnapshotDate = new Date(
-        getPeriodStart(pool.pool.createdAt).valueOf() + SNAPSHOT_INTERVAL_SECONDS * 1000
-      )
+      const trancheIds = ids.map((id) => id.toHex())
       const tranches = await TrancheService.getByPoolId(pool.pool.id)
       for (const tranche of tranches) {
+        const trancheIndex = trancheIds.findIndex((trancheId) => tranche.tranche.trancheId === trancheId)
+        if (trancheIndex === -1) throw new Error(`Could not find TrancheDetails for tranche :${tranche.tranche.id}`)
+        await tranche.updatePrice(tokenPrices[trancheIndex].toBigInt())
         await tranche.updateSupply()
+        await tranche.updateDebt(trancheData[trancheIndex].debt.toBigInt())
         await tranche.computeYield('yieldSinceLastPeriod', lastPeriodStart)
-        await tranche.computeYield('yieldSinceInception', firstSnapshotDate)
+        await tranche.computeYield('yieldSinceInception')
         await tranche.computeYieldAnnualized('yield30DaysAnnualized', blockPeriodStart, daysAgo30)
         await tranche.computeYieldAnnualized('yield90DaysAnnualized', blockPeriodStart, daysAgo90)
         await tranche.save()

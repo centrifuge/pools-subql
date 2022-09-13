@@ -4,10 +4,10 @@ version: 1.0.0
 runner:
   node:
     name: '@subql/node'
-    version: 1.4.1
+    version: '1'
   query:
     name: '@subql/query'
-    version: 1.2.1
+    version: '1'
 description: 'SubQuery API powered by EMBRIO.tech to query Centrifuge chain data for analytics insights on how Centrifuge is unlocking economic opportunity for all by connecting people to borrow and lend money transparently and cost-effectively.'
 repository: https://github.com/embrio-tech/centrifuge-subql
 schema:
@@ -22,11 +22,12 @@ dataSources:
   - kind: substrate/Runtime
     startBlock: 1
     mapping:
-
       file: ./dist/index.js
       handlers:
         - handler: handleBlock
           kind: substrate/BlockHandler
+          filter:
+            modulo: 100
         - handler: handlePoolCreated
           kind: substrate/EventHandler
           filter:
@@ -72,8 +73,33 @@ dataSources:
           filter:
             module: proxy
             method: AnonymousCreated
-        - handler: handleBorrowings
+        - handler: handleLoanCreated
+          kind: substrate/EventHandler
+          filter:
+            module: loans
+            method: Created
+        - handler: handleLoanBorrowed
           kind: substrate/EventHandler
           filter:
             module: loans
             method: Borrowed
+        - handler: handleLoanPriced
+          kind: substrate/EventHandler
+          filter:
+            module: loans
+            method: Priced
+        - handler: handleLoanRepaid
+          kind: substrate/EventHandler
+          filter:
+            module: loans
+            method: Repaid
+        - handler: handleLoanClosed
+          kind: substrate/EventHandler
+          filter:
+            module: loans
+            method: Closed
+        - handler: handleTokenTransfer
+          kind: substrate/EventHandler
+          filter:
+            module: ormlTokens
+            method: Transfer

@@ -1,5 +1,6 @@
 import { Option } from '@polkadot/types'
 import { bnToBn, nToBigInt } from '@polkadot/util'
+import { CPREC, RAY_DIGITS, WAD, WAD_DIGITS } from '../../config'
 import { EpochDetails } from '../../helpers/types'
 import { Epoch, EpochState } from '../../types'
 
@@ -12,10 +13,11 @@ export class EpochService {
     this.epochStates = epochStates
   }
 
-  static init = async (poolId: string, epochId: number, trancheIds: string[], timestamp: Date) => {
-    const epoch = new Epoch(`${poolId}-${epochId.toString()}`)
+  static init = async (poolId: string, epochNr: number, trancheIds: string[], timestamp: Date) => {
+    logger.info(`Initialising epoch ${epochNr} for pool ${poolId}`)
+    const epoch = new Epoch(`${poolId}-${epochNr.toString()}`)
 
-    epoch.index = epochId
+    epoch.index = epochNr
     epoch.poolId = poolId
     epoch.openedAt = timestamp
 
@@ -24,20 +26,21 @@ export class EpochService {
 
     const epochStates: EpochState[] = []
     for (const trancheId of trancheIds) {
-      const epochState = new EpochState(`${poolId}-${epochId}-${trancheId}`)
+      const epochState = new EpochState(`${poolId}-${epochNr}-${trancheId}`)
       epochState.epochId = epoch.id
       epochState.trancheId = trancheId
       epochState.outstandingInvestOrders = BigInt(0)
       epochState.outstandingRedeemOrders = BigInt(0)
+      epochState.outstandingRedeemOrdersCurrency = BigInt(0)
       epochStates.push(epochState)
     }
     return new EpochService(epoch, epochStates)
   }
 
-  static getById = async (epochId: string) => {
-    const epoch = await Epoch.get(epochId)
+  static getById = async (poolId: string, epochNr: number) => {
+    const epoch = await Epoch.get(`${poolId}-${epochNr.toString()}`)
     if (epoch === undefined) return undefined
-    const epochStates = await EpochState.getByEpochId(epochId)
+    const epochStates = await EpochState.getByEpochId(`${poolId}-${epochNr.toString()}`)
     return new EpochService(epoch, epochStates)
   }
 
@@ -50,7 +53,7 @@ export class EpochService {
     this.epoch.closedAt = timestamp
   }
 
-  public executeEpoch = async (timestamp: Date) => {
+  public executeEpoch = async (timestamp: Date, digits: number) => {
     logger.info(`Updating EpochExecutionDetails for pool ${this.epoch.poolId} on epoch ${this.epoch.index}`)
 
     this.epoch.executedAt = timestamp
@@ -67,14 +70,15 @@ export class EpochService {
       epochState.investFulfillment = epochDetails.investFulfillment.toBigInt()
       epochState.redeemFulfillment = epochDetails.redeemFulfillment.toBigInt()
       epochState.fulfilledInvestOrders = nToBigInt(
-        bnToBn(epochState.outstandingInvestOrders)
-          .mul(epochDetails.investFulfillment.toBn())
-          .div(bnToBn(10).pow(bnToBn(18)))
+        bnToBn(epochState.outstandingInvestOrders).mul(epochDetails.investFulfillment.toBn()).div(WAD)
       )
       epochState.fulfilledRedeemOrders = nToBigInt(
-        bnToBn(epochState.outstandingRedeemOrders)
-          .mul(epochDetails.redeemFulfillment.toBn())
-          .div(bnToBn(10).pow(bnToBn(18)))
+        bnToBn(epochState.outstandingRedeemOrders).mul(epochDetails.redeemFulfillment.toBn()).div(WAD)
+      )
+      epochState.fulfilledRedeemOrdersCurrency = this.computeCurrencyAmount(
+        epochState.fulfilledRedeemOrders,
+        epochState.price,
+        digits
       )
     }
     return this
@@ -87,10 +91,28 @@ export class EpochService {
     return this
   }
 
-  public updateOutstandingRedeemOrders = (trancheId: string, newAmount: bigint, oldAmount: bigint) => {
+  public updateOutstandingRedeemOrders = (
+    trancheId: string,
+    newAmount: bigint,
+    oldAmount: bigint,
+    tokenPrice: bigint,
+    digits: number
+  ) => {
     const trancheState = this.epochStates.find((trancheState) => trancheState.trancheId === trancheId)
     if (trancheState === undefined) throw new Error(`No epochState with could be found for tranche: ${trancheId}`)
     trancheState.outstandingRedeemOrders = trancheState.outstandingRedeemOrders + newAmount - oldAmount
+    trancheState.outstandingRedeemOrdersCurrency = this.computeCurrencyAmount(
+      trancheState.outstandingRedeemOrders,
+      tokenPrice,
+      digits
+    )
     return this
   }
+
+  private computeCurrencyAmount = (amount: bigint, price: bigint, digits: number) =>
+    nToBigInt(
+      bnToBn(amount)
+        .mul(bnToBn(price))
+        .div(CPREC(RAY_DIGITS + WAD_DIGITS - digits))
+    )
 }

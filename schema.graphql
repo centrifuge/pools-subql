@@ -13,7 +13,7 @@ type Pool @entity {
   createdAt: Date!
   createdAtBlockNumber: Int!
 
-  currency: String!
+  currency: Currency!
   metadata: String!
 
   minEpochTime: Int!
@@ -39,6 +39,7 @@ type PoolState @entity {
   availableReserve: BigInt!
   maxReserve: BigInt!
   totalDebt: BigInt!
+  value: BigInt!
 
   # Aggregated transaction data over the last period
   totalBorrowed_: BigInt
@@ -68,6 +69,7 @@ type PoolSnapshot @entity {
   availableReserve: BigInt!
   maxReserve: BigInt!
   totalDebt: BigInt!
+  value: BigInt!
 
   # Aggregated transaction data over the last period
   totalBorrowed_: BigInt
@@ -81,6 +83,7 @@ type PoolSnapshot @entity {
 
 type Tranche @entity {
   id: ID! #poolId-trancheId
+  index: Int!
   type: String! @index
   pool: Pool! @index
 
@@ -100,12 +103,15 @@ type TrancheState @entity {
 
   supply: BigInt
   price: BigInt
+  debt: BigInt
 
   outstandingInvestOrders_: BigInt!
   outstandingRedeemOrders_: BigInt!
+  outstandingRedeemOrdersCurrency_: BigInt!
 
   fulfilledInvestOrders_: BigInt!
   fulfilledRedeemOrders_: BigInt!
+  fulfilledRedeemOrdersCurrency_: BigInt!
 
   yield30DaysAnnualized: BigInt
   yield90DaysAnnualized: BigInt
@@ -123,12 +129,15 @@ type TrancheSnapshot @entity {
 
   supply: BigInt
   price: BigInt
+  debt: BigInt
 
   outstandingInvestOrders_: BigInt!
   outstandingRedeemOrders_: BigInt!
+  outstandingRedeemOrdersCurrency_: BigInt!
 
   fulfilledInvestOrders_: BigInt!
   fulfilledRedeemOrders_: BigInt!
+  fulfilledRedeemOrdersCurrency_: BigInt!
 
   yield30DaysAnnualized: BigInt
   yield90DaysAnnualized: BigInt
@@ -151,6 +160,8 @@ type Epoch @entity {
   totalRepaid: BigInt!
 
   epochStates: [EpochState] @derivedFrom(field: "epoch")
+
+  investorTransactions: [InvestorTransaction] @derivedFrom(field: "epoch")
 }
 
 type EpochState @entity {
@@ -165,8 +176,10 @@ type EpochState @entity {
 
   outstandingInvestOrders: BigInt!
   outstandingRedeemOrders: BigInt!
+  outstandingRedeemOrdersCurrency: BigInt!
   fulfilledInvestOrders: BigInt
   fulfilledRedeemOrders: BigInt
+  fulfilledRedeemOrdersCurrency: BigInt
 
   investFulfillment: BigInt
   redeemFulfillment: BigInt
@@ -181,6 +194,8 @@ enum InvestorTransactionType {
   REDEEM_EXECUTION
   TRANSFER_IN
   TRANSFER_OUT
+  INVEST_COLLECT
+  REDEEM_COLLECT
 }
 
 type InvestorTransaction @entity {
@@ -191,6 +206,7 @@ type InvestorTransaction @entity {
   tranche: Tranche! @index
   epochNumber: Int! @index
   timestamp: Date!
+  epoch: Epoch!
 
   type: InvestorTransactionType!
   tokenAmount: BigInt
@@ -235,20 +251,31 @@ enum LoanStatus {
   CLOSED
 }
 
-#UNUSED
-type Loan @entity {
-  id: ID!
+enum LoanType {
+  BulletLoan
+  CreditLine
+  CreditLineWithMaturity
+}
 
+type Loan @entity {
+  id: ID! # poolId - loanId
   createdAt: Date!
 
   # collateral:
   status: LoanStatus!
-  # TODO: how to store loan type data
+
+  type: LoanType
+  spec: String
 
   interestRatePerSec: BigInt
   outstandingDebt: BigInt
 
+  totalBorrowed: BigInt
+  totalRepaid: BigInt
+
   writeOffIndex: Int
+  writtenOffPercentage: BigInt
+  penaltyInterestRatePerSec: BigInt
   adminWrittenOff: Boolean
 
   pool: Pool!
@@ -262,13 +289,16 @@ enum BorrowerTransactionType {
   CLOSED
 }
 
-#UNUSED
 type BorrowerTransaction @entity {
-  id: ID!
+  id: ID! # extrinsic hash - epoch number - transaction type
+  timestamp: Date!
+  pool: Pool! @index
+  hash: String!
 
-  account: Account!
-  epochNumber: Int!
-  loan: Loan!
+  accountId: String!
+  epochNumber: Int! @index
+  epoch: Epoch!
+  loan: Loan! @index
   type: BorrowerTransactionType!
 
   # only applies to BORROWED and REPAID transactions
@@ -291,4 +321,9 @@ type Proxy @entity {
   proxyType: String
   removed: Boolean
   delay: Int
+}
+
+type Currency @entity {
+  id: ID!
+  decimals: Int!
 }

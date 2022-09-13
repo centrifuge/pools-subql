@@ -1,12 +1,13 @@
-import { Option } from '@polkadot/types'
+import { Option, u64 } from '@polkadot/types'
+import { bnToBn, nToBigInt } from '@polkadot/util'
 import { errorHandler } from '../../helpers/errorHandler'
-import { NavDetails, PoolDetails, TrancheData } from '../../helpers/types'
+import { ExtendedRpc, NavDetails, PoolDetails, TrancheData } from '../../helpers/types'
 import { Pool, PoolState } from '../../types'
 
 export class PoolService {
   readonly pool: Pool
   readonly poolState: PoolState
-  readonly tranches: TrancheData | null
+  tranches: TrancheData
 
   constructor(pool: Pool, poolState: PoolState, tranches: TrancheData = null) {
     this.pool = pool
@@ -14,7 +15,12 @@ export class PoolService {
     this.tranches = tranches
   }
 
-  static init = async (poolId: string, timestamp: Date, blockNumber: number) => {
+  static init = async (
+    poolId: string,
+    timestamp: Date,
+    blockNumber: number,
+    currencyCallback: (ticker: string) => Promise<string>
+  ) => {
     const poolReq = await api.query.pools.pool<Option<PoolDetails>>(poolId)
     if (poolReq.isNone) throw new Error('No pool data available to create teh pool')
     const poolData = poolReq.unwrap()
@@ -27,6 +33,7 @@ export class PoolService {
     poolState.availableReserve = BigInt(0)
     poolState.maxReserve = BigInt(0)
     poolState.totalDebt = BigInt(0)
+    poolState.value = BigInt(0)
 
     poolState.totalBorrowed_ = BigInt(0)
     poolState.totalRepaid_ = BigInt(0)
@@ -45,7 +52,7 @@ export class PoolService {
     pool.createdAt = timestamp
     pool.createdAtBlockNumber = blockNumber
 
-    pool.currency = poolData.currency.toString()
+    pool.currencyId = await currencyCallback(poolData.currency.toString())
     pool.metadata = poolData.metadata.isSome ? poolData.metadata.unwrap().toUtf8() : 'NA'
 
     pool.minEpochTime = poolData.parameters.minEpochTime.toNumber()
@@ -80,11 +87,13 @@ export class PoolService {
 
   private _updateState = async () => {
     const poolResponse = await api.query.pools.pool<Option<PoolDetails>>(this.pool.id)
+    logger.info(`Updating state for pool: ${this.pool.id} with data: ${JSON.stringify(poolResponse.toHuman())}`)
     if (poolResponse.isSome) {
       const poolData = poolResponse.unwrap()
       this.poolState.totalReserve = poolData.reserve.total.toBigInt()
       this.poolState.availableReserve = poolData.reserve.available.toBigInt()
       this.poolState.maxReserve = poolData.reserve.max.toBigInt()
+      this.tranches = poolData.tranches
     }
     return this
   }
@@ -115,4 +124,18 @@ export class PoolService {
   public executeEpoch = (epochId: number) => {
     this.pool.lastEpochExecuted = epochId
   }
+
+  public computePoolValue = () => {
+    const nav = bnToBn(this.poolState.netAssetValue)
+    const totalReserve = bnToBn(this.poolState.totalReserve)
+    this.poolState.value = nToBigInt(nav.add(totalReserve))
+  }
+
+  private _getTrancheTokenPrices = async () => {
+    logger.info(`Qerying RPC tranche token prices for pool ${this.pool.id}`)
+    const poolId = new u64(api.registry, this.pool.id)
+    const tokenPrices = await (api.rpc as ExtendedRpc).pools.trancheTokenPrices(poolId)
+    return tokenPrices
+  }
+  public getTrancheTokenPrices = errorHandler(this._getTrancheTokenPrices)
 }
