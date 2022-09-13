@@ -83,6 +83,7 @@ type PoolSnapshot @entity {
 
 type Tranche @entity {
   id: ID! #poolId-trancheId
+  index: Int!
   type: String! @index
   pool: Pool! @index
 
@@ -106,9 +107,11 @@ type TrancheState @entity {
 
   outstandingInvestOrders_: BigInt!
   outstandingRedeemOrders_: BigInt!
+  outstandingRedeemOrdersCurrency_: BigInt!
 
   fulfilledInvestOrders_: BigInt!
   fulfilledRedeemOrders_: BigInt!
+  fulfilledRedeemOrdersCurrency_: BigInt!
 
   yield30DaysAnnualized: BigInt
   yield90DaysAnnualized: BigInt
@@ -130,9 +133,11 @@ type TrancheSnapshot @entity {
 
   outstandingInvestOrders_: BigInt!
   outstandingRedeemOrders_: BigInt!
+  outstandingRedeemOrdersCurrency_: BigInt!
 
   fulfilledInvestOrders_: BigInt!
   fulfilledRedeemOrders_: BigInt!
+  fulfilledRedeemOrdersCurrency_: BigInt!
 
   yield30DaysAnnualized: BigInt
   yield90DaysAnnualized: BigInt
@@ -171,8 +176,10 @@ type EpochState @entity {
 
   outstandingInvestOrders: BigInt!
   outstandingRedeemOrders: BigInt!
+  outstandingRedeemOrdersCurrency: BigInt!
   fulfilledInvestOrders: BigInt
   fulfilledRedeemOrders: BigInt
+  fulfilledRedeemOrdersCurrency: BigInt
 
   investFulfillment: BigInt
   redeemFulfillment: BigInt
@@ -244,20 +251,31 @@ enum LoanStatus {
   CLOSED
 }
 
-#UNUSED
-type Loan @entity {
-  id: ID!
+enum LoanType {
+  BulletLoan
+  CreditLine
+  CreditLineWithMaturity
+}
 
+type Loan @entity {
+  id: ID! # poolId - loanId
   createdAt: Date!
 
   # collateral:
   status: LoanStatus!
-  # TODO: how to store loan type data
+
+  type: LoanType
+  spec: String
 
   interestRatePerSec: BigInt
   outstandingDebt: BigInt
 
+  totalBorrowed: BigInt
+  totalRepaid: BigInt
+
   writeOffIndex: Int
+  writtenOffPercentage: BigInt
+  penaltyInterestRatePerSec: BigInt
   adminWrittenOff: Boolean
 
   pool: Pool!
@@ -271,13 +289,16 @@ enum BorrowerTransactionType {
   CLOSED
 }
 
-#UNUSED
 type BorrowerTransaction @entity {
-  id: ID!
+  id: ID! # extrinsic hash - epoch number - transaction type
+  timestamp: Date!
+  pool: Pool! @index
+  hash: String!
 
-  account: Account!
-  epochNumber: Int!
-  loan: Loan!
+  accountId: String!
+  epochNumber: Int! @index
+  epoch: Epoch!
+  loan: Loan! @index
   type: BorrowerTransactionType!
 
   # only applies to BORROWED and REPAID transactions

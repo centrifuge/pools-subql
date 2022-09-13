@@ -1,6 +1,6 @@
-import { u128, u64, U8aFixed } from '@polkadot/types'
+import { u128, u64 } from '@polkadot/types'
 import { bnToBn, nToBigInt } from '@polkadot/util'
-import { RAY } from '../../config'
+import { CPREC, RAY, RAY_DIGITS, WAD_DIGITS } from '../../config'
 import { errorHandler } from '../../helpers/errorHandler'
 import { ExtendedRpc, TrancheDetails } from '../../helpers/types'
 import { Tranche, TrancheSnapshot, TrancheState } from '../../types'
@@ -14,20 +14,23 @@ export class TrancheService {
     this.trancheState = trancheState
   }
 
-  static init = async (trancheId: string, poolId: string, trancheData: TrancheDetails) => {
+  static init = async (poolId: string, trancheId: string, index: number, trancheData: TrancheDetails) => {
     const trancheState = new TrancheState(`${poolId}-${trancheId}`)
     trancheState.type = 'ALL'
 
     trancheState.outstandingInvestOrders_ = BigInt(0)
     trancheState.outstandingRedeemOrders_ = BigInt(0)
+    trancheState.outstandingRedeemOrdersCurrency_ = BigInt(0)
     trancheState.fulfilledInvestOrders_ = BigInt(0)
     trancheState.fulfilledRedeemOrders_ = BigInt(0)
+    trancheState.fulfilledRedeemOrdersCurrency_ = BigInt(0)
     trancheState.price = nToBigInt(RAY)
 
     const tranche = new Tranche(`${poolId}-${trancheId}`)
     tranche.type = 'ALL'
     tranche.poolId = poolId
     tranche.trancheId = trancheId
+    tranche.index = index
     tranche.isResidual = trancheData.trancheType.isResidual
     tranche.seniority = trancheData.seniority.toNumber()
 
@@ -41,9 +44,9 @@ export class TrancheService {
     return new TrancheService(tranche, trancheState)
   }
 
-  static getById = async (trancheId: string) => {
-    const tranche = await Tranche.get(trancheId)
-    const trancheState = await TrancheState.get(trancheId)
+  static getById = async (poolId: string, trancheId: string) => {
+    const tranche = await Tranche.get(`${poolId}-${trancheId}`)
+    const trancheState = await TrancheState.get(`${poolId}-${trancheId}`)
     if (tranche === undefined || trancheState === undefined) return undefined
     return new TrancheService(tranche, trancheState)
   }
@@ -81,10 +84,8 @@ export class TrancheService {
   private _updatePricefromRpc = async () => {
     logger.info(`Qerying RPC price for tranche ${this.tranche.id}`)
     const poolId = new u64(api.registry, this.tranche.poolId)
-    const trancheId = new U8aFixed(api.registry, this.tranche.trancheId, 128)
-    logger.info(`trancheId: ${trancheId.toString()}`)
-    const tokenPrice = await (api.rpc as ExtendedRpc).pools.trancheTokenPrice(poolId, trancheId)
-    this.updatePrice(tokenPrice.toBigInt())
+    const tokenPrices = await (api.rpc as ExtendedRpc).pools.trancheTokenPrices(poolId)
+    this.updatePrice(tokenPrices[this.tranche.index].toBigInt())
     return this
   }
   public updatePriceFromRpc = errorHandler(this._updatePricefromRpc)
@@ -97,8 +98,8 @@ export class TrancheService {
 
   private _computeYield = async (yieldField: string, referencePeriodStart?: Date) => {
     logger.info(
-      `Computing yield for tranche ${this.tranche.trancheId} of\
-       pool ${this.tranche.poolId} with reference date ${referencePeriodStart}`
+      `Computing yield for tranche ${this.tranche.trancheId} of ` +
+        `pool ${this.tranche.poolId} with reference date ${referencePeriodStart}`
     )
 
     let trancheSnapshot: TrancheSnapshot
@@ -116,8 +117,8 @@ export class TrancheService {
       )
       if (trancheSnapshot === undefined) {
         logger.warn(
-          `No tranche snapshot found tranche ${this.tranche.poolId}-${this.tranche.trancheId} with\
-         reference date ${referencePeriodStart}`
+          `No tranche snapshot found tranche ${this.tranche.poolId}-${this.tranche.trancheId} with ` +
+            `reference date ${referencePeriodStart}`
         )
         return this
       }
@@ -139,8 +140,8 @@ export class TrancheService {
     referencePeriodStart: Date
   ) => {
     logger.info(
-      `Computing annualized yield for tranche ${this.tranche.trancheId} of\
-       pool ${this.tranche.poolId} with reference date ${referencePeriodStart}`
+      `Computing annualized yield for tranche ${this.tranche.trancheId} of ` +
+        `pool ${this.tranche.poolId} with reference date ${referencePeriodStart}`
     )
     const trancheSnapshots = await TrancheSnapshot.getByPeriodStart(referencePeriodStart)
     if (trancheSnapshots.length === 0) {
@@ -152,8 +153,8 @@ export class TrancheService {
     )
     if (trancheSnapshot === undefined) {
       logger.warn(
-        `No tranche snapshot found tranche ${this.tranche.poolId}-${this.tranche.poolId} with\
-         reference date ${referencePeriodStart}`
+        `No tranche snapshot found tranche ${this.tranche.poolId}-${this.tranche.poolId} with ` +
+          `reference date ${referencePeriodStart}`
       )
       return this
     }
@@ -176,8 +177,12 @@ export class TrancheService {
     return this
   }
 
-  public updateOutstandingRedeemOrders = (newAmount: bigint, oldAmount: bigint) => {
+  public updateOutstandingRedeemOrders = (newAmount: bigint, oldAmount: bigint, digits: number) => {
     this.trancheState.outstandingRedeemOrders_ = this.trancheState.outstandingRedeemOrders_ + newAmount - oldAmount
+    this.trancheState.outstandingRedeemOrdersCurrency_ = this.computeCurrencyAmount(
+      this.trancheState.outstandingRedeemOrders_,
+      digits
+    )
     return this
   }
 
@@ -190,4 +195,11 @@ export class TrancheService {
     this.trancheState.fulfilledRedeemOrders_ = this.trancheState.fulfilledRedeemOrders_ + amount
     return this
   }
+
+  private computeCurrencyAmount = (amount: bigint, digits: number) =>
+    nToBigInt(
+      bnToBn(amount)
+        .mul(bnToBn(this.trancheState.price))
+        .div(CPREC(RAY_DIGITS + WAD_DIGITS - digits))
+    )
 }

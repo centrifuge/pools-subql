@@ -112,14 +112,26 @@ export interface AssetMetadata extends Struct {
   existentialDeposit: u128
 }
 
-export type LoanAsset = ITuple<[u64, u128]>
+export interface LoanSpecs extends Struct {
+  advanceRate: u128
+  value: u128
+  probabilityOfDefault?: u128
+  lossGivenDefault?: u128
+  discountRate?: u128
+  maturityDate?: u64
+}
 
+export type LoanAsset = ITuple<[u64, u128]>
 export type PoolEvent = ITuple<[u64]>
 
 // poolId, loanId, collateral
 export type LoanCreatedClosedEvent = ITuple<[u64, u128, LoanAsset]>
 // poolId, loanId, amount
-export type LoanBorrowedEvent = ITuple<[u64, u128, u128]>
+export type LoanBorrowedRepaidEvent = ITuple<[u64, u128, u128]>
+//poolId, loanId, interestRatePerSec, loanType
+export type LoanPricedEvent = ITuple<[u64, u128, u128, Enum]>
+//poolId, loanId, percentage, penaltyInterestRatePerSec, writeOffGroupIndex
+export type LoanWrittenOffEvent = ITuple<[u64, u128, u128, u128, Option<u32>]>
 
 export type EpochEvent = ITuple<[u64, u32]>
 export type EpochSolutionEvent = ITuple<[u64, u32, EpochSolution]>
@@ -134,7 +146,7 @@ export type TokensTransferEvent = ITuple<[TokensCurrencyId, AccountId32, Account
 
 export type ExtendedRpc = typeof api.rpc & {
   pools: {
-    trancheTokenPrice: PromiseRpcResult<AugmentedRpc<(poolId: u64, trancheId: U8aFixed) => Observable<u128>>>
+    trancheTokenPrice: PromiseRpcResult<AugmentedRpc<(poolId: u64, trancheId: number[]) => Observable<u128>>>
     trancheTokenPrices: PromiseRpcResult<AugmentedRpc<(poolId: u64) => Observable<Vec<u128>>>>
   }
 }

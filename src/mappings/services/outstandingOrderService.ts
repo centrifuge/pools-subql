@@ -1,6 +1,6 @@
 import { bnToBn, nToBigInt } from '@polkadot/util'
-import { WAD } from '../../config'
 import { OutstandingOrder } from '../../types'
+import { InvestorTransactionData } from './investorTransactionService'
 
 export class OutstandingOrderService {
   readonly outstandingOrder: OutstandingOrder
@@ -9,51 +9,26 @@ export class OutstandingOrderService {
     this.outstandingOrder = outstandingOrder
   }
 
-  static init = (
-    poolId: string,
-    trancheId: string,
-    epochNumber: number,
-    address: string,
-    hash: string,
-    invest: bigint,
-    redeem: bigint,
-    timestamp: Date
-  ) => {
-    const oo = new OutstandingOrder(`${poolId}-${trancheId}-${address}`)
-    oo.hash = hash
-    oo.accountId = address
-    oo.poolId = poolId
-    oo.trancheId = `${poolId}-${trancheId}`
-    oo.epochNumber = epochNumber
-    oo.timestamp = timestamp
+  static init = (data: InvestorTransactionData, invest, redeem) => {
+    const oo = new OutstandingOrder(`${data.poolId}-${data.trancheId}-${data.address}`)
+    oo.hash = data.hash
+    oo.accountId = data.address
+    oo.poolId = data.poolId
+    oo.trancheId = `${data.poolId}-${data.trancheId}`
+    oo.epochNumber = data.epochNumber
+    oo.timestamp = data.timestamp
 
     oo.invest = invest
     oo.redeem = redeem
     return new OutstandingOrderService(oo)
   }
 
-  static initInvest = (
-    poolId: string,
-    trancheId: string,
-    epochNumber: number,
-    address: string,
-    hash: string,
-    amount: bigint,
-    timestamp: Date
-  ) => {
-    return this.init(poolId, trancheId, epochNumber, address, hash, amount, BigInt(0), timestamp)
+  static initInvest = (data: InvestorTransactionData) => {
+    return this.init(data, data.amount, BigInt(0))
   }
 
-  static initRedeem = (
-    poolId: string,
-    trancheId: string,
-    epochNumber: number,
-    address: string,
-    hash: string,
-    amount: bigint,
-    timestamp: Date
-  ) => {
-    return this.init(poolId, trancheId, epochNumber, address, hash, BigInt(0), amount, timestamp)
+  static initRedeem = (data: InvestorTransactionData) => {
+    return this.init(data, BigInt(0), data.amount)
   }
 
   static getByTrancheId = async (poolId: string, trancheId: string) => {
@@ -74,14 +49,12 @@ export class OutstandingOrderService {
   }
 
   updateUnfulfilledInvest = (investFulfillment: bigint) => {
-    const unfulfilledRatio = WAD.sub(bnToBn(investFulfillment))
-    this.outstandingOrder.invest = nToBigInt(bnToBn(this.outstandingOrder.invest).mul(unfulfilledRatio).div(WAD))
+    this.outstandingOrder.invest = nToBigInt(bnToBn(this.outstandingOrder.invest).sub(bnToBn(investFulfillment)))
     return this
   }
 
   updateUnfulfilledRedeem = (redeemFulfillment: bigint) => {
-    const unfulfilledRatio = WAD.sub(bnToBn(redeemFulfillment))
-    this.outstandingOrder.redeem = nToBigInt(bnToBn(this.outstandingOrder.redeem).mul(unfulfilledRatio).div(WAD))
+    this.outstandingOrder.redeem = nToBigInt(bnToBn(this.outstandingOrder.redeem).sub(bnToBn(redeemFulfillment)))
     return this
   }
 }

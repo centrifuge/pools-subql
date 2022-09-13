@@ -1,6 +1,36 @@
 import { bnToBn, nToBigInt } from '@polkadot/util'
-import { CPREC, RAY_DIGITS, WAD, WAD_DIGITS } from '../../config'
+import { CPREC, RAY_DIGITS, WAD_DIGITS, WAD } from '../../config'
 import { InvestorTransaction, InvestorTransactionType } from '../../types'
+
+const currencyTypes = [
+  InvestorTransactionType.INVEST_ORDER_UPDATE,
+  InvestorTransactionType.INVEST_ORDER_CANCEL,
+  InvestorTransactionType.INVEST_EXECUTION,
+  InvestorTransactionType.REDEEM_COLLECT,
+]
+
+const tokenTypes = [
+  InvestorTransactionType.REDEEM_ORDER_UPDATE,
+  InvestorTransactionType.REDEEM_ORDER_CANCEL,
+  InvestorTransactionType.REDEEM_EXECUTION,
+  InvestorTransactionType.INVEST_COLLECT,
+  InvestorTransactionType.TRANSFER_IN,
+  InvestorTransactionType.TRANSFER_OUT,
+]
+
+export interface InvestorTransactionData {
+  readonly poolId: string
+  readonly trancheId: string
+  readonly epochNumber: number
+  readonly address: string
+  readonly hash: string
+  readonly amount: bigint
+  readonly timestamp: Date
+  readonly digits: number
+  readonly price?: bigint
+  readonly fee?: bigint
+  readonly fulfillmentRate?: bigint
+}
 
 export class InvestorTransactionService {
   readonly investorTransaction: InvestorTransaction
@@ -9,278 +39,84 @@ export class InvestorTransactionService {
     this.investorTransaction = investorTransaction
   }
 
-  static init = (
-    poolId: string,
-    trancheId: string,
-    epochNumber: number,
-    address: string,
-    hash: string,
-    type: InvestorTransactionType,
-    amount: bigint,
-    timestamp: Date
-  ) => {
-    const tx = new InvestorTransaction(`${hash}-${epochNumber.toString()}-${type.toString()}`)
-    tx.hash = hash
-    tx.accountId = address
-    tx.poolId = poolId.toString()
-    tx.epochNumber = epochNumber
-    tx.epochId = `${poolId}-${epochNumber.toString()}`
-    tx.trancheId = `${poolId}-${trancheId}`
-    tx.timestamp = timestamp
+  static init = (data: InvestorTransactionData, type: InvestorTransactionType) => {
+    const tx = new InvestorTransaction(`${data.hash}-${data.epochNumber.toString()}-${type.toString()}`)
+    tx.poolId = data.poolId.toString()
+    tx.trancheId = `${data.poolId}-${data.trancheId}`
+    tx.epochNumber = data.epochNumber
+    tx.accountId = data.address
+    tx.hash = data.hash
+    tx.timestamp = data.timestamp
+    tx.tokenPrice = data.price
+    tx.transactionFee = data.fee
+
+    tx.epochId = `${data.poolId}-${data.epochNumber.toString()}`
     tx.type = type
 
-    const currencyTypes = [
-      InvestorTransactionType.INVEST_ORDER_UPDATE,
-      InvestorTransactionType.INVEST_ORDER_CANCEL,
-      InvestorTransactionType.INVEST_EXECUTION,
-      InvestorTransactionType.REDEEM_COLLECT,
-    ]
-    tx.currencyAmount = currencyTypes.includes(type) ? amount : BigInt(0)
-
-    const tokenTypes = [
-      InvestorTransactionType.REDEEM_ORDER_UPDATE,
-      InvestorTransactionType.REDEEM_ORDER_CANCEL,
-      InvestorTransactionType.REDEEM_EXECUTION,
-      InvestorTransactionType.INVEST_COLLECT,
-      InvestorTransactionType.TRANSFER_IN,
-      InvestorTransactionType.TRANSFER_OUT,
-    ]
-    tx.tokenAmount = tokenTypes.includes(type) ? amount : BigInt(0)
+    tx.currencyAmount = currencyTypes.includes(type) ? data.amount : this.computeCurrencyAmount(data)
+    tx.tokenAmount = tokenTypes.includes(type) ? data.amount : this.computeTokenAmount(data)
 
     return new InvestorTransactionService(tx)
   }
 
-  static executeInvestOrder = (
-    poolId: string,
-    trancheId: string,
-    epochNumber: number,
-    address: string,
-    hash: string,
-    amount: bigint,
-    fulfillmentRate: bigint,
-    price: bigint,
-    fee: bigint,
-    timestamp: Date,
-    digits: number
-  ) => {
-    const tx = this.init(
-      poolId,
-      trancheId,
-      epochNumber,
-      address,
-      hash,
-      InvestorTransactionType.INVEST_EXECUTION,
-      nToBigInt(bnToBn(amount).mul(bnToBn(fulfillmentRate)).div(WAD)),
-      timestamp
+  static executeInvestOrder = (data: InvestorTransactionData) => {
+    logger.info(
+      `Executing invest order for address ${data.address} in pool ${data.poolId} tranche ${data.trancheId} ` +
+        `with amount: ${data.amount} fulfillmentRate: ${data.fulfillmentRate} ` +
+        `price: ${data.price} digits: ${data.digits}`
     )
-    tx.investorTransaction.tokenPrice = price
-    tx.investorTransaction.transactionFee = fee
-    tx.investorTransaction.tokenAmount = nToBigInt(
-      bnToBn(amount).mul(CPREC(RAY_DIGITS + WAD_DIGITS - digits).div(bnToBn(price)))
-    )
+    const extendedData = {
+      ...data,
+      amount: this.computeFulfilledAmount(data),
+    }
+    const tx = this.init(extendedData, InvestorTransactionType.INVEST_EXECUTION)
     return tx
   }
 
-  static executeRedeemOrder = (
-    poolId: string,
-    trancheId: string,
-    epochNumber: number,
-    address: string,
-    hash: string,
-    amount: bigint,
-    fulfillmentRate: bigint,
-    price: bigint,
-    fee: bigint,
-    timestamp: Date,
-    digits: number
-  ) => {
-    const tx = this.init(
-      poolId,
-      trancheId,
-      epochNumber,
-      address,
-      hash,
-      InvestorTransactionType.REDEEM_EXECUTION,
-      nToBigInt(bnToBn(amount).mul(bnToBn(fulfillmentRate)).div(WAD)),
-      timestamp
+  static executeRedeemOrder = (data: InvestorTransactionData) => {
+    logger.info(
+      `Executing redeem order for address ${data.address} in pool ${data.poolId} tranche ${data.trancheId} ` +
+        `with amount: ${data.amount} fulfillmentRate: ${data.fulfillmentRate} ` +
+        `price: ${data.price} digits: ${data.digits}`
     )
-
-    tx.investorTransaction.tokenPrice = price
-    tx.investorTransaction.transactionFee = fee
-    tx.investorTransaction.currencyAmount = nToBigInt(
-      bnToBn(amount)
-        .mul(bnToBn(price))
-        .div(CPREC(RAY_DIGITS + WAD_DIGITS - digits))
-    )
+    const extendedData = {
+      ...data,
+      amount: this.computeFulfilledAmount(data),
+    }
+    const tx = this.init(extendedData, InvestorTransactionType.REDEEM_EXECUTION)
     return tx
   }
 
-  static updateInvestOrder = (
-    poolId: string,
-    trancheId: string,
-    epochNumber: number,
-    address: string,
-    hash: string,
-    amount: bigint,
-    timestamp: Date
-  ) => {
-    return this.init(
-      poolId,
-      trancheId,
-      epochNumber,
-      address,
-      hash,
-      InvestorTransactionType.INVEST_ORDER_UPDATE,
-      amount,
-      timestamp
-    )
+  static updateInvestOrder = (data: InvestorTransactionData) => {
+    return this.init(data, InvestorTransactionType.INVEST_ORDER_UPDATE)
   }
 
-  static updateRedeemOrder = (
-    poolId: string,
-    trancheId: string,
-    epochNumber: number,
-    address: string,
-    hash: string,
-    amount: bigint,
-    timestamp: Date
-  ) => {
-    return this.init(
-      poolId,
-      trancheId,
-      epochNumber,
-      address,
-      hash,
-      InvestorTransactionType.REDEEM_ORDER_UPDATE,
-      amount,
-      timestamp
-    )
+  static updateRedeemOrder = (data: InvestorTransactionData) => {
+    return this.init(data, InvestorTransactionType.REDEEM_ORDER_UPDATE)
   }
 
-  static cancelInvestOrder = (
-    poolId: string,
-    trancheId: string,
-    epochNumber: number,
-    address: string,
-    hash: string,
-    amount: bigint,
-    timestamp: Date
-  ) => {
-    return this.init(
-      poolId,
-      trancheId,
-      epochNumber,
-      address,
-      hash,
-      InvestorTransactionType.INVEST_ORDER_CANCEL,
-      amount,
-      timestamp
-    )
+  static cancelInvestOrder = (data: InvestorTransactionData) => {
+    return this.init(data, InvestorTransactionType.INVEST_ORDER_CANCEL)
   }
 
-  static cancelRedeemOrder = (
-    poolId: string,
-    trancheId: string,
-    epochNumber: number,
-    address: string,
-    hash: string,
-    amount: bigint,
-    timestamp: Date
-  ) => {
-    return this.init(
-      poolId,
-      trancheId,
-      epochNumber,
-      address,
-      hash,
-      InvestorTransactionType.REDEEM_ORDER_CANCEL,
-      amount,
-      timestamp
-    )
+  static cancelRedeemOrder = (data: InvestorTransactionData) => {
+    return this.init(data, InvestorTransactionType.REDEEM_ORDER_CANCEL)
   }
 
-  static collectInvestOrder = (
-    poolId: string,
-    trancheId: string,
-    epochNumber: number,
-    address: string,
-    hash: string,
-    amount: bigint,
-    timestamp: Date
-  ) => {
-    return this.init(
-      poolId,
-      trancheId,
-      epochNumber,
-      address,
-      hash,
-      InvestorTransactionType.INVEST_COLLECT,
-      amount,
-      timestamp
-    )
+  static collectInvestOrder = (data: InvestorTransactionData) => {
+    return this.init(data, InvestorTransactionType.INVEST_COLLECT)
   }
 
-  static collectRedeemOrder = (
-    poolId: string,
-    trancheId: string,
-    epochNumber: number,
-    address: string,
-    hash: string,
-    amount: bigint,
-    timestamp: Date
-  ) => {
-    return this.init(
-      poolId,
-      trancheId,
-      epochNumber,
-      address,
-      hash,
-      InvestorTransactionType.REDEEM_COLLECT,
-      amount,
-      timestamp
-    )
+  static collectRedeemOrder = (data: InvestorTransactionData) => {
+    return this.init(data, InvestorTransactionType.REDEEM_COLLECT)
   }
 
-  static transferIn = (
-    poolId: string,
-    trancheId: string,
-    epochNumber: number,
-    address: string,
-    hash: string,
-    amount: bigint,
-    timestamp: Date
-  ) => {
-    return this.init(
-      poolId,
-      trancheId,
-      epochNumber,
-      address,
-      hash,
-      InvestorTransactionType.TRANSFER_IN,
-      amount,
-      timestamp
-    )
+  static transferIn = (data: InvestorTransactionData) => {
+    return this.init(data, InvestorTransactionType.TRANSFER_IN)
   }
 
-  static transferOut = (
-    poolId: string,
-    trancheId: string,
-    epochNumber: number,
-    address: string,
-    hash: string,
-    amount: bigint,
-    timestamp: Date
-  ) => {
-    return this.init(
-      poolId,
-      trancheId,
-      epochNumber,
-      address,
-      hash,
-      InvestorTransactionType.TRANSFER_OUT,
-      amount,
-      timestamp
-    )
+  static transferOut = (data: InvestorTransactionData) => {
+    return this.init(data, InvestorTransactionType.TRANSFER_OUT)
   }
 
   save = async () => {
@@ -293,4 +129,25 @@ export class InvestorTransactionService {
     if (tx === undefined) return undefined
     return new InvestorTransactionService(tx)
   }
+
+  static computeTokenAmount = (data: InvestorTransactionData) =>
+    data.price
+      ? nToBigInt(
+          bnToBn(data.amount)
+            .mul(CPREC(RAY_DIGITS + WAD_DIGITS - data.digits))
+            .div(bnToBn(data.price))
+        )
+      : null
+
+  static computeCurrencyAmount = (data: InvestorTransactionData) =>
+    data.price
+      ? nToBigInt(
+          bnToBn(data.amount)
+            .mul(bnToBn(data.price))
+            .div(CPREC(RAY_DIGITS + WAD_DIGITS - data.digits))
+        )
+      : null
+
+  static computeFulfilledAmount = (data: InvestorTransactionData) =>
+    nToBigInt(bnToBn(data.amount).mul(bnToBn(data.fulfillmentRate)).div(WAD))
 }
