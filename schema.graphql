@@ -158,6 +158,9 @@ type Epoch @entity {
   # Aggregated data during this epoch
   totalBorrowed: BigInt!
   totalRepaid: BigInt!
+  totalInvested: BigInt!
+  totalRedeemed: BigInt!
+  totalRedeemedCurrency: BigInt!
 
   epochStates: [EpochState] @derivedFrom(field: "epoch")
 
