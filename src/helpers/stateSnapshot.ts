@@ -43,13 +43,14 @@ async function _stateSnapshotter<
 >(stateModel: T, snapshotModel: U, block: SubstrateBlock, fkReferenceName: string = undefined): Promise<void> {
   const entitySaves: Promise<void>[] = []
   const stateModelHasGetByType = Object.prototype.hasOwnProperty.call(stateModel, 'getByType')
-  if (!stateModelHasGetByType) throw new Error('stateModel has no method .hasOwnProperty()')
-  const stateEntities = await stateModel.getByType('ALL')
+  if (!stateModelHasGetByType) throw new Error('stateModel has no method .getByType()')
   logger.info(`Performing snapshots of ${stateModel.name}`)
+  const stateEntities = await stateModel.getByType('ALL')
   for (const stateEntity of stateEntities) {
     const blockNumber = block.block.header.number.toNumber()
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { id, type, ...copyStateEntity } = stateEntity
+    logger.info(`Snapshotting ${stateModel.name}: ${id}`)
     const snapshotEntity = new snapshotModel(`${id}-${blockNumber.toString()}`)
     Object.assign(snapshotEntity, copyStateEntity)
     snapshotEntity.timestamp = block.timestamp
@@ -58,8 +59,8 @@ async function _stateSnapshotter<
 
     if (fkReferenceName) snapshotEntity[fkReferenceName] = stateEntity.id
 
-    const propNamesToReset = Object.getOwnPropertyNames(stateEntity).filter((propName) => propName.endsWith('_'))
-    logger.info(`Resetting ${stateModel.name} entities: [${propNamesToReset.concat(',')}]`)
+    const propNames = Object.getOwnPropertyNames(stateEntity)
+    const propNamesToReset = propNames.filter((propName) => propName.endsWith('_'))
     for (const propName of propNamesToReset) {
       stateEntity[propName] = BigInt(0)
     }

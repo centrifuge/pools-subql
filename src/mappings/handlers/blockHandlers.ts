@@ -38,7 +38,7 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
       for (const tranche of tranches) {
         const trancheIndex = trancheIds.findIndex((trancheId) => tranche.tranche.trancheId === trancheId)
         if (trancheIndex === -1) throw new Error(`Could not find TrancheDetails for tranche :${tranche.tranche.id}`)
-        await tranche.updatePrice(tokenPrices[trancheIndex].toBigInt())
+        if (tokenPrices !== undefined) await tranche.updatePrice(tokenPrices[trancheIndex].toBigInt())
         await tranche.updateSupply()
         await tranche.updateDebt(trancheData[trancheIndex].debt.toBigInt())
         await tranche.computeYield('yieldSinceLastPeriod', lastPeriodStart)

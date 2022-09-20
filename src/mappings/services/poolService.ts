@@ -1,4 +1,4 @@
-import { Option, u64 } from '@polkadot/types'
+import { Option, u128, u64, Vec } from '@polkadot/types'
 import { bnToBn, nToBigInt } from '@polkadot/util'
 import { errorHandler } from '../../helpers/errorHandler'
 import { ExtendedRpc, NavDetails, PoolDetails, TrancheData } from '../../helpers/types'
@@ -134,7 +134,13 @@ export class PoolService {
   private _getTrancheTokenPrices = async () => {
     logger.info(`Qerying RPC tranche token prices for pool ${this.pool.id}`)
     const poolId = new u64(api.registry, this.pool.id)
-    const tokenPrices = await (api.rpc as ExtendedRpc).pools.trancheTokenPrices(poolId)
+    let tokenPrices: Vec<u128>
+    try {
+      tokenPrices = await (api.rpc as ExtendedRpc).pools.trancheTokenPrices(poolId)
+    } catch (err) {
+      logger.error(`Unable to fetch tranche token prices for pool: ${this.pool.id}: ${err}`)
+      tokenPrices = undefined
+    }
     return tokenPrices
   }
   public getTrancheTokenPrices = errorHandler(this._getTrancheTokenPrices)
