@@ -20,7 +20,7 @@ export async function handleProxyAnonymousCreated(event: SubstrateEvent): Promis
   const [account, createdBy, proxyType] = event.event.data
 
   const anonymousProxy = new AnonymousProxy(`${account.toString()}`)
-  anonymousProxy.account = account.toString()
+  anonymousProxy.accountId = account.toString()
   anonymousProxy.createdBy = createdBy.toString()
   anonymousProxy.proxyType = proxyType.toString()
   await anonymousProxy.save()

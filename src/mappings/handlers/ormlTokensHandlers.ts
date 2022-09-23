@@ -1,6 +1,7 @@
 import { SubstrateEvent } from '@subql/types'
 import { errorHandler } from '../../helpers/errorHandler'
 import { TokensTransferEvent } from '../../helpers/types'
+import { AccountService } from '../services/accountService'
 import { CurrencyService } from '../services/currencyService'
 import { InvestorTransactionService } from '../services/investorTransactionService'
 import { PoolService } from '../services/poolService'
@@ -12,12 +13,11 @@ async function _handleTokenTransfer(event: SubstrateEvent<TokensTransferEvent>):
 
   if (currency.isTranche) {
     const [poolId, trancheId] = currency.asTranche
-
-    const fromId = String.fromCharCode(...from.toU8a())
-    const toId = String.fromCharCode(...to.toU8a())
+    const fromAddress = String.fromCharCode(...from.toU8a())
+    const toAddress = String.fromCharCode(...to.toU8a())
 
     // FILTER OUT ALL TRANSACTIONS CONTAINING A POOL ADDRESS
-    if (fromId.startsWith('pool') || toId.startsWith('pool')) return
+    if (fromAddress.startsWith('pool') || toAddress.startsWith('pool')) return
 
     logger.info(
       `Token transfer tor tranche: ${poolId.toString()}-${trancheId.toString()}.
@@ -28,6 +28,10 @@ async function _handleTokenTransfer(event: SubstrateEvent<TokensTransferEvent>):
     // Get corresponding pool
     const pool = await PoolService.getById(poolId.toString())
     const tranche = await TrancheService.getById(poolId.toString(), trancheId.toHex())
+    const [fromAccount, toAccount] = await Promise.all([
+      AccountService.getOrInit(fromAddress),
+      AccountService.getOrInit(toAddress),
+    ])
 
     // Update tranche price
     await tranche.updatePriceFromRpc()
@@ -46,11 +50,11 @@ async function _handleTokenTransfer(event: SubstrateEvent<TokensTransferEvent>):
 
     // CREATE 2 TRANSFERS FOR FROM AND TO ADDRESS
     // with from create TRANSFER_OUT
-    const txOut = InvestorTransactionService.transferOut({ ...orderData, address: from.toString() })
+    const txOut = InvestorTransactionService.transferOut({ ...orderData, address: fromAccount.account.id })
     await txOut.save()
 
     // with to create TRANSFER_IN
-    const txIn = InvestorTransactionService.transferIn({ ...orderData, address: to.toString() })
+    const txIn = InvestorTransactionService.transferIn({ ...orderData, address: toAccount.account.id })
     await txIn.save()
   }
 }

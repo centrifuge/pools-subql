@@ -204,7 +204,7 @@ enum InvestorTransactionType {
 type InvestorTransaction @entity {
   id: ID! # extrinsic hash - epoch number - transaction type
   hash: String!
-  accountId: String #Account @index
+  account: Account @index #Account @index
   pool: Pool! @index
   tranche: Tranche! @index
   epochNumber: Int! @index
@@ -221,7 +221,7 @@ type InvestorTransaction @entity {
 type OutstandingOrder @entity {
   id: ID! # pool id - tranche id - investor address
   hash: String!
-  accountId: String #Account @index
+  account: Account! @index #Account @index
   pool: Pool! @index
   tranche: Tranche! @index
   epochNumber: Int! @index
@@ -234,18 +234,28 @@ type OutstandingOrder @entity {
 type Account @entity {
   id: ID!
 
-  publicAddress: String!
+  anonymousProxies: [AnonymousProxy] @derivedFrom(field: "account")
+
+  investorTransactions: [InvestorTransaction] @derivedFrom(field: "account")
+  borrowerTransactions: [BorrowerTransaction] @derivedFrom(field: "account")
+
+  outstandingOrders: [OutstandingOrder] @derivedFrom(field: "account")
+  trancheBalances: [TrancheBalance] @derivedFrom(field: "account")
 }
 
-type AccountBalance @entity {
-  id: ID! # pool id - tranche id - account id
+type TrancheBalance @entity {
+  id: ID! # address - pool id - tranche id
   account: Account @index
   pool: Pool! @index
   tranche: Tranche! @index
 
-  collected: BigInt!
-  uncollected: BigInt!
-  ordered: BigInt!
+  investOrdered: BigInt!
+  investUncollected: BigInt!
+  investCollected: BigInt!
+
+  redeemOrdered: BigInt!
+  redeemUncollected: BigInt!
+  redeemCollected: BigInt!
 }
 
 enum LoanStatus {
@@ -298,7 +308,7 @@ type BorrowerTransaction @entity {
   pool: Pool! @index
   hash: String!
 
-  accountId: String!
+  account: Account! @index
   epochNumber: Int! @index
   epoch: Epoch!
   loan: Loan! @index
@@ -311,7 +321,7 @@ type BorrowerTransaction @entity {
 type AnonymousProxy @entity {
   id: ID!
 
-  account: String!
+  account: Account! @index
   createdBy: String!
   proxyType: String
 }
