@@ -13,12 +13,17 @@ import { AccountService } from '../services/accountService'
 
 export const handleLoanCreated = errorHandler(_handleLoanCreated)
 async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedClosedEvent>) {
-  const [poolId, loanId] = event.event.data
+  const [poolId, loanId, [, collateral]] = event.event.data
   logger.info(`Loan created event for pool: ${poolId.toString()} loan: ${loanId.toString()}`)
   const pool = await PoolService.getById(poolId.toString())
   const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toString())
 
-  const loan = await LoanService.init(poolId.toString(), loanId.toString(), event.block.timestamp)
+  const loan = await LoanService.init(
+    poolId.toString(),
+    loanId.toString(),
+    collateral.toBigInt(),
+    event.block.timestamp
+  )
   await loan.save()
 
   const bt = await BorrowerTransactionService.created({

@@ -4,15 +4,11 @@ import { getPeriodStart } from './timekeeperService'
 
 interface Constructor<C> {
   new (id: string): C
-}
-
-interface TypeGetter<C> {
-  getByType(type: string): Promise<C[]> | undefined
+  //getByType(type: string): C[] | undefined
 }
 
 interface GenericState {
   id: string
-  type: string
   save(): Promise<void>
 }
 
@@ -37,19 +33,24 @@ interface GenericSnapshot {
  * @returns A promise resolving when all state manipulations in the DB is completed
  */
 export const stateSnapshotter = errorHandler(_stateSnapshotter)
-async function _stateSnapshotter<
-  T extends Constructor<GenericState> & TypeGetter<GenericState>,
-  U extends Constructor<GenericSnapshot>
->(stateModel: T, snapshotModel: U, block: SubstrateBlock, fkReferenceName: string = undefined): Promise<void> {
+async function _stateSnapshotter<T extends Constructor<GenericState>, U extends Constructor<GenericSnapshot>>(
+  stateModel: T,
+  snapshotModel: U,
+  block: SubstrateBlock,
+  fkReferenceName: string = undefined,
+  filterKey = 'Type',
+  filterValue = 'ALL'
+): Promise<void> {
   const entitySaves: Promise<void>[] = []
-  const stateModelHasGetByType = Object.prototype.hasOwnProperty.call(stateModel, 'getByType')
-  if (!stateModelHasGetByType) throw new Error('stateModel has no method .getByType()')
+  const getterName = `getBy${filterKey}`
+  const stateModelHasGetByType = Object.prototype.hasOwnProperty.call(stateModel, getterName)
+  if (!stateModelHasGetByType) throw new Error(`${stateModel.name} has no method .${getterName}()`)
   logger.info(`Performing snapshots of ${stateModel.name}`)
-  const stateEntities = await stateModel.getByType('ALL')
+  const stateEntities = await stateModel[getterName](filterValue)
   for (const stateEntity of stateEntities) {
     const blockNumber = block.block.header.number.toNumber()
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { id, type, ...copyStateEntity } = stateEntity
+    const { id, [filterKey.toLowerCase()]: type, ...copyStateEntity } = stateEntity
     logger.info(`Snapshotting ${stateModel.name}: ${id}`)
     const snapshotEntity = new snapshotModel(`${id}-${blockNumber.toString()}`)
     Object.assign(snapshotEntity, copyStateEntity)

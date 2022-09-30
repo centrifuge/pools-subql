@@ -121,6 +121,23 @@ export interface LoanSpecs extends Struct {
   maturityDate?: u64
 }
 
+export interface PricedLoanDetails extends Struct {
+  loanId: u128
+  loanType: Enum
+  interestRatePerSec: u128
+  originationDate: Option<u64>
+  normalizedDebt: u128
+  totalBorrowed: u128
+  totalRepaid: u128
+  writeOffStatus: Enum
+  lastUpdated: u64
+}
+
+export interface InterestAccrualRateDetails extends Struct {
+  accumulatedRate: u128
+  lastUpdated: u64
+}
+
 export type LoanAsset = ITuple<[u64, u128]>
 export type PoolEvent = ITuple<[u64]>
 

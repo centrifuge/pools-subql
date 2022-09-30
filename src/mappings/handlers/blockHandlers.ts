@@ -1,11 +1,12 @@
 import { SubstrateBlock } from '@subql/types'
-import { PoolState, PoolSnapshot, TrancheState, TrancheSnapshot } from '../../types'
+import { PoolState, PoolSnapshot, TrancheState, TrancheSnapshot, LoanState, LoanSnapshot } from '../../types'
 import { getPeriodStart, TimekeeperService } from '../../helpers/timekeeperService'
 import { errorHandler } from '../../helpers/errorHandler'
 import { stateSnapshotter } from '../../helpers/stateSnapshot'
 import { SNAPSHOT_INTERVAL_SECONDS } from '../../config'
 import { PoolService } from '../services/poolService'
 import { TrancheService } from '../services/trancheService'
+import { LoanService } from '../services/loanService'
 
 const timekeeper = TimekeeperService.init()
 
@@ -47,11 +48,21 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
         await tranche.computeYieldAnnualized('yield90DaysAnnualized', blockPeriodStart, daysAgo90)
         await tranche.save()
       }
+
+      // Update loans outstanding debt
+      const activeLoanData = await pool.getActiveLoanData()
+      for (const loanId in activeLoanData) {
+        const loan = await LoanService.getById(pool.pool.id, loanId)
+        const { normalizedDebt, interestRate } = activeLoanData[loanId]
+        await loan.updateOutstandingDebt(normalizedDebt, interestRate)
+        await loan.save()
+      }
     }
 
     //Perform Snapshots and reset accumulators
     await stateSnapshotter(PoolState, PoolSnapshot, block, 'poolId')
     await stateSnapshotter(TrancheState, TrancheSnapshot, block, 'trancheId')
+    await stateSnapshotter(LoanState, LoanSnapshot, block, 'loanId', 'Status', 'ACTIVE')
 
     //Update tracking of period and continue
     await (await timekeeper).update(blockPeriodStart)

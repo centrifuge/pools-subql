@@ -258,11 +258,11 @@ type TrancheBalance @entity {
   redeemCollected: BigInt!
 }
 
-enum LoanStatus {
-  CREATED
-  ACTIVE
-  CLOSED
-}
+# enum LoanStatus {
+#   CREATED
+#   ACTIVE
+#   CLOSED
+# }
 
 enum LoanType {
   BulletLoan
@@ -274,24 +274,49 @@ type Loan @entity {
   id: ID! # poolId - loanId
   createdAt: Date!
 
-  # collateral:
-  status: LoanStatus!
+  collateral: BigInt!
 
   type: LoanType
   spec: String
 
   interestRatePerSec: BigInt
+
+  adminWrittenOff: Boolean
+
+  pool: Pool!
+  state: LoanState!
+}
+
+type LoanState @entity {
+  id: ID! # poolId - loanId
+  status: String! @index
+
   outstandingDebt: BigInt
 
-  totalBorrowed: BigInt
-  totalRepaid: BigInt
+  totalBorrowed_: BigInt
+  totalRepaid_: BigInt
 
   writeOffIndex: Int
   writtenOffPercentage: BigInt
   penaltyInterestRatePerSec: BigInt
-  adminWrittenOff: Boolean
+}
 
-  pool: Pool!
+type LoanSnapshot @entity {
+  id: ID! # poolId - loanId - blockNumber
+  loan: Loan!
+
+  timestamp: Date!
+  blockNumber: Int!
+  periodStart: Date! @index
+
+  outstandingDebt: BigInt
+
+  totalBorrowed_: BigInt
+  totalRepaid_: BigInt
+
+  writeOffIndex: Int
+  writtenOffPercentage: BigInt
+  penaltyInterestRatePerSec: BigInt
 }
 
 enum BorrowerTransactionType {

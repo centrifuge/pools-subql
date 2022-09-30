@@ -1,7 +1,7 @@
 import { Option, u128, u64, Vec } from '@polkadot/types'
 import { bnToBn, nToBigInt } from '@polkadot/util'
 import { errorHandler } from '../../helpers/errorHandler'
-import { ExtendedRpc, NavDetails, PoolDetails, TrancheData } from '../../helpers/types'
+import { ExtendedRpc, NavDetails, PoolDetails, PricedLoanDetails, TrancheData } from '../../helpers/types'
 import { Pool, PoolState } from '../../types'
 
 export class PoolService {
@@ -144,4 +144,25 @@ export class PoolService {
     return tokenPrices
   }
   public getTrancheTokenPrices = errorHandler(this._getTrancheTokenPrices)
+
+  private _getActiveLoanData = async () => {
+    logger.info(`Querying active loan data for pool: ${this.pool.id}`)
+    const loanDetails = await api.query.loans.activeLoans<Vec<PricedLoanDetails>>(this.pool.id)
+    const activeLoanData = loanDetails.reduce<ActiveLoanData>(
+      (last, current) => ({
+        ...last,
+        [current.loanId.toString()]: {
+          normalizedDebt: current.normalizedDebt.toBigInt(),
+          interestRate: current.interestRatePerSec.toBigInt(),
+        },
+      }),
+      {}
+    )
+    return activeLoanData
+  }
+  public getActiveLoanData = errorHandler(this._getActiveLoanData)
+}
+
+interface ActiveLoanData {
+  [loanId: string]: { normalizedDebt: bigint; interestRate: bigint }
 }
