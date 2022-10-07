@@ -29,6 +29,7 @@ export interface TrancheDetails extends Struct {
   reserve: u128
   ratio: Perquintill
   lastUpdatedInterest: u64
+  index?: number
 }
 
 export interface TrancheTypeEnum extends Enum {
@@ -139,7 +140,9 @@ export interface InterestAccrualRateDetails extends Struct {
 }
 
 export type LoanAsset = ITuple<[u64, u128]>
-export type PoolEvent = ITuple<[u64]>
+
+// poolId
+export type PoolCreatedUpdatedEvent = ITuple<[u64]>
 
 // poolId, loanId, collateral
 export type LoanCreatedClosedEvent = ITuple<[u64, u128, LoanAsset]>

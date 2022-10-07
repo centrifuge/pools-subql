@@ -39,7 +39,7 @@ async function _stateSnapshotter<T extends Constructor<GenericState>, U extends 
   block: SubstrateBlock,
   fkReferenceName: string = undefined,
   filterKey = 'Type',
-  filterValue = 'ALL'
+  filterValue: string | boolean = 'ALL'
 ): Promise<void> {
   const entitySaves: Promise<void>[] = []
   const getterName = `getBy${filterKey}`

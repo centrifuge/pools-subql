@@ -100,6 +100,7 @@ type Tranche @entity {
 type TrancheState @entity {
   id: ID! #poolId-trancheId
   type: String! @index
+  active: Boolean! @index
 
   supply: BigInt
   price: BigInt

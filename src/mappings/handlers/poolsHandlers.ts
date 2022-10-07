@@ -3,7 +3,7 @@ import { errorHandler } from '../../helpers/errorHandler'
 import { EpochService } from '../services/epochService'
 import { PoolService } from '../services/poolService'
 import { TrancheService } from '../services/trancheService'
-import { EpochEvent, OrderEvent, OrdersCollectedEvent, PoolEvent } from '../../helpers/types'
+import { EpochEvent, OrderEvent, OrdersCollectedEvent, PoolCreatedUpdatedEvent } from '../../helpers/types'
 import { OutstandingOrderService } from '../services/outstandingOrderService'
 import { InvestorTransactionData, InvestorTransactionService } from '../services/investorTransactionService'
 import { CurrencyService } from '../services/currencyService'
@@ -11,7 +11,7 @@ import { AccountService } from '../services/accountService'
 import { TrancheBalanceService } from '../services/trancheBalanceService'
 
 export const handlePoolCreated = errorHandler(_handlePoolCreated)
-async function _handlePoolCreated(event: SubstrateEvent<PoolEvent>): Promise<void> {
+async function _handlePoolCreated(event: SubstrateEvent<PoolCreatedUpdatedEvent>): Promise<void> {
   const [poolId] = event.event.data
   logger.info(`Pool ${poolId.toString()} created in block ${event.block.block.header.number}`)
 
@@ -19,21 +19,18 @@ async function _handlePoolCreated(event: SubstrateEvent<PoolEvent>): Promise<voi
   const poolService = await PoolService.init(
     poolId.toString(),
     event.block.timestamp,
-    event.block.block.header.number.toNumber(),
-    async (ticker) => (await CurrencyService.getOrInit(ticker)).currency.id
+    event.block.block.header.number.toNumber()
   )
+  await poolService.initData(async (ticker) => (await CurrencyService.getOrInit(ticker)).currency.id)
   await poolService.save()
 
-  const { ids, tranches } = poolService.tranches
-  const trancheIds = ids.map((id) => id.toHex())
-
   // Initialise the tranches
-  for (const [index, trancheData] of tranches.entries()) {
-    const trancheId = trancheIds[index]
-    logger.info(`Creating tranche with id: ${trancheId}`)
-    const trancheService = await TrancheService.init(poolId.toString(), trancheId, index, trancheData)
+  const tranches = await poolService.getTranches()
+  for (const [id, tranche] of Object.entries(tranches)) {
+    logger.info(`Creating tranche with id: ${id}`)
+    const trancheService = await TrancheService.init(poolId.toString(), id, tranche.index, tranche.data)
     await trancheService.updateSupply()
-    await trancheService.updateDebt(trancheData.debt.toBigInt())
+    await trancheService.updateDebt(tranche.data.debt.toBigInt())
     await trancheService.save()
   }
 
@@ -41,16 +38,37 @@ async function _handlePoolCreated(event: SubstrateEvent<PoolEvent>): Promise<voi
   const epochService = await EpochService.init(
     poolId.toString(),
     poolService.pool.currentEpoch,
-    trancheIds,
+    Object.keys(tranches),
     event.block.timestamp
   )
   await epochService.save()
 }
 
 export const handlePoolUpdated = errorHandler(_handlePoolUpdated)
-async function _handlePoolUpdated(event: SubstrateEvent<PoolEvent>): Promise<void> {
+async function _handlePoolUpdated(event: SubstrateEvent<PoolCreatedUpdatedEvent>): Promise<void> {
   const [poolId] = event.event.data
+  const pool = await PoolService.getById(poolId.toString())
   logger.info(`Pool ${poolId.toString()} updated on block ${event.block.block.header.number}`)
+  await pool.initData(async (ticker) => (await CurrencyService.getOrInit(ticker)).currency.id)
+  await pool.save()
+
+  // Deactivate active tranches
+  const activeTranches = await TrancheService.getActives(poolId.toString())
+  for (const activeTranche of activeTranches) {
+    await activeTranche.deactivate()
+    await activeTranche.save()
+  }
+
+  // Reprocess tranches
+  const tranches = await pool.getTranches()
+  for (const [id, tranche] of Object.entries(tranches)) {
+    logger.info(`Syncing tranche with id: ${id}`)
+    const trancheService = await TrancheService.getOrInit(poolId.toString(), id, tranche.index, tranche.data)
+    await trancheService.activate()
+    await trancheService.updateSupply()
+    await trancheService.updateDebt(tranche.data.debt.toBigInt())
+    await trancheService.save()
+  }
 }
 
 export const handleEpochClosed = errorHandler(_handleEpochClosed)
