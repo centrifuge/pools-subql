@@ -29,6 +29,7 @@ export class PoolService {
     poolState.totalInvested_ = BigInt(0)
     poolState.totalRedeemed_ = BigInt(0)
     poolState.totalNumberOfLoans_ = BigInt(0)
+    poolState.totalNumberOfActiveLoans = BigInt(0)
 
     poolState.totalEverBorrowed = BigInt(0)
     poolState.totalEverNumberOfLoans = BigInt(0)
@@ -104,6 +105,10 @@ export class PoolService {
     return this
   }
   public updateNav = errorHandler(this._updateNav)
+
+  public updateTotalNumberOfActiveLoans = (activeLoans: bigint) => {
+    this.poolState.totalNumberOfActiveLoans = activeLoans
+  }
 
   public increaseTotalBorrowings = (borrowedAmount: bigint) => {
     this.poolState.totalBorrowed_ = this.poolState.totalBorrowed_ + borrowedAmount

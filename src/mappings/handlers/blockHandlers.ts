@@ -28,7 +28,6 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
       await pool.updateState()
       await pool.updateNav()
       await pool.computePoolValue()
-      await pool.save()
 
       // Update tranche states
       const tranches = await TrancheService.getActives(pool.pool.id)
@@ -54,6 +53,9 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
         await loan.updateOutstandingDebt(normalizedDebt, interestRate)
         await loan.save()
       }
+
+      await pool.updateTotalNumberOfActiveLoans(BigInt(Object.keys(activeLoanData).length))
+      await pool.save()
     }
 
     //Perform Snapshots and reset accumulators

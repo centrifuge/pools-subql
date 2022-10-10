@@ -49,6 +49,8 @@ type PoolState @entity {
   totalRedeemed_: BigInt
   totalNumberOfLoans_: BigInt
 
+  totalNumberOfActiveLoans: BigInt!
+
   # Cumulated transaction data since pool creation
   totalEverBorrowed: BigInt
   totalEverNumberOfLoans: BigInt
@@ -78,6 +80,8 @@ type PoolSnapshot @entity {
   totalInvested_: BigInt
   totalRedeemed_: BigInt
   totalNumberOfLoans_: BigInt
+
+  totalNumberOfActiveLoans: BigInt!
 
   # Cumulated transaction data since pool creation
   totalEverBorrowed: BigInt
@@ -278,6 +282,7 @@ type Loan @entity {
   createdAt: Date!
 
   collateral: BigInt!
+  maturityDate: Date
 
   type: LoanType
   spec: String

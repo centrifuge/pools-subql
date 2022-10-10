@@ -72,6 +72,11 @@ export class LoanService {
     this.loan.spec = specBuff.toString('base64')
   }
 
+  public updateMaturityDate = (maturityDate: Date) => {
+    logger.info(`Updating maturity date for loan ${this.loan.id} to ${maturityDate.toISOString()}`)
+    this.loan.maturityDate = maturityDate
+  }
+
   public activate = () => {
     logger.info(`Activating loan ${this.loan.id}`)
     this.loanState.status = 'ACTIVE'

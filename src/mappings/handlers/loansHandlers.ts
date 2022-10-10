@@ -4,6 +4,7 @@ import {
   LoanCreatedClosedEvent,
   LoanPricedEvent,
   LoanWrittenOffEvent,
+  LoanSpecs,
 } from '../../helpers/types'
 import { errorHandler } from '../../helpers/errorHandler'
 import { PoolService } from '../services/poolService'
@@ -72,10 +73,14 @@ async function _handleLoanPriced(event: SubstrateEvent<LoanPricedEvent>) {
   const pool = await PoolService.getById(poolId.toString())
   const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toString())
 
+  const loanSpecs = loanType.inner as LoanSpecs
+  const maturityDate = loanSpecs.maturityDate ? new Date(loanSpecs.maturityDate.toNumber() * 1000) : null
+
   const loan = await LoanService.getById(poolId.toString(), loanId.toString())
   await loan.activate()
   await loan.updateInterestRate(interestRatePerSec.toBigInt())
   await loan.updateLoanType(loanType.type, loanType.inner.toJSON())
+  await loan.updateMaturityDate(maturityDate)
   await loan.save()
 
   const bt = await BorrowerTransactionService.priced({
