@@ -33,6 +33,7 @@ type Pool @entity {
 type PoolState @entity {
   id: ID! #poolId
   type: String! @index
+
   #States
   netAssetValue: BigInt!
   totalReserve: BigInt!
@@ -74,6 +75,8 @@ type PoolSnapshot @entity {
   # Aggregated transaction data over the last period
   totalBorrowed_: BigInt
   totalRepaid_: BigInt
+  totalInvested_: BigInt
+  totalRedeemed_: BigInt
   totalNumberOfLoans_: BigInt
 
   # Cumulated transaction data since pool creation
@@ -161,7 +164,6 @@ type Epoch @entity {
   totalRepaid: BigInt!
   totalInvested: BigInt!
   totalRedeemed: BigInt!
-  totalRedeemedCurrency: BigInt!
 
   epochStates: [EpochState] @derivedFrom(field: "epoch")
 

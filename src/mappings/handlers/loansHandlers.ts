@@ -133,7 +133,7 @@ async function _handleLoanClosed(event: SubstrateEvent<LoanCreatedClosedEvent>) 
   await loan.close()
   await loan.save()
 
-  const bt = await BorrowerTransactionService.repaid({
+  const bt = await BorrowerTransactionService.closed({
     poolId: poolId.toString(),
     loanId: loanId.toString(),
     address: account.account.id,

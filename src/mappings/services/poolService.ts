@@ -112,6 +112,14 @@ export class PoolService {
     this.poolState.totalEverNumberOfLoans = this.poolState.totalEverNumberOfLoans + BigInt(1)
   }
 
+  public increaseTotalInvested = (currencyAmount: bigint) => {
+    this.poolState.totalInvested_ += currencyAmount
+  }
+
+  public increaseTotalRedeemed = (currencyAmount: bigint) => {
+    this.poolState.totalRedeemed_ += currencyAmount
+  }
+
   public closeEpoch = (epochId: number) => {
     this.pool.lastEpochClosed = epochId
     this.pool.currentEpoch = epochId + 1

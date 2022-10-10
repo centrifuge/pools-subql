@@ -25,7 +25,6 @@ export class EpochService {
     epoch.totalRepaid = BigInt(0)
     epoch.totalInvested = BigInt(0)
     epoch.totalRedeemed = BigInt(0)
-    epoch.totalRedeemedCurrency = BigInt(0)
 
     const epochStates: EpochState[] = []
     for (const trancheId of trancheIds) {
@@ -85,8 +84,7 @@ export class EpochService {
       )
 
       this.epoch.totalInvested += epochState.fulfilledInvestOrders
-      this.epoch.totalRedeemed += epochState.fulfilledRedeemOrders
-      this.epoch.totalRedeemedCurrency += epochState.fulfilledRedeemOrdersCurrency
+      this.epoch.totalRedeemed += epochState.fulfilledRedeemOrdersCurrency
     }
     return this
   }

@@ -113,6 +113,8 @@ async function _handleEpochExecuted(event: SubstrateEvent<EpochEvent>): Promise<
   await epoch.save()
 
   await poolService.executeEpoch(epochId.toNumber())
+  await poolService.increaseTotalInvested(epoch.epoch.totalInvested)
+  await poolService.increaseTotalRedeemed(epoch.epoch.totalRedeemed)
   await poolService.save()
 
   // Compute and save aggregated order fulfillment
@@ -123,7 +125,7 @@ async function _handleEpochExecuted(event: SubstrateEvent<EpochEvent>): Promise<
     await tranche.updateSupply()
     await tranche.updatePrice(epochState.price)
     await tranche.updateFulfilledInvestOrders(epochState.fulfilledInvestOrders)
-    await tranche.updateFulfilledRedeemOrders(epochState.fulfilledRedeemOrders)
+    await tranche.updateFulfilledRedeemOrders(epochState.fulfilledRedeemOrders, digits)
     await tranche.save()
 
     // Carry over aggregated unfulfilled orders to next epoch

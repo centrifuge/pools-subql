@@ -216,8 +216,12 @@ export class TrancheService {
     return this
   }
 
-  public updateFulfilledRedeemOrders = (amount: bigint) => {
+  public updateFulfilledRedeemOrders = (amount: bigint, digits: number) => {
     this.trancheState.fulfilledRedeemOrders_ = this.trancheState.fulfilledRedeemOrders_ + amount
+    this.trancheState.fulfilledRedeemOrdersCurrency_ = this.computeCurrencyAmount(
+      this.trancheState.fulfilledRedeemOrders_,
+      digits
+    )
     return this
   }
 
