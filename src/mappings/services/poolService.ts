@@ -1,5 +1,6 @@
 import { Option, u128, u64, Vec } from '@polkadot/types'
 import { bnToBn, nToBigInt } from '@polkadot/util'
+import { paginatedGetter } from '../../helpers/paginatedGetter'
 import { errorHandler } from '../../helpers/errorHandler'
 import { ExtendedRpc, NavDetails, PoolDetails, PricedLoanDetails, TrancheDetails } from '../../helpers/types'
 import { Pool, PoolState } from '../../types'
@@ -68,10 +69,10 @@ export class PoolService {
   }
 
   static getAll = async () => {
-    const pools = await Pool.getByType('ALL')
+    const pools = (await paginatedGetter('Pool', 'type', 'ALL')) as Pool[]
     const result: PoolService[] = []
     for (const pool of pools) {
-      const element = new PoolService(pool, await PoolState.get(pool.id))
+      const element = new PoolService(Pool.create(pool), await PoolState.get(pool.id))
       result.push(element)
     }
     return result

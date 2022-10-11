@@ -1,4 +1,5 @@
 import { bnToBn, nToBigInt } from '@polkadot/util'
+import { paginatedGetter } from '../../helpers/paginatedGetter'
 import { OutstandingOrder } from '../../types'
 import { InvestorTransactionData } from './investorTransactionService'
 
@@ -32,10 +33,12 @@ export class OutstandingOrderService {
   }
 
   static getByTrancheId = async (poolId: string, trancheId: string) => {
-    const outstandingOrders = (await OutstandingOrder.getByTrancheId(`${poolId}-${trancheId}`)).map(
-      (oo) => new OutstandingOrderService(oo)
-    )
-    return outstandingOrders
+    const entities = (await paginatedGetter(
+      'OutstandingOrder',
+      'trancheId',
+      `${poolId}-${trancheId}`
+    )) as OutstandingOrder[]
+    return entities.map((ooEntity) => new OutstandingOrderService(OutstandingOrder.create(ooEntity)))
   }
 
   save = async () => {
