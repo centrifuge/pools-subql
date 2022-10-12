@@ -60,7 +60,7 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
     //Perform Snapshots and reset accumulators
     await stateSnapshotter('PoolState', 'PoolSnapshot', block, 'poolId')
     await stateSnapshotter('TrancheState', 'TrancheSnapshot', block, 'trancheId', 'active', true)
-    await stateSnapshotter('LoanState', 'LoanSnapshot', block, 'loanId', 'status', 'ACTIVE')
+    await stateSnapshotter('LoanState', 'LoanSnapshot', block, 'loanId', 'active', true)
 
     //Update tracking of period and continue
     await (await timekeeper).update(blockPeriodStart)

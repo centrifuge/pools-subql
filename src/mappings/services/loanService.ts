@@ -4,7 +4,7 @@ import { bnToBn, nToBigInt } from '@polkadot/util'
 import { RAY } from '../../config'
 import { errorHandler } from '../../helpers/errorHandler'
 import { InterestAccrualRateDetails } from '../../helpers/types'
-import { Loan, LoanState, LoanType } from '../../types'
+import { Loan, LoanState, LoanStatus, LoanType } from '../../types'
 
 export class LoanService {
   readonly loan: Loan
@@ -24,7 +24,8 @@ export class LoanService {
     loan.poolId = poolId
     loan.collateral = collateral
     loan.stateId = `${poolId}-${loanId}`
-    loanState.status = 'CREATED'
+    loanState.active = false
+    loanState.status = LoanStatus.CREATED
     loanState.outstandingDebt = BigInt(0)
     loanState.totalBorrowed_ = BigInt(0)
     loanState.totalRepaid_ = BigInt(0)
@@ -79,12 +80,14 @@ export class LoanService {
 
   public activate = () => {
     logger.info(`Activating loan ${this.loan.id}`)
-    this.loanState.status = 'ACTIVE'
+    this.loanState.active = true
+    this.loanState.status = LoanStatus.ACTIVE
   }
 
   public close = () => {
     logger.info(`Closing loan ${this.loan.id}`)
-    this.loanState.status = 'CLOSED'
+    this.loanState.active = false
+    this.loanState.status = LoanStatus.CLOSED
   }
 
   private _updateOutstandingDebt = async (normalizedDebt: bigint, interestRatePerSec: bigint) => {

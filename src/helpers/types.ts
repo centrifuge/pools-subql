@@ -139,6 +139,12 @@ export interface InterestAccrualRateDetails extends Struct {
   lastUpdated: u64
 }
 
+export interface AccountData extends Struct {
+  free: u128
+  reserved: u128
+  frozen: u128
+}
+
 export type LoanAsset = ITuple<[u64, u128]>
 
 // poolId
@@ -163,6 +169,9 @@ export type OrdersCollectedEvent = ITuple<[u64, U8aFixed, u32, AccountId32, Outs
 
 // currencyId: 'CommonTypesTokensCurrencyId'from,to,amount
 export type TokensTransferEvent = ITuple<[TokensCurrencyId, AccountId32, AccountId32, u128]>
+
+// currencyId, who, amount
+export type TokensEndowedDepositedWithdrawnEvent = ITuple<[TokensCurrencyId, AccountId32, u128]>
 
 export type ExtendedRpc = typeof api.rpc & {
   pools: {
