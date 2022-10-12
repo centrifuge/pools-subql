@@ -8,6 +8,8 @@ A GraphQL API to query the Centrifuge Parachain on Polkadot.
 
 ## :seedling: Staging
 
+[![Pipeline](https://github.com/embrio-tech/centrifuge-subql/actions/workflows/deploy.yml/badge.svg)](https://github.com/embrio-tech/centrifuge-subql/actions/workflows/deploy.yml)
+
 Use GraphQL query endpoint at [https://api.subquery.network/sq/embrio-tech/centrifuge-subql](https://explorer.subquery.network/subquery/embrio-tech/centrifuge-subql) or try the API with the [SubQuery Playground](https://explorer.subquery.network/subquery/embrio-tech/centrifuge-subql).
 
 ## :construction_worker_man: Development

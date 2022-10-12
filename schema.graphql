@@ -33,6 +33,7 @@ type Pool @entity {
 type PoolState @entity {
   id: ID! #poolId
   type: String! @index
+
   #States
   netAssetValue: BigInt!
   totalReserve: BigInt!
@@ -47,6 +48,8 @@ type PoolState @entity {
   totalInvested_: BigInt
   totalRedeemed_: BigInt
   totalNumberOfLoans_: BigInt
+
+  totalNumberOfActiveLoans: BigInt!
 
   # Cumulated transaction data since pool creation
   totalEverBorrowed: BigInt
@@ -74,7 +77,11 @@ type PoolSnapshot @entity {
   # Aggregated transaction data over the last period
   totalBorrowed_: BigInt
   totalRepaid_: BigInt
+  totalInvested_: BigInt
+  totalRedeemed_: BigInt
   totalNumberOfLoans_: BigInt
+
+  totalNumberOfActiveLoans: BigInt!
 
   # Cumulated transaction data since pool creation
   totalEverBorrowed: BigInt
@@ -100,6 +107,7 @@ type Tranche @entity {
 type TrancheState @entity {
   id: ID! #poolId-trancheId
   type: String! @index
+  active: Boolean! @index
 
   supply: BigInt
   price: BigInt
@@ -158,6 +166,8 @@ type Epoch @entity {
   # Aggregated data during this epoch
   totalBorrowed: BigInt!
   totalRepaid: BigInt!
+  totalInvested: BigInt!
+  totalRedeemed: BigInt!
 
   epochStates: [EpochState] @derivedFrom(field: "epoch")
 
@@ -168,9 +178,6 @@ type EpochState @entity {
   id: ID! #poolId-epochIndex-trancheId
   epoch: Epoch! @index
   trancheId: String!
-
-  #investorTransactions: [InvestorTransaction] @derivedFrom(field: "epochState")
-  #borrowerTransctions: [BorrowerTransaction] @derivedFrom(field: "epochState")
 
   price: BigInt
 
@@ -198,15 +205,28 @@ enum InvestorTransactionType {
   REDEEM_COLLECT
 }
 
+type OutstandingOrder @entity {
+  id: ID! # pool id - tranche id - investor address
+  hash: String!
+  account: Account! @index #Account @index
+  pool: Pool! @index
+  tranche: Tranche! @index
+  epochNumber: Int!
+  timestamp: Date!
+
+  invest: BigInt!
+  redeem: BigInt!
+}
+
 type InvestorTransaction @entity {
   id: ID! # extrinsic hash - epoch number - transaction type
   hash: String!
-  accountId: String #Account @index
+  account: Account! @index #Account @index
   pool: Pool! @index
   tranche: Tranche! @index
-  epochNumber: Int! @index
+  epochNumber: Int!
   timestamp: Date!
-  epoch: Epoch!
+  epoch: Epoch! @index
 
   type: InvestorTransactionType!
   tokenAmount: BigInt
@@ -215,34 +235,64 @@ type InvestorTransaction @entity {
   transactionFee: BigInt
 }
 
-type OutstandingOrder @entity {
-  id: ID! # pool id - tranche id - investor address
-  hash: String!
-  accountId: String #Account @index
-  pool: Pool! @index
-  tranche: Tranche! @index
-  epochNumber: Int! @index
-  timestamp: Date!
+enum BorrowerTransactionType {
+  CREATED
+  PRICED
+  BORROWED
+  REPAID
+  CLOSED
+}
 
-  invest: BigInt!
-  redeem: BigInt!
+type BorrowerTransaction @entity {
+  id: ID! # extrinsic hash - epoch number - transaction type
+  timestamp: Date!
+  pool: Pool! @index
+  hash: String!
+
+  account: Account! @index
+  epochNumber: Int!
+  epoch: Epoch! @index
+  loan: Loan!
+  type: BorrowerTransactionType!
+
+  # only applies to BORROWED and REPAID transactions
+  amount: BigInt
 }
 
 type Account @entity {
   id: ID!
 
-  publicAddress: String!
+  anonymousProxies: [AnonymousProxy] @derivedFrom(field: "account")
+
+  investorTransactions: [InvestorTransaction] @derivedFrom(field: "account")
+  borrowerTransactions: [BorrowerTransaction] @derivedFrom(field: "account")
+
+  outstandingOrders: [OutstandingOrder] @derivedFrom(field: "account")
+  trancheBalances: [TrancheBalance] @derivedFrom(field: "account")
+  currencyBalances: [CurrencyBalance] @derivedFrom(field: "account")
 }
 
-type AccountBalance @entity {
-  id: ID! # pool id - tranche id - account id
-  account: Account @index
+type TrancheBalance @entity {
+  id: ID! # address - pool id - tranche id
+  account: Account! @index
   pool: Pool! @index
   tranche: Tranche! @index
 
-  collected: BigInt!
-  uncollected: BigInt!
-  ordered: BigInt!
+  investOrdered: BigInt!
+  investUncollected: BigInt!
+  investCollected: BigInt!
+
+  redeemOrdered: BigInt!
+  redeemUncollected: BigInt!
+  redeemCollected: BigInt!
+}
+
+type CurrencyBalance @entity {
+  id: ID! # address - currencyId
+  account: Account! @index
+
+  currency: Currency!
+  amount: BigInt!
 }
 
 enum LoanStatus {
@@ -261,54 +311,57 @@ type Loan @entity {
   id: ID! # poolId - loanId
   createdAt: Date!
 
-  # collateral:
-  status: LoanStatus!
+  collateral: BigInt!
+  maturityDate: Date
 
   type: LoanType
   spec: String
 
   interestRatePerSec: BigInt
+
+  adminWrittenOff: Boolean
+
+  pool: Pool!
+  state: LoanState!
+}
+
+type LoanState @entity {
+  id: ID! # poolId - loanId
+  active: Boolean! @index
+  status: LoanStatus!
+
   outstandingDebt: BigInt
 
-  totalBorrowed: BigInt
-  totalRepaid: BigInt
+  totalBorrowed_: BigInt
+  totalRepaid_: BigInt
 
   writeOffIndex: Int
   writtenOffPercentage: BigInt
   penaltyInterestRatePerSec: BigInt
-  adminWrittenOff: Boolean
-
-  pool: Pool!
 }
 
-enum BorrowerTransactionType {
-  CREATED
-  PRICED
-  BORROWED
-  REPAID
-  CLOSED
-}
+type LoanSnapshot @entity {
+  id: ID! # poolId - loanId - blockNumber
+  loan: Loan!
 
-type BorrowerTransaction @entity {
-  id: ID! # extrinsic hash - epoch number - transaction type
   timestamp: Date!
-  pool: Pool! @index
-  hash: String!
+  blockNumber: Int!
+  periodStart: Date! @index
 
-  accountId: String!
-  epochNumber: Int! @index
-  epoch: Epoch!
-  loan: Loan! @index
-  type: BorrowerTransactionType!
+  outstandingDebt: BigInt
 
-  # only applies to BORROWED and REPAID transactions
-  amount: BigInt
+  totalBorrowed_: BigInt
+  totalRepaid_: BigInt
+
+  writeOffIndex: Int
+  writtenOffPercentage: BigInt
+  penaltyInterestRatePerSec: BigInt
 }
 
 type AnonymousProxy @entity {
   id: ID!
 
-  account: String!
+  account: Account! @index
   createdBy: String!
   proxyType: String
 }

@@ -1,45 +1,57 @@
+import { Option } from '@polkadot/types'
 import { AnyJson } from '@polkadot/types/types'
-import { Loan, LoanStatus, LoanType } from '../../types'
+import { bnToBn, nToBigInt } from '@polkadot/util'
+import { RAY } from '../../config'
+import { errorHandler } from '../../helpers/errorHandler'
+import { InterestAccrualRateDetails } from '../../helpers/types'
+import { Loan, LoanState, LoanStatus, LoanType } from '../../types'
 
 export class LoanService {
   readonly loan: Loan
+  readonly loanState: LoanState
 
-  constructor(loan: Loan) {
+  constructor(loan: Loan, loanState: LoanState) {
     this.loan = loan
+    this.loanState = loanState
   }
 
-  static init = async (poolId: string, loanId: string, timestamp: Date) => {
+  static init = async (poolId: string, loanId: string, collateral: bigint, timestamp: Date) => {
     logger.info(`Initialising loan ${loanId} for pool ${poolId}`)
     const loan = new Loan(`${poolId}-${loanId}`)
+    const loanState = new LoanState(`${poolId}-${loanId}`)
 
     loan.createdAt = timestamp
     loan.poolId = poolId
-    loan.status = LoanStatus.CREATED
-    loan.outstandingDebt = BigInt(0)
-    loan.totalBorrowed = BigInt(0)
-    loan.totalRepaid = BigInt(0)
+    loan.collateral = collateral
+    loan.stateId = `${poolId}-${loanId}`
+    loanState.active = false
+    loanState.status = LoanStatus.CREATED
+    loanState.outstandingDebt = BigInt(0)
+    loanState.totalBorrowed_ = BigInt(0)
+    loanState.totalRepaid_ = BigInt(0)
 
-    return new LoanService(loan)
+    return new LoanService(loan, loanState)
   }
 
   static getById = async (poolId: string, loanId: string) => {
-    const loan = await Loan.get(`${poolId}-${loanId}`)
-    if (loan === undefined) return undefined
-    return new LoanService(loan)
+    const [loan, loanState] = await Promise.all([Loan.get(`${poolId}-${loanId}`), LoanState.get(`${poolId}-${loanId}`)])
+    if (loan === undefined || loanState === undefined) return undefined
+    return new LoanService(loan, loanState)
   }
 
   public save = async () => {
+    await this.loanState.save()
     await this.loan.save()
   }
 
   public borrow = (amount: bigint) => {
     logger.info(`Increasing outstanding debt for loan ${this.loan.id} by ${amount}`)
-    this.loan.totalBorrowed = this.loan.totalBorrowed + amount
+    this.loanState.totalBorrowed_ = this.loanState.totalBorrowed_ + amount
   }
 
   public repay = (amount: bigint) => {
     logger.info(`Decreasing outstanding debt for loan ${this.loan.id} by ${amount}`)
-    this.loan.totalRepaid = this.loan.totalRepaid + amount
+    this.loanState.totalRepaid_ = this.loanState.totalRepaid_ + amount
   }
 
   public updateInterestRate = (interestRatePerSec: bigint) => {
@@ -49,9 +61,9 @@ export class LoanService {
 
   public writeOff = (percentage: bigint, penaltyInterestRatePerSec: bigint, writeOffIndex: number) => {
     logger.info(`Writing off loan ${this.loan.id} with ${percentage}`)
-    this.loan.writtenOffPercentage = percentage
-    this.loan.penaltyInterestRatePerSec = penaltyInterestRatePerSec
-    this.loan.writeOffIndex = writeOffIndex
+    this.loanState.writtenOffPercentage = percentage
+    this.loanState.penaltyInterestRatePerSec = penaltyInterestRatePerSec
+    this.loanState.writeOffIndex = writeOffIndex
   }
 
   public updateLoanType = (loanType: string, loanSpec?: AnyJson) => {
@@ -61,13 +73,29 @@ export class LoanService {
     this.loan.spec = specBuff.toString('base64')
   }
 
+  public updateMaturityDate = (maturityDate: Date) => {
+    logger.info(`Updating maturity date for loan ${this.loan.id} to ${maturityDate.toISOString()}`)
+    this.loan.maturityDate = maturityDate
+  }
+
   public activate = () => {
     logger.info(`Activating loan ${this.loan.id}`)
-    this.loan.status = LoanStatus.ACTIVE
+    this.loanState.active = true
+    this.loanState.status = LoanStatus.ACTIVE
   }
 
   public close = () => {
     logger.info(`Closing loan ${this.loan.id}`)
-    this.loan.status = LoanStatus.CLOSED
+    this.loanState.active = false
+    this.loanState.status = LoanStatus.CLOSED
   }
+
+  private _updateOutstandingDebt = async (normalizedDebt: bigint, interestRatePerSec: bigint) => {
+    const rateDetails = await api.query.interestAccrual.rate<Option<InterestAccrualRateDetails>>(interestRatePerSec)
+    if (rateDetails.isNone) return
+    const { accumulatedRate } = rateDetails.unwrap()
+    this.loanState.outstandingDebt = nToBigInt(bnToBn(normalizedDebt).mul(bnToBn(accumulatedRate)).div(RAY))
+    logger.info(`Updating outstanding debt for loan: ${this.loan.id} to ${this.loanState.outstandingDebt.toString()}`)
+  }
+  public updateOutstandingDebt = errorHandler(this._updateOutstandingDebt)
 }

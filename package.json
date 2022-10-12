@@ -4,8 +4,8 @@
   "description": "Subquery for the pools functionality",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc -b",
-    "prepack": "rm -rf dist && npm build",
+    "build": "subql build",
+    "prepack": "rm -rf dist && subql build",
     "test": "jest",
     "codegen": "./node_modules/.bin/subql codegen",
     "generate:defs": "ts-node --skip-project node_modules/.bin/polkadot-types-from-defs --package centrifuge-subql/src/api-interfaces --endpoint 'wss://fullnode.development.cntrfg.com' --input ./src/api-interfaces",
@@ -24,16 +24,15 @@
   ],
   "author": "Centrifuge",
   "license": "MIT",
-  "dependencies": {
-    "@polkadot/api": "^8"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@commitlint/cli": "^17.0.2",
     "@commitlint/config-conventional": "^17.0.2",
-    "@polkadot/typegen": "^8",
-    "@polkadot/types": "^8",
-    "@polkadot/util": "^8",
-    "@subql/cli": "^1.5.0",
+    "@polkadot/api": "^9",
+    "@polkadot/typegen": "^9",
+    "@polkadot/types": "^9",
+    "@polkadot/util": "^9",
+    "@subql/cli": "latest",
     "@typescript-eslint/eslint-plugin": "^5.28.0",
     "@typescript-eslint/parser": "^5.28.0",
     "eslint": "^8.17.0",

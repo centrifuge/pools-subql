@@ -1,11 +1,11 @@
 import { SubstrateBlock } from '@subql/types'
-import { PoolState, PoolSnapshot, TrancheState, TrancheSnapshot } from '../../types'
 import { getPeriodStart, TimekeeperService } from '../../helpers/timekeeperService'
 import { errorHandler } from '../../helpers/errorHandler'
 import { stateSnapshotter } from '../../helpers/stateSnapshot'
 import { SNAPSHOT_INTERVAL_SECONDS } from '../../config'
 import { PoolService } from '../services/poolService'
 import { TrancheService } from '../services/trancheService'
+import { LoanService } from '../services/loanService'
 
 const timekeeper = TimekeeperService.init()
 
@@ -27,31 +27,40 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
       await pool.updateState()
       await pool.updateNav()
       await pool.computePoolValue()
-      await pool.save()
-
-      const { ids, tranches: trancheData } = pool.tranches
-      const tokenPrices = await pool.getTrancheTokenPrices()
 
       // Update tranche states
-      const trancheIds = ids.map((id) => id.toHex())
-      const tranches = await TrancheService.getByPoolId(pool.pool.id)
+      const tranches = await TrancheService.getActives(pool.pool.id)
+      const trancheData = await pool.getTranches()
+      const trancheTokenPrices = await pool.getTrancheTokenPrices()
       for (const tranche of tranches) {
-        const trancheIndex = trancheIds.findIndex((trancheId) => tranche.tranche.trancheId === trancheId)
-        if (trancheIndex === -1) throw new Error(`Could not find TrancheDetails for tranche :${tranche.tranche.id}`)
-        await tranche.updatePrice(tokenPrices[trancheIndex].toBigInt())
+        const index = tranche.tranche.index
+        if (trancheTokenPrices !== undefined) await tranche.updatePrice(trancheTokenPrices[index].toBigInt())
         await tranche.updateSupply()
-        await tranche.updateDebt(trancheData[trancheIndex].debt.toBigInt())
+        await tranche.updateDebt(trancheData[tranche.tranche.trancheId].data.debt.toBigInt())
         await tranche.computeYield('yieldSinceLastPeriod', lastPeriodStart)
         await tranche.computeYield('yieldSinceInception')
         await tranche.computeYieldAnnualized('yield30DaysAnnualized', blockPeriodStart, daysAgo30)
         await tranche.computeYieldAnnualized('yield90DaysAnnualized', blockPeriodStart, daysAgo90)
         await tranche.save()
       }
+
+      // Update loans outstanding debt
+      const activeLoanData = await pool.getActiveLoanData()
+      for (const loanId in activeLoanData) {
+        const loan = await LoanService.getById(pool.pool.id, loanId)
+        const { normalizedDebt, interestRate } = activeLoanData[loanId]
+        await loan.updateOutstandingDebt(normalizedDebt, interestRate)
+        await loan.save()
+      }
+
+      await pool.updateTotalNumberOfActiveLoans(BigInt(Object.keys(activeLoanData).length))
+      await pool.save()
     }
 
     //Perform Snapshots and reset accumulators
-    await stateSnapshotter(PoolState, PoolSnapshot, block, 'poolId')
-    await stateSnapshotter(TrancheState, TrancheSnapshot, block, 'trancheId')
+    await stateSnapshotter('PoolState', 'PoolSnapshot', block, 'poolId')
+    await stateSnapshotter('TrancheState', 'TrancheSnapshot', block, 'trancheId', 'active', true)
+    await stateSnapshotter('LoanState', 'LoanSnapshot', block, 'loanId', 'active', true)
 
     //Update tracking of period and continue
     await (await timekeeper).update(blockPeriodStart)
