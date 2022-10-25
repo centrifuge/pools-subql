@@ -21,7 +21,6 @@ Use GraphQL query endpoint at [https://api.subquery.network/sq/embrio-tech/centr
   - node: version specified in [`.nvmrc`](/.nvmrc)
 - [Yarn](https://classic.yarnpkg.com/en/)
 
-
 ### Code generation
 
 To generate the entities based on `schema.graphql`, run:
@@ -72,172 +71,39 @@ This repository uses commitlint to enforce commit message conventions. You have 
 
 ```mermaid
 erDiagram
-    Timekeeper {
-        string id PK
-        date lastPeriodStart
-    }
+    Account ||--o{ TrancheBalance: ""
+    Account ||--o{ CurrencyBalance: ""
+
+    Loan ||--|| LoanState: ""
+    Loan ||--o{ LoanSnapshot: ""
+    LoanState ||..|| LoanSnapshot: "onNewPeriod"
 
     Pool ||--|| PoolState: ""
-    Pool {
-        String id PK
-        String type "idx"
-
-        Date timestamp
-        Int blockNumber
-
-        String currency
-        String metadata
-
-        Int minEpochTime
-        Int maxNavAge
-
-        Int currentEpoch
-        Int lastEpochClosed
-        Int lastEpochExecuted
-
-        String stateId FK
-    }
-
+    Pool ||--o{ PoolSnapshot: ""
     PoolState ||..|| PoolSnapshot: "onNewPeriod"
-    PoolState{
-        String id PK
-        String type "idx"
-
-        BigInt netAssetValue
-        BigInt totalReserve
-        BigInt availableReserve
-        BigInt maxReserve
-        BigInt totalDebt
-
-        BigInt totalBorrowed_
-        BigInt totalRepaid_
-        BigInt totalInvested_
-        BigInt totalRedeemed_
-        BigInt totalNumberOfLoans_
-
-        BigInt totalEverBorrowed
-        BigInt totalEverNumberOfLoans
-    }
-
-    PoolSnapshot }o--|| Pool: ""
-    PoolSnapshot {
-        String id PK
-        String poolId FK
-
-        Date timestamp
-        Int blockNumber
-
-        BigInt netAssetValue
-        BigInt totalReserve
-        BigInt availableReserve
-        BigInt maxReserve
-        BigInt totalDebt
-
-        BigInt totalBorrowed
-        BigInt totalRepaid
-        BigInt totalInvested
-        BigInt totalRedeemed
-
-        BigInt totalBorrowed_
-        BigInt totalRepaid_
-        BigInt totalInvested_
-        BigInt totalRedeemed_
-        BigInt totalNumberOfLoans_
-
-        BigInt totalEverBorrowed
-        BigInt totalEverNumberOfLoans
-    }
 
     Tranche }o--|| Pool: ""
     Tranche ||--|| TrancheState: ""
-    Tranche {
-        String id PK
-        String type "idx"
-        String poolId FK
-        String trancheId
-
-        Bool isResidual
-        Int seniority
-        BigInt interestRatePerSec
-        BigInt minRiskBuffer
-
-        String state FK
-    }
-
+    Tranche ||--o{ TrancheSnapshot: ""
     TrancheState ||..|| TrancheSnapshot: "onNewPeriod"
-    TrancheState {
-        String id PK
-        String type "idx"
-
-        BigInt supply
-        Float price
-
-        BigInt outstandingInvestOrders
-        BigInt outstandingRedeemOrders
-
-        BigInt yield30Days
-        BigInt yield90Days
-        BigInt yieldSinceInception
-    }
-
-    TrancheSnapshot }o--|| Tranche: ""
-    TrancheSnapshot {
-        String id PK
-        String trancheId FK
-
-        Date timestamp
-        Int blockNumber
-
-        BigInt supply
-        Float price
-
-        BigInt outstandingInvestOrders
-        BigInt outstandingRedeemOrders
-
-        BigInt yield30Days
-        BigInt yield90Days
-        BigInt yieldSinceInception
-    }
 
     Epoch }|--|| Pool: ""
-    Epoch {
-        String id PK
-        String poolId FK
-
-        Int index
-
-        Date openedAt
-        Date closedAt
-        Date executedAt
-
-        BigInt totalBorrowed
-        BigInt totalRepaid
-        BigInt totalInvested
-        BigInt totalRedeemed
-    }
+    Epoch }o--|| EpochState: ""
+    EpochState ||--|| Tranche: ""
 
     InvestorTransaction }o--|| Account: ""
     InvestorTransaction ||--|| Pool: ""
     InvestorTransaction ||--|| Tranche: ""
     InvestorTransaction ||--|| Epoch: ""
-    InvestorTransaction {}
-
-
-    BorrowerTransaction }o--|| Account: ""
-    BorrowerTransaction ||--|| Epoch: ""
-    BorrowerTransaction ||--|| Loan: ""
-    BorrowerTransaction {}
-
 
     OutstandingOrder }o--|| Account: ""
     OutstandingOrder ||--|| Pool: ""
     OutstandingOrder ||--|| Tranche: ""
     OutstandingOrder ||--|| Epoch: ""
-    OutstandingOrder {}
 
-    Account {}
-    AccountBalance {}
-    Loan {}
-    Proxy {}
-    AnonymousProxy {}
+    BorrowerTransaction }o--|| Account: ""
+    BorrowerTransaction ||--|| Epoch: ""
+    BorrowerTransaction ||--|| Loan: ""
+
+    Currency ||--|{ Pool: ""
 ```
