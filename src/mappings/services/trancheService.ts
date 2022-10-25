@@ -1,4 +1,4 @@
-import { u128, u64 } from '@polkadot/types'
+import { u128 } from '@polkadot/types'
 import { bnToBn, nToBigInt } from '@polkadot/util'
 import { paginatedGetter } from '../../helpers/paginatedGetter'
 import { CPREC, RAY, RAY_DIGITS, WAD_DIGITS } from '../../config'
@@ -106,7 +106,7 @@ export class TrancheService {
 
   private _updatePricefromRpc = async () => {
     logger.info(`Qerying RPC price for tranche ${this.tranche.id}`)
-    const poolId = new u64(api.registry, this.tranche.poolId)
+    const poolId = this.tranche.poolId
     const tokenPrices = await (api.rpc as ExtendedRpc).pools.trancheTokenPrices(poolId)
     const trancheTokenPrice = tokenPrices[this.tranche.index].toBigInt()
     if (trancheTokenPrice <= BigInt(0))
