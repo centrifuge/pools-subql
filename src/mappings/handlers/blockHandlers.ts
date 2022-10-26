@@ -52,7 +52,7 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
         await loan.updateOutstandingDebt(normalizedDebt, interestRate)
         await loan.save()
 
-        if (loan.loan.maturityDate > block.timestamp)
+        if (loan.loan.maturityDate < block.timestamp)
           await pool.increaseTotalDebtOverdue(loan.loanState.outstandingDebt)
       }
 
