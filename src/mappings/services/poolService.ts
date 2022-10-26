@@ -31,6 +31,8 @@ export class PoolService {
     poolState.totalRedeemed_ = BigInt(0)
     poolState.totalNumberOfLoans_ = BigInt(0)
     poolState.totalNumberOfActiveLoans = BigInt(0)
+    poolState.totalWrittenOff_ = BigInt(0)
+    poolState.totalDebtOverdue = BigInt(0)
 
     poolState.totalEverBorrowed = BigInt(0)
     poolState.totalEverNumberOfLoans = BigInt(0)
@@ -139,6 +141,18 @@ export class PoolService {
     const nav = bnToBn(this.poolState.netAssetValue)
     const totalReserve = bnToBn(this.poolState.totalReserve)
     this.poolState.value = nToBigInt(nav.add(totalReserve))
+  }
+
+  public resetTotalDebtOverdue = () => {
+    this.poolState.totalDebtOverdue = BigInt(0)
+  }
+
+  public increaseTotalDebtOverdue = (amount: bigint) => {
+    this.poolState.totalDebtOverdue += amount
+  }
+
+  public increaseTotalWrittenOff = (amount: bigint) => {
+    this.poolState.totalWrittenOff_ += amount
   }
 
   private _getTranches = async () => {

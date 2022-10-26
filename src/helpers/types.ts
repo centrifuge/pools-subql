@@ -2,7 +2,7 @@
 import { AugmentedRpc, PromiseRpcResult } from '@polkadot/api/types'
 import { Enum, Null, Struct, u128, u32, u64, U8aFixed, Option, Vec, Bytes } from '@polkadot/types'
 import { AccountId32, Address, Perquintill } from '@polkadot/types/interfaces'
-import { AnyTuple, ITuple, Observable } from '@polkadot/types/types'
+import { ITuple, Observable } from '@polkadot/types/types'
 
 export interface PoolDetails extends Struct {
   reserve: { total: u128; available: u128; max: u128 }
@@ -145,7 +145,14 @@ export interface AccountData extends Struct {
   frozen: u128
 }
 
-export type LoanAsset = ITuple<[u64, u128]> & AnyTuple
+export interface NftItemMetadata extends Struct {
+  deposit: u128
+  data: Bytes
+  isFrozen: boolean
+}
+
+// ClassId, ItemId
+export type LoanAsset = ITuple<[u64, u128]>
 
 // poolId
 export type PoolCreatedUpdatedEvent = ITuple<[u64, Address]>

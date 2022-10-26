@@ -1,9 +1,9 @@
 import { Option } from '@polkadot/types'
 import { AnyJson } from '@polkadot/types/types'
 import { bnToBn, nToBigInt } from '@polkadot/util'
-import { RAY } from '../../config'
+import { RAY, WAD } from '../../config'
 import { errorHandler } from '../../helpers/errorHandler'
-import { InterestAccrualRateDetails } from '../../helpers/types'
+import { InterestAccrualRateDetails, NftItemMetadata } from '../../helpers/types'
 import { Loan, LoanState, LoanStatus, LoanType } from '../../types'
 
 export class LoanService {
@@ -15,14 +15,15 @@ export class LoanService {
     this.loanState = loanState
   }
 
-  static init = async (poolId: string, loanId: string, collateral: bigint, timestamp: Date) => {
+  static init = async (poolId: string, loanId: string, nftClassId: bigint, nftItemId: bigint, timestamp: Date) => {
     logger.info(`Initialising loan ${loanId} for pool ${poolId}`)
     const loan = new Loan(`${poolId}-${loanId}`)
     const loanState = new LoanState(`${poolId}-${loanId}`)
 
     loan.createdAt = timestamp
     loan.poolId = poolId
-    loan.collateral = collateral
+    loan.collateralNftClassId = nftClassId
+    loan.collateralNftItemId = nftItemId
     loan.stateId = `${poolId}-${loanId}`
     loanState.active = false
     loanState.status = LoanStatus.CREATED
@@ -61,9 +62,13 @@ export class LoanService {
 
   public writeOff = (percentage: bigint, penaltyInterestRatePerSec: bigint, writeOffIndex: number) => {
     logger.info(`Writing off loan ${this.loan.id} with ${percentage}`)
-    this.loanState.writtenOffPercentage = percentage
+    this.loanState.writtenOffPercentage_ = percentage
     this.loanState.penaltyInterestRatePerSec = penaltyInterestRatePerSec
     this.loanState.writeOffIndex = writeOffIndex
+
+    this.loanState.writtenOffAmount_ = nToBigInt(
+      bnToBn(this.loanState.outstandingDebt).mul(bnToBn(percentage)).div(WAD)
+    )
   }
 
   public updateLoanType = (loanType: string, loanSpec?: AnyJson) => {
@@ -73,9 +78,8 @@ export class LoanService {
     this.loan.spec = specBuff.toString('base64')
   }
 
-  public updateMaturityDate = (maturityDate: Date) => {
-    logger.info(`Updating maturity date for loan ${this.loan.id} to ${maturityDate.toISOString()}`)
-    this.loan.maturityDate = maturityDate
+  public updateLoanSpecs = (decodedLoanSpecs: DecodedLoanSpecs) => {
+    Object.assign(this.loan, decodedLoanSpecs)
   }
 
   public activate = () => {
@@ -98,4 +102,38 @@ export class LoanService {
     logger.info(`Updating outstanding debt for loan: ${this.loan.id} to ${this.loanState.outstandingDebt.toString()}`)
   }
   public updateOutstandingDebt = errorHandler(this._updateOutstandingDebt)
+
+  private _updateItemMetadata = async () => {
+    logger.info(
+      `Updating metadata for loan: ${this.loan.id} with ` +
+        `collectionId ${this.loan.collateralNftClassId.toString()}, ` +
+        `itemId: ${this.loan.collateralNftItemId.toString()}`
+    )
+    const itemMetadata = await api.query.uniques.instanceMetadataOf<Option<NftItemMetadata>>(
+      this.loan.collateralNftClassId,
+      this.loan.collateralNftItemId
+    )
+    if (itemMetadata.isNone) {
+      throw new Error(
+        `No metadata returned for loan: ${this.loan.id} with ` +
+          `collectionId ${this.loan.collateralNftClassId.toString()}, ` +
+          `itemId: ${this.loan.collateralNftItemId.toString()}`
+      )
+    }
+
+    const payload = itemMetadata.unwrap()
+    this.loan.metadata = payload.data.toUtf8()
+
+    return this
+  }
+  public updateItemMetadata = errorHandler(this._updateItemMetadata)
+}
+
+interface DecodedLoanSpecs {
+  advanceRate: bigint
+  value: bigint
+  probabilityOfDefault?: bigint
+  lossGivenDefault?: bigint
+  discountRate?: bigint
+  maturityDate?: Date
 }

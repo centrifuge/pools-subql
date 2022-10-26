@@ -27,6 +27,7 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
       await pool.updateState()
       await pool.updateNav()
       await pool.computePoolValue()
+      await pool.resetTotalDebtOverdue()
 
       // Update tranche states
       const tranches = await TrancheService.getActives(pool.pool.id)
@@ -44,13 +45,15 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
         await tranche.save()
       }
 
-      // Update loans outstanding debt
       const activeLoanData = await pool.getActiveLoanData()
       for (const loanId in activeLoanData) {
         const loan = await LoanService.getById(pool.pool.id, loanId)
         const { normalizedDebt, interestRate } = activeLoanData[loanId]
         await loan.updateOutstandingDebt(normalizedDebt, interestRate)
         await loan.save()
+
+        if (loan.loan.maturityDate > block.timestamp)
+          await pool.increaseTotalDebtOverdue(loan.loanState.outstandingDebt)
       }
 
       await pool.updateTotalNumberOfActiveLoans(BigInt(Object.keys(activeLoanData).length))
