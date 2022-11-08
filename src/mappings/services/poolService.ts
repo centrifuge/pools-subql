@@ -1,4 +1,4 @@
-import { Option, u128, u64, Vec } from '@polkadot/types'
+import { Option, u128, Vec } from '@polkadot/types'
 import { bnToBn, nToBigInt } from '@polkadot/util'
 import { paginatedGetter } from '../../helpers/paginatedGetter'
 import { errorHandler } from '../../helpers/errorHandler'
@@ -31,6 +31,8 @@ export class PoolService {
     poolState.totalRedeemed_ = BigInt(0)
     poolState.totalNumberOfLoans_ = BigInt(0)
     poolState.totalNumberOfActiveLoans = BigInt(0)
+    poolState.totalWrittenOff_ = BigInt(0)
+    poolState.totalDebtOverdue = BigInt(0)
 
     poolState.totalEverBorrowed = BigInt(0)
     poolState.totalEverNumberOfLoans = BigInt(0)
@@ -112,10 +114,10 @@ export class PoolService {
   }
 
   public increaseTotalBorrowings = (borrowedAmount: bigint) => {
-    this.poolState.totalBorrowed_ = this.poolState.totalBorrowed_ + borrowedAmount
-    this.poolState.totalEverBorrowed = this.poolState.totalEverBorrowed + borrowedAmount
-    this.poolState.totalNumberOfLoans_ = this.poolState.totalNumberOfLoans_ + BigInt(1)
-    this.poolState.totalEverNumberOfLoans = this.poolState.totalEverNumberOfLoans + BigInt(1)
+    this.poolState.totalBorrowed_ += borrowedAmount
+    this.poolState.totalEverBorrowed += borrowedAmount
+    this.poolState.totalNumberOfLoans_ += BigInt(1)
+    this.poolState.totalEverNumberOfLoans += BigInt(1)
   }
 
   public increaseTotalInvested = (currencyAmount: bigint) => {
@@ -141,6 +143,18 @@ export class PoolService {
     this.poolState.value = nToBigInt(nav.add(totalReserve))
   }
 
+  public resetTotalDebtOverdue = () => {
+    this.poolState.totalDebtOverdue = BigInt(0)
+  }
+
+  public increaseTotalDebtOverdue = (amount: bigint) => {
+    this.poolState.totalDebtOverdue += amount
+  }
+
+  public increaseTotalWrittenOff = (amount: bigint) => {
+    this.poolState.totalWrittenOff_ += amount
+  }
+
   private _getTranches = async () => {
     const poolResponse = await api.query.pools.pool<Option<PoolDetails>>(this.pool.id)
     logger.info(`Fetching tranches for pool: ${this.pool.id}`)
@@ -156,7 +170,7 @@ export class PoolService {
 
   private _getTrancheTokenPrices = async () => {
     logger.info(`Qerying RPC tranche token prices for pool ${this.pool.id}`)
-    const poolId = new u64(api.registry, this.pool.id)
+    const poolId = this.pool.id
     let tokenPrices: Vec<u128>
     try {
       tokenPrices = await (api.rpc as ExtendedRpc).pools.trancheTokenPrices(poolId)

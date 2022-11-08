@@ -50,6 +50,8 @@ type PoolState @entity {
   totalNumberOfLoans_: BigInt
 
   totalNumberOfActiveLoans: BigInt!
+  totalDebtOverdue: BigInt!
+  totalWrittenOff_: BigInt!
 
   # Cumulated transaction data since pool creation
   totalEverBorrowed: BigInt
@@ -311,7 +313,16 @@ type Loan @entity {
   id: ID! # poolId - loanId
   createdAt: Date!
 
-  collateral: BigInt!
+  collateralNftClassId: BigInt!
+  collateralNftItemId: BigInt!
+
+  metadata: String
+
+  advanceRate: BigInt
+  value: BigInt
+  probabilityOfDefault: BigInt
+  lossGivenDefault: BigInt
+  discountRate: BigInt
   maturityDate: Date
 
   type: LoanType
@@ -336,7 +347,8 @@ type LoanState @entity {
   totalRepaid_: BigInt
 
   writeOffIndex: Int
-  writtenOffPercentage: BigInt
+  writtenOffPercentage_: BigInt
+  writtenOffAmount_: BigInt
   penaltyInterestRatePerSec: BigInt
 }
 
@@ -354,7 +366,8 @@ type LoanSnapshot @entity {
   totalRepaid_: BigInt
 
   writeOffIndex: Int
-  writtenOffPercentage: BigInt
+  writtenOffPercentage_: BigInt
+  writtenOffAmount_: BigInt
   penaltyInterestRatePerSec: BigInt
 }
 

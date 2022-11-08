@@ -1,7 +1,7 @@
 //find out types: const a = createType(api.registry, '[u8;32]', 18)
 import { AugmentedRpc, PromiseRpcResult } from '@polkadot/api/types'
 import { Enum, Null, Struct, u128, u32, u64, U8aFixed, Option, Vec, Bytes } from '@polkadot/types'
-import { AccountId32, Perquintill } from '@polkadot/types/interfaces'
+import { AccountId32, Address, Perquintill } from '@polkadot/types/interfaces'
 import { ITuple, Observable } from '@polkadot/types/types'
 
 export interface PoolDetails extends Struct {
@@ -145,10 +145,17 @@ export interface AccountData extends Struct {
   frozen: u128
 }
 
+export interface NftItemMetadata extends Struct {
+  deposit: u128
+  data: Bytes
+  isFrozen: boolean
+}
+
+// ClassId, ItemId
 export type LoanAsset = ITuple<[u64, u128]>
 
 // poolId
-export type PoolCreatedUpdatedEvent = ITuple<[u64]>
+export type PoolCreatedUpdatedEvent = ITuple<[u64, Address]>
 
 // poolId, loanId, collateral
 export type LoanCreatedClosedEvent = ITuple<[u64, u128, LoanAsset]>
@@ -175,7 +182,9 @@ export type TokensEndowedDepositedWithdrawnEvent = ITuple<[TokensCurrencyId, Acc
 
 export type ExtendedRpc = typeof api.rpc & {
   pools: {
-    trancheTokenPrice: PromiseRpcResult<AugmentedRpc<(poolId: u64, trancheId: number[]) => Observable<u128>>>
-    trancheTokenPrices: PromiseRpcResult<AugmentedRpc<(poolId: u64) => Observable<Vec<u128>>>>
+    trancheTokenPrice: PromiseRpcResult<
+      AugmentedRpc<(poolId: number | string, trancheId: number[]) => Observable<u128>>
+    >
+    trancheTokenPrices: PromiseRpcResult<AugmentedRpc<(poolId: number | string) => Observable<Vec<u128>>>>
   }
 }
