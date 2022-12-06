@@ -1,15 +1,9 @@
 import { TrancheBalance } from '../../types/models/TrancheBalance'
 
-export class TrancheBalanceService {
-  readonly trancheBalance: TrancheBalance
-
-  constructor(trancheBalance: TrancheBalance) {
-    this.trancheBalance = trancheBalance
-  }
-
-  static init = (address: string, poolId: string, trancheId: string) => {
+export class TrancheBalanceService extends TrancheBalance {
+  static init(address: string, poolId: string, trancheId: string) {
     logger.info(`Initialising new TrancheBalance: ${address}-${poolId}-${trancheId}`)
-    const trancheBalance = new TrancheBalance(`${address}-${poolId}-${trancheId}`)
+    const trancheBalance = new this(`${address}-${poolId}-${trancheId}`)
     trancheBalance.accountId = address
     trancheBalance.poolId = poolId
     trancheBalance.trancheId = `${poolId}-${trancheId}`
@@ -19,16 +13,12 @@ export class TrancheBalanceService {
     trancheBalance.redeemOrdered = BigInt(0)
     trancheBalance.redeemUncollected = BigInt(0)
     trancheBalance.redeemCollected = BigInt(0)
-    return new TrancheBalanceService(trancheBalance)
+    return trancheBalance
   }
 
-  static getById = async (address: string, poolId: string, trancheId: string) => {
-    const trancheBalance = await TrancheBalance.get(`${address}-${poolId}-${trancheId}`)
-    if (trancheBalance === undefined) {
-      return undefined
-    } else {
-      return new TrancheBalanceService(trancheBalance)
-    }
+  static async getById(address: string, poolId: string, trancheId: string) {
+    const trancheBalance = await this.get(`${address}-${poolId}-${trancheId}`)
+    return trancheBalance as TrancheBalanceService
   }
 
   static getOrInit = async (address: string, poolId: string, trancheId: string) => {
@@ -40,35 +30,31 @@ export class TrancheBalanceService {
     return trancheBalance
   }
 
-  public save = async () => {
-    await this.trancheBalance.save()
+  public investOrder(currencyAmount: bigint) {
+    this.investOrdered += currencyAmount
   }
 
-  public investOrdered = (currencyAmount: bigint) => {
-    this.trancheBalance.investOrdered += currencyAmount
+  public redeemOrder(tokenAmount: bigint) {
+    this.redeemOrdered += tokenAmount
   }
 
-  public redeemOrdered = (tokenAmount: bigint) => {
-    this.trancheBalance.redeemOrdered += tokenAmount
+  public investExecute(currencyAmount: bigint, tokenAmount: bigint) {
+    this.investOrdered -= currencyAmount
+    this.investUncollected += tokenAmount
   }
 
-  public investExecuted = (currencyAmount: bigint, tokenAmount: bigint) => {
-    this.trancheBalance.investOrdered -= currencyAmount
-    this.trancheBalance.investUncollected += tokenAmount
+  public redeemExecute(tokenAmount: bigint, currencyAmount: bigint) {
+    this.redeemOrdered -= tokenAmount
+    this.redeemUncollected += currencyAmount
   }
 
-  public redeemExecuted = (tokenAmount: bigint, currencyAmount: bigint) => {
-    this.trancheBalance.redeemOrdered -= tokenAmount
-    this.trancheBalance.redeemUncollected += currencyAmount
+  public investCollect(tokenAmount: bigint) {
+    this.investUncollected -= tokenAmount
+    this.investCollected += tokenAmount
   }
 
-  public investCollected = (tokenAmount: bigint) => {
-    this.trancheBalance.investUncollected -= tokenAmount
-    this.trancheBalance.investCollected += tokenAmount
-  }
-
-  public redeemCollected = (currencyAmount: bigint) => {
-    this.trancheBalance.redeemUncollected -= currencyAmount
-    this.trancheBalance.redeemCollected += currencyAmount
+  public redeemCollect(currencyAmount: bigint) {
+    this.redeemUncollected -= currencyAmount
+    this.redeemCollected += currencyAmount
   }
 }

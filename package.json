@@ -33,7 +33,7 @@
     "@polkadot/typegen": "^9",
     "@subql/cli": "latest",
     "@subql/types": "latest",
-    "@subql/node": "1.9.2",
+    "@subql/node": "^1.15.1",
     "@typescript-eslint/eslint-plugin": "^5.28.0",
     "@typescript-eslint/parser": "^5.28.0",
     "husky": "^7.0.0",

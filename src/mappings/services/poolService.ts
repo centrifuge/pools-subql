@@ -1,163 +1,157 @@
 import { Option, u128, Vec } from '@polkadot/types'
 import { bnToBn, nToBigInt } from '@polkadot/util'
 import { paginatedGetter } from '../../helpers/paginatedGetter'
-import { errorHandler } from '../../helpers/errorHandler'
-import { ExtendedRpc, NavDetails, PoolDetails, PricedLoanDetails, TrancheDetails } from '../../helpers/types'
-import { Pool, PoolState } from '../../types'
+import {
+  ExtendedRpc,
+  NavDetails,
+  PoolDetails,
+  PoolMetadata,
+  PricedLoanDetails,
+  TrancheDetails,
+} from '../../helpers/types'
+import { Pool } from '../../types'
 
-export class PoolService {
-  readonly pool: Pool
-  readonly poolState: PoolState
+export class PoolService extends Pool {
+  static init(
+    poolId: string,
+    currencyId: string,
+    maxReserve: bigint,
+    maxNavAge: number,
+    minEpochTime: number,
+    timestamp: Date,
+    blockNumber: number
+  ) {
+    const pool = new this(poolId)
 
-  constructor(pool: Pool, poolState: PoolState) {
-    this.pool = pool
-    this.poolState = poolState
-  }
+    pool.currencyId = currencyId
+    pool.maxReserve = maxReserve
+    pool.maxNavAge = maxNavAge
+    pool.minEpochTime = minEpochTime
 
-  static init = (poolId: string, timestamp: Date, blockNumber: number) => {
-    const poolState = new PoolState(poolId)
+    pool.netAssetValue = BigInt(0)
+    pool.totalReserve = BigInt(0)
+    pool.availableReserve = BigInt(0)
+    pool.totalDebt = BigInt(0)
+    pool.value = BigInt(0)
 
-    poolState.type = 'ALL'
-    poolState.netAssetValue = BigInt(0)
-    poolState.totalReserve = BigInt(0)
-    poolState.availableReserve = BigInt(0)
-    poolState.maxReserve = BigInt(0)
-    poolState.totalDebt = BigInt(0)
-    poolState.value = BigInt(0)
+    pool.totalBorrowed_ = BigInt(0)
+    pool.totalRepaid_ = BigInt(0)
+    pool.totalInvested_ = BigInt(0)
+    pool.totalRedeemed_ = BigInt(0)
+    pool.totalNumberOfLoans_ = BigInt(0)
+    pool.totalNumberOfActiveLoans = BigInt(0)
+    pool.totalWrittenOff_ = BigInt(0)
+    pool.totalDebtOverdue = BigInt(0)
 
-    poolState.totalBorrowed_ = BigInt(0)
-    poolState.totalRepaid_ = BigInt(0)
-    poolState.totalInvested_ = BigInt(0)
-    poolState.totalRedeemed_ = BigInt(0)
-    poolState.totalNumberOfLoans_ = BigInt(0)
-    poolState.totalNumberOfActiveLoans = BigInt(0)
-    poolState.totalWrittenOff_ = BigInt(0)
-    poolState.totalDebtOverdue = BigInt(0)
-
-    poolState.totalEverBorrowed = BigInt(0)
-    poolState.totalEverNumberOfLoans = BigInt(0)
+    pool.totalEverBorrowed = BigInt(0)
+    pool.totalEverNumberOfLoans = BigInt(0)
 
     //Create the pool
     const currentEpoch = 1
-    const pool = new Pool(poolId)
-    pool.stateId = poolId
+
     pool.type = 'ALL'
     pool.createdAt = timestamp
     pool.createdAtBlockNumber = blockNumber
     pool.currentEpoch = currentEpoch
 
-    return new PoolService(pool, poolState)
+    return pool
   }
 
-  private _initData = async (currencyCallback: (ticker: string) => Promise<string>) => {
-    const poolReq = await api.query.pools.pool<Option<PoolDetails>>(this.pool.id)
+  public async initData() {
+    const [poolReq, metadataReq] = await Promise.all([
+      api.query.poolSystem.pool<Option<PoolDetails>>(this.id),
+      api.query.poolRegistry.poolMetadata<Option<PoolMetadata>>(this.id),
+    ])
+
     if (poolReq.isNone) throw new Error('No pool data available to create the pool')
+
     const poolData = poolReq.unwrap()
-
-    this.pool.currencyId = await currencyCallback(poolData.currency.toString())
-    this.pool.metadata = poolData.metadata.isSome ? poolData.metadata.unwrap().toUtf8() : 'NA'
-
-    this.pool.minEpochTime = poolData.parameters.minEpochTime.toNumber()
-    this.pool.maxNavAge = poolData.parameters.maxNavAge.toNumber()
-    return this
-  }
-  public initData = errorHandler(this._initData)
-
-  static getById = async (poolId: string) => {
-    const pool = await Pool.get(poolId)
-    const poolState = await PoolState.get(poolId)
-    if (pool === undefined || poolState === undefined) return undefined
-    return new PoolService(pool, poolState)
-  }
-
-  static getAll = async () => {
-    const pools = (await paginatedGetter('Pool', 'type', 'ALL')) as Pool[]
-    const result: PoolService[] = []
-    for (const pool of pools) {
-      const element = new PoolService(Pool.create(pool), await PoolState.get(pool.id))
-      result.push(element)
-    }
-    return result
-  }
-
-  save = async () => {
-    await this.poolState.save()
-    await this.pool.save()
+    this.metadata = metadataReq.isSome ? metadataReq.unwrap().metadata.toUtf8() : 'NA'
+    this.minEpochTime = poolData.parameters.minEpochTime.toNumber()
+    this.maxNavAge = poolData.parameters.maxNavAge.toNumber()
     return this
   }
 
-  private _updateState = async () => {
-    const poolResponse = await api.query.pools.pool<Option<PoolDetails>>(this.pool.id)
-    logger.info(`Updating state for pool: ${this.pool.id} with data: ${JSON.stringify(poolResponse.toHuman())}`)
+  static async getById(poolId: string) {
+    const pool = (await this.get(poolId)) as PoolService
+    return pool
+  }
+
+  static async getAll() {
+    const pools = (await paginatedGetter('Pool', 'type', 'ALL')) as PoolService[]
+    return pools.map((pool) => this.create(pool) as PoolService)
+  }
+
+  public async updateState() {
+    const poolResponse = await api.query.poolSystem.pool<Option<PoolDetails>>(this.id)
+    logger.info(`Updating state for pool: ${this.id} with data: ${JSON.stringify(poolResponse.toHuman())}`)
     if (poolResponse.isSome) {
       const poolData = poolResponse.unwrap()
-      this.poolState.totalReserve = poolData.reserve.total.toBigInt()
-      this.poolState.availableReserve = poolData.reserve.available.toBigInt()
-      this.poolState.maxReserve = poolData.reserve.max.toBigInt()
+      this.totalReserve = poolData.reserve.total.toBigInt()
+      this.availableReserve = poolData.reserve.available.toBigInt()
+      this.maxReserve = poolData.reserve.max.toBigInt()
     }
     return this
   }
-  public updateState = errorHandler(this._updateState)
 
-  private _updateNav = async () => {
-    const navResponse = await api.query.loans.poolNAV<Option<NavDetails>>(this.pool.id)
+  public async updateNav() {
+    const navResponse = await api.query.loans.poolNAV<Option<NavDetails>>(this.id)
     if (navResponse.isSome) {
       const navData = navResponse.unwrap()
-      this.poolState.netAssetValue = navData.latest.toBigInt()
+      this.netAssetValue = navData.latest.toBigInt()
     }
     return this
   }
-  public updateNav = errorHandler(this._updateNav)
 
-  public updateTotalNumberOfActiveLoans = (activeLoans: bigint) => {
-    this.poolState.totalNumberOfActiveLoans = activeLoans
+  public updateTotalNumberOfActiveLoans(activeLoans: bigint) {
+    this.totalNumberOfActiveLoans = activeLoans
   }
 
-  public increaseTotalBorrowings = (borrowedAmount: bigint) => {
-    this.poolState.totalBorrowed_ += borrowedAmount
-    this.poolState.totalEverBorrowed += borrowedAmount
-    this.poolState.totalNumberOfLoans_ += BigInt(1)
-    this.poolState.totalEverNumberOfLoans += BigInt(1)
+  public increaseTotalBorrowings(borrowedAmount: bigint) {
+    this.totalBorrowed_ += borrowedAmount
+    this.totalEverBorrowed += borrowedAmount
+    this.totalNumberOfLoans_ += BigInt(1)
+    this.totalEverNumberOfLoans += BigInt(1)
   }
 
-  public increaseTotalInvested = (currencyAmount: bigint) => {
-    this.poolState.totalInvested_ += currencyAmount
+  public increaseTotalInvested(currencyAmount: bigint) {
+    this.totalInvested_ += currencyAmount
   }
 
-  public increaseTotalRedeemed = (currencyAmount: bigint) => {
-    this.poolState.totalRedeemed_ += currencyAmount
+  public increaseTotalRedeemed(currencyAmount: bigint) {
+    this.totalRedeemed_ += currencyAmount
   }
 
-  public closeEpoch = (epochId: number) => {
-    this.pool.lastEpochClosed = epochId
-    this.pool.currentEpoch = epochId + 1
+  public closeEpoch(epochId: number) {
+    this.lastEpochClosed = epochId
+    this.currentEpoch = epochId + 1
   }
 
-  public executeEpoch = (epochId: number) => {
-    this.pool.lastEpochExecuted = epochId
+  public executeEpoch(epochId: number) {
+    this.lastEpochExecuted = epochId
   }
 
-  public computePoolValue = () => {
-    const nav = bnToBn(this.poolState.netAssetValue)
-    const totalReserve = bnToBn(this.poolState.totalReserve)
-    this.poolState.value = nToBigInt(nav.add(totalReserve))
+  public computePoolValue() {
+    const nav = bnToBn(this.netAssetValue)
+    const totalReserve = bnToBn(this.totalReserve)
+    this.value = nToBigInt(nav.add(totalReserve))
   }
 
-  public resetTotalDebtOverdue = () => {
-    this.poolState.totalDebtOverdue = BigInt(0)
+  public resetTotalDebtOverdue() {
+    this.totalDebtOverdue = BigInt(0)
   }
 
-  public increaseTotalDebtOverdue = (amount: bigint) => {
-    this.poolState.totalDebtOverdue += amount
+  public increaseTotalDebtOverdue(amount: bigint) {
+    this.totalDebtOverdue += amount
   }
 
-  public increaseTotalWrittenOff = (amount: bigint) => {
-    this.poolState.totalWrittenOff_ += amount
+  public increaseTotalWrittenOff(amount: bigint) {
+    this.totalWrittenOff_ += amount
   }
 
-  private _getTranches = async () => {
-    const poolResponse = await api.query.pools.pool<Option<PoolDetails>>(this.pool.id)
-    logger.info(`Fetching tranches for pool: ${this.pool.id}`)
+  public async getTranches() {
+    const poolResponse = await api.query.poolSystem.pool<Option<PoolDetails>>(this.id)
+    logger.info(`Fetching tranches for pool: ${this.id}`)
 
     if (poolResponse.isNone) throw new Error('Unable to fetch pool data!')
 
@@ -166,25 +160,23 @@ export class PoolService {
 
     return tranches.reduce<PoolTranches>((obj, data, index) => ({ ...obj, [ids[index].toHex()]: { index, data } }), {})
   }
-  public getTranches = errorHandler(this._getTranches)
 
-  private _getTrancheTokenPrices = async () => {
-    logger.info(`Qerying RPC tranche token prices for pool ${this.pool.id}`)
-    const poolId = this.pool.id
+  public async getTrancheTokenPrices() {
+    logger.info(`Qerying RPC tranche token prices for pool ${this.id}`)
+    const poolId = this.id
     let tokenPrices: Vec<u128>
     try {
       tokenPrices = await (api.rpc as ExtendedRpc).pools.trancheTokenPrices(poolId)
     } catch (err) {
-      logger.error(`Unable to fetch tranche token prices for pool: ${this.pool.id}: ${err}`)
+      logger.error(`Unable to fetch tranche token prices for pool: ${this.id}: ${err}`)
       tokenPrices = undefined
     }
     return tokenPrices
   }
-  public getTrancheTokenPrices = errorHandler(this._getTrancheTokenPrices)
 
-  private _getActiveLoanData = async () => {
-    logger.info(`Querying active loan data for pool: ${this.pool.id}`)
-    const loanDetails = await api.query.loans.activeLoans<Vec<PricedLoanDetails>>(this.pool.id)
+  public async getActiveLoanData() {
+    logger.info(`Querying active loan data for pool: ${this.id}`)
+    const loanDetails = await api.query.loans.activeLoans<Vec<PricedLoanDetails>>(this.id)
     const activeLoanData = loanDetails.reduce<ActiveLoanData>(
       (last, current) => ({
         ...last,
@@ -197,7 +189,6 @@ export class PoolService {
     )
     return activeLoanData
   }
-  public getActiveLoanData = errorHandler(this._getActiveLoanData)
 }
 
 interface ActiveLoanData {

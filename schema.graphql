@@ -24,16 +24,6 @@ type Pool @entity {
   lastEpochClosed: Int
   lastEpochExecuted: Int
 
-  state: PoolState!
-
-  tranches: [Tranche] @derivedFrom(field: "pool")
-}
-
-# Track current state that regularly changes
-type PoolState @entity {
-  id: ID! #poolId
-  type: String! @index
-
   #States
   netAssetValue: BigInt!
   totalReserve: BigInt!
@@ -59,6 +49,7 @@ type PoolState @entity {
 
   tranches: [Tranche] @derivedFrom(field: "pool")
 }
+
 #Tracks PoolState over Time
 type PoolSnapshot @entity {
   id: ID! #poolId-blockNumber
@@ -103,12 +94,6 @@ type Tranche @entity {
   interestRatePerSec: BigInt
   minRiskBuffer: BigInt
 
-  state: TrancheState!
-}
-
-type TrancheState @entity {
-  id: ID! #poolId-trancheId
-  type: String! @index
   active: Boolean! @index
 
   supply: BigInt
@@ -333,11 +318,7 @@ type Loan @entity {
   adminWrittenOff: Boolean
 
   pool: Pool!
-  state: LoanState!
-}
 
-type LoanState @entity {
-  id: ID! # poolId - loanId
   active: Boolean! @index
   status: LoanStatus!
 

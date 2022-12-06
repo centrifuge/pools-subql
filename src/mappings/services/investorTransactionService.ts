@@ -32,15 +32,9 @@ export interface InvestorTransactionData {
   readonly fulfillmentRate?: bigint
 }
 
-export class InvestorTransactionService {
-  readonly investorTransaction: InvestorTransaction
-
-  constructor(investorTransaction: InvestorTransaction) {
-    this.investorTransaction = investorTransaction
-  }
-
-  static init = (data: InvestorTransactionData, type: InvestorTransactionType) => {
-    const tx = new InvestorTransaction(`${data.hash}-${data.epochNumber.toString()}-${type.toString()}`)
+export class InvestorTransactionService extends InvestorTransaction {
+  static init(data: InvestorTransactionData, type: InvestorTransactionType) {
+    const tx = new this(`${data.hash}-${data.epochNumber.toString()}-${type.toString()}`)
     tx.poolId = data.poolId.toString()
     tx.trancheId = `${data.poolId}-${data.trancheId}`
     tx.epochNumber = data.epochNumber
@@ -56,10 +50,10 @@ export class InvestorTransactionService {
     tx.currencyAmount = currencyTypes.includes(type) ? data.amount : this.computeCurrencyAmount(data)
     tx.tokenAmount = tokenTypes.includes(type) ? data.amount : this.computeTokenAmount(data)
 
-    return new InvestorTransactionService(tx)
+    return tx
   }
 
-  static executeInvestOrder = (data: InvestorTransactionData) => {
+  static executeInvestOrder(data: InvestorTransactionData) {
     logger.info(
       `Executing invest order for address ${data.address} in pool ${data.poolId} tranche ${data.trancheId} ` +
         `with amount: ${data.amount} fulfillmentRate: ${data.fulfillmentRate} ` +
@@ -73,7 +67,7 @@ export class InvestorTransactionService {
     return tx
   }
 
-  static executeRedeemOrder = (data: InvestorTransactionData) => {
+  static executeRedeemOrder(data: InvestorTransactionData) {
     logger.info(
       `Executing redeem order for address ${data.address} in pool ${data.poolId} tranche ${data.trancheId} ` +
         `with amount: ${data.amount} fulfillmentRate: ${data.fulfillmentRate} ` +
@@ -87,67 +81,64 @@ export class InvestorTransactionService {
     return tx
   }
 
-  static updateInvestOrder = (data: InvestorTransactionData) => {
+  static updateInvestOrder(data: InvestorTransactionData) {
     return this.init(data, InvestorTransactionType.INVEST_ORDER_UPDATE)
   }
 
-  static updateRedeemOrder = (data: InvestorTransactionData) => {
+  static updateRedeemOrder(data: InvestorTransactionData) {
     return this.init(data, InvestorTransactionType.REDEEM_ORDER_UPDATE)
   }
 
-  static cancelInvestOrder = (data: InvestorTransactionData) => {
+  static cancelInvestOrder(data: InvestorTransactionData) {
     return this.init(data, InvestorTransactionType.INVEST_ORDER_CANCEL)
   }
 
-  static cancelRedeemOrder = (data: InvestorTransactionData) => {
+  static cancelRedeemOrder(data: InvestorTransactionData) {
     return this.init(data, InvestorTransactionType.REDEEM_ORDER_CANCEL)
   }
 
-  static collectInvestOrder = (data: InvestorTransactionData) => {
+  static collectInvestOrder(data: InvestorTransactionData) {
     return this.init(data, InvestorTransactionType.INVEST_COLLECT)
   }
 
-  static collectRedeemOrder = (data: InvestorTransactionData) => {
+  static collectRedeemOrder(data: InvestorTransactionData) {
     return this.init(data, InvestorTransactionType.REDEEM_COLLECT)
   }
 
-  static transferIn = (data: InvestorTransactionData) => {
+  static transferIn(data: InvestorTransactionData) {
     return this.init(data, InvestorTransactionType.TRANSFER_IN)
   }
 
-  static transferOut = (data: InvestorTransactionData) => {
+  static transferOut(data: InvestorTransactionData) {
     return this.init(data, InvestorTransactionType.TRANSFER_OUT)
   }
 
-  save = async () => {
-    await this.investorTransaction.save()
-    return this
+  static async getById(hash: string) {
+    const tx = (await this.get(hash)) as InvestorTransactionService
+    return tx
   }
 
-  static getById = async (hash: string) => {
-    const tx = await InvestorTransaction.get(hash)
-    if (tx === undefined) return undefined
-    return new InvestorTransactionService(tx)
-  }
-
-  static computeTokenAmount = (data: InvestorTransactionData) =>
-    data.price
+  static computeTokenAmount(data: InvestorTransactionData) {
+    return data.price
       ? nToBigInt(
           bnToBn(data.amount)
             .mul(CPREC(RAY_DIGITS + WAD_DIGITS - data.digits))
             .div(bnToBn(data.price))
         )
       : null
+  }
 
-  static computeCurrencyAmount = (data: InvestorTransactionData) =>
-    data.price
+  static computeCurrencyAmount(data: InvestorTransactionData) {
+    return data.price
       ? nToBigInt(
           bnToBn(data.amount)
             .mul(bnToBn(data.price))
             .div(CPREC(RAY_DIGITS + WAD_DIGITS - data.digits))
         )
       : null
+  }
 
-  static computeFulfilledAmount = (data: InvestorTransactionData) =>
-    nToBigInt(bnToBn(data.amount).mul(bnToBn(data.fulfillmentRate)).div(WAD))
+  static computeFulfilledAmount(data: InvestorTransactionData) {
+    return nToBigInt(bnToBn(data.amount).mul(bnToBn(data.fulfillmentRate)).div(WAD))
+  }
 }

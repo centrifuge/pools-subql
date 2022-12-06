@@ -16,7 +16,10 @@ export const handleLoanCreated = errorHandler(_handleLoanCreated)
 async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedClosedEvent>) {
   const [poolId, loanId, [nftClassId, nftItemId]] = event.event.data
   logger.info(`Loan created event for pool: ${poolId.toString()} loan: ${loanId.toString()}`)
+
   const pool = await PoolService.getById(poolId.toString())
+  if (pool === undefined) throw new Error('Pool not found!')
+
   const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toString())
 
   const loan = await LoanService.init(
@@ -32,8 +35,8 @@ async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedClosedEvent>)
   const bt = await BorrowerTransactionService.created({
     poolId: poolId.toString(),
     loanId: loanId.toString(),
-    address: account.account.id,
-    epochNumber: pool.pool.currentEpoch,
+    address: account.id,
+    epochNumber: pool.currentEpoch,
     hash: event.extrinsic.extrinsic.hash.toString(),
     timestamp: event.block.timestamp,
   })
@@ -44,7 +47,10 @@ export const handleLoanBorrowed = errorHandler(_handleLoanBorrowed)
 async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedRepaidEvent>): Promise<void> {
   const [poolId, loanId, amount] = event.event.data
   logger.info(`Loan borrowed event for pool: ${poolId.toString()} amount: ${amount.toString()}`)
+
   const pool = await PoolService.getById(poolId.toString())
+  if (pool === undefined) throw new Error('Pool not found!')
+
   const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toString())
 
   // Update loan amount
@@ -56,8 +62,8 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedRepaidEvent
   const bt = await BorrowerTransactionService.borrowed({
     poolId: poolId.toString(),
     loanId: loanId.toString(),
-    address: account.account.id,
-    epochNumber: pool.pool.currentEpoch,
+    address: account.id,
+    epochNumber: pool.currentEpoch,
     hash: event.extrinsic.extrinsic.hash.toString(),
     timestamp: event.block.timestamp,
     amount: amount.toBigInt(),
@@ -73,7 +79,10 @@ export const handleLoanPriced = errorHandler(_handleLoanPriced)
 async function _handleLoanPriced(event: SubstrateEvent<LoanPricedEvent>) {
   const [poolId, loanId, interestRatePerSec, loanType] = event.event.data
   logger.info(`Loan priced event for pool: ${poolId.toString()} loan: ${loanId.toString()}`)
+
   const pool = await PoolService.getById(poolId.toString())
+  if (pool === undefined) throw new Error('Pool not found!')
+
   const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toString())
 
   const loanSpecs = loanType.inner as LoanSpecs
@@ -96,8 +105,8 @@ async function _handleLoanPriced(event: SubstrateEvent<LoanPricedEvent>) {
   const bt = await BorrowerTransactionService.priced({
     poolId: poolId.toString(),
     loanId: loanId.toString(),
-    address: account.account.id,
-    epochNumber: pool.pool.currentEpoch,
+    address: account.id,
+    epochNumber: pool.currentEpoch,
     hash: event.extrinsic.extrinsic.hash.toString(),
     timestamp: event.block.timestamp,
   })
@@ -108,7 +117,10 @@ export const handleLoanRepaid = errorHandler(_handleLoanRepaid)
 async function _handleLoanRepaid(event: SubstrateEvent<LoanBorrowedRepaidEvent>) {
   const [poolId, loanId, amount] = event.event.data
   logger.info(`Loan borrowed event for pool: ${poolId.toString()} amount: ${amount.toString()}`)
+
   const pool = await PoolService.getById(poolId.toString())
+  if (pool === undefined) throw new Error('Pool not found!')
+
   const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toString())
 
   const loan = await LoanService.getById(poolId.toString(), loanId.toString())
@@ -119,8 +131,8 @@ async function _handleLoanRepaid(event: SubstrateEvent<LoanBorrowedRepaidEvent>)
   const bt = await BorrowerTransactionService.repaid({
     poolId: poolId.toString(),
     loanId: loanId.toString(),
-    address: account.account.id,
-    epochNumber: pool.pool.currentEpoch,
+    address: account.id,
+    epochNumber: pool.currentEpoch,
     hash: event.extrinsic.extrinsic.hash.toString(),
     timestamp: event.block.timestamp,
     amount: amount.toBigInt(),
@@ -139,7 +151,9 @@ async function _handleLoanWrittenOff(event: SubstrateEvent<LoanWrittenOffEvent>)
   await loan.save()
 
   const pool = await PoolService.getById(poolId.toString())
-  await pool.increaseTotalWrittenOff(loan.loanState.writtenOffAmount_)
+  if (pool === undefined) throw new Error('Pool not found!')
+
+  await pool.increaseTotalWrittenOff(loan.writtenOffAmount_)
   await pool.save()
 }
 
@@ -147,7 +161,10 @@ export const handleLoanClosed = errorHandler(_handleLoanClosed)
 async function _handleLoanClosed(event: SubstrateEvent<LoanCreatedClosedEvent>) {
   const [poolId, loanId] = event.event.data
   logger.info(`Loan closed event for pool: ${poolId.toString()} loanId: ${loanId.toString()}`)
+
   const pool = await PoolService.getById(poolId.toString())
+  if (pool === undefined) throw new Error('Pool not found!')
+
   const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toString())
 
   const loan = await LoanService.getById(poolId.toString(), loanId.toString())
@@ -158,8 +175,8 @@ async function _handleLoanClosed(event: SubstrateEvent<LoanCreatedClosedEvent>) 
   const bt = await BorrowerTransactionService.closed({
     poolId: poolId.toString(),
     loanId: loanId.toString(),
-    address: account.account.id,
-    epochNumber: pool.pool.currentEpoch,
+    address: account.id,
+    epochNumber: pool.currentEpoch,
     hash: event.extrinsic.extrinsic.hash.toString(),
     timestamp: event.block.timestamp,
   })

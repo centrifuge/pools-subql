@@ -1,33 +1,23 @@
-import { errorHandler } from '../../helpers/errorHandler'
 import { AccountData } from '../../helpers/types'
 import { CurrencyBalance } from '../../types/models/CurrencyBalance'
 
-export class CurrencyBalanceService {
-  readonly currencyBalance: CurrencyBalance
-
-  constructor(currencyBalance: CurrencyBalance) {
-    this.currencyBalance = currencyBalance
-  }
-
-  static init = (address: string, currency: string) => {
+export class CurrencyBalanceService extends CurrencyBalance {
+  static init(address: string, currency: string) {
     logger.info(`Initialising new CurrencyBalance: ${address}-${currency}`)
-    const currencyBalance = new CurrencyBalance(`${address}-${currency}`)
+    const currencyBalance = new this(`${address}-${currency}`)
     currencyBalance.accountId = address
     currencyBalance.currencyId = currency
     currencyBalance.amount = BigInt(0)
-    return new CurrencyBalanceService(currencyBalance)
+    return currencyBalance
   }
 
-  static getById = async (address: string, currency: string) => {
-    const currencyBalance = await CurrencyBalance.get(`${address}-${currency}`)
-    if (currencyBalance === undefined) {
-      return undefined
-    } else {
-      return new CurrencyBalanceService(currencyBalance)
-    }
+  static async getById(address: string, currency: string) {
+    const id = `${address}-${currency}`
+    const currencyBalance = await this.get(id)
+    return currencyBalance as CurrencyBalanceService
   }
 
-  static getOrInit = async (address: string, currency: string) => {
+  static async getOrInit(address: string, currency: string) {
     let currencyBalance = await this.getById(address, currency)
     if (currencyBalance === undefined) {
       currencyBalance = this.init(address, currency)
@@ -37,24 +27,16 @@ export class CurrencyBalanceService {
     return currencyBalance
   }
 
-  private _getBalance = async () => {
-    const balanceResponse = await api.query.ormlTokens.accounts<AccountData>(
-      this.currencyBalance.accountId,
-      this.currencyBalance.currencyId
-    )
-    this.currencyBalance.amount = balanceResponse.free.toBigInt()
-  }
-  public getBalance = errorHandler(this._getBalance)
-
-  public save = async () => {
-    await this.currencyBalance.save()
+  public async getBalance() {
+    const balanceResponse = await api.query.ormlTokens.accounts<AccountData>(this.accountId, this.currencyId)
+    this.amount = balanceResponse.free.toBigInt()
   }
 
-  public credit = (amount: bigint) => {
-    this.currencyBalance.amount += amount
+  public credit(amount: bigint) {
+    this.amount += amount
   }
 
-  public debit = (amount: bigint) => {
-    this.currencyBalance.amount -= amount
+  public debit(amount: bigint) {
+    this.amount -= amount
   }
 }

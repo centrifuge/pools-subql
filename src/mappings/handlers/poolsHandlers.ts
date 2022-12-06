@@ -3,53 +3,63 @@ import { errorHandler } from '../../helpers/errorHandler'
 import { EpochService } from '../services/epochService'
 import { PoolService } from '../services/poolService'
 import { TrancheService } from '../services/trancheService'
-import { EpochEvent, OrderEvent, OrdersCollectedEvent, PoolCreatedUpdatedEvent } from '../../helpers/types'
+import { EpochClosedExecutedEvent, PoolCreatedEvent, PoolUpdatedEvent } from '../../helpers/types'
 import { OutstandingOrderService } from '../services/outstandingOrderService'
-import { InvestorTransactionData, InvestorTransactionService } from '../services/investorTransactionService'
+import { InvestorTransactionService } from '../services/investorTransactionService'
 import { CurrencyService } from '../services/currencyService'
-import { AccountService } from '../services/accountService'
 import { TrancheBalanceService } from '../services/trancheBalanceService'
 
 export const handlePoolCreated = errorHandler(_handlePoolCreated)
-async function _handlePoolCreated(event: SubstrateEvent<PoolCreatedUpdatedEvent>): Promise<void> {
-  const [poolId] = event.event.data
-  logger.info(`Pool ${poolId.toString()} created in block ${event.block.block.header.number}`)
+async function _handlePoolCreated(event: SubstrateEvent<PoolCreatedEvent>): Promise<void> {
+  const [, , poolId, essence] = event.event.data
+  logger.info(
+    `Pool ${poolId.toString()} with currency: ${essence.currency.type} ` +
+      `created in block ${event.block.block.header.number}`
+  )
+
+  const currency = await CurrencyService.getOrInit(essence.currency.type)
 
   // Initialise Pool
-  const poolService = await PoolService.init(
+  const pool = await PoolService.init(
     poolId.toString(),
+    currency.id,
+    essence.maxReserve.toBigInt(),
+    essence.maxNavAge.toNumber(),
+    essence.minEpochTime.toNumber(),
     event.block.timestamp,
     event.block.block.header.number.toNumber()
   )
-  await poolService.initData(async (ticker) => (await CurrencyService.getOrInit(ticker)).currency.id)
-  await poolService.save()
+  await pool.initData()
+  await pool.save()
 
   // Initialise the tranches
-  const tranches = await poolService.getTranches()
-  for (const [id, tranche] of Object.entries(tranches)) {
-    logger.info(`Creating tranche with id: ${id}`)
-    const trancheService = await TrancheService.init(poolId.toString(), id, tranche.index, tranche.data)
-    await trancheService.updateSupply()
-    await trancheService.updateDebt(tranche.data.debt.toBigInt())
-    await trancheService.save()
+  const trancheData = await pool.getTranches()
+  const tranches = essence.tranches.map((trancheEssence, index) => {
+    const trancheId = trancheEssence.currency.trancheId.toHex()
+    logger.info(`Creating tranche with id: ${pool.id}-${trancheId}`)
+    return TrancheService.init(pool.id, trancheId, index, trancheData[trancheId].data)
+  })
+
+  for (const tranche of tranches) {
+    await tranche.updateSupply()
+    await tranche.save()
   }
 
   // Initialise Epoch
-  const epochService = await EpochService.init(
-    poolId.toString(),
-    poolService.pool.currentEpoch,
-    Object.keys(tranches),
-    event.block.timestamp
-  )
-  await epochService.save()
+  const trancheIds = tranches.map((tranche) => tranche.trancheId)
+  const epoch = await EpochService.init(poolId.toString(), pool.currentEpoch, trancheIds, event.block.timestamp)
+  await epoch.saveWithStates()
 }
 
 export const handlePoolUpdated = errorHandler(_handlePoolUpdated)
-async function _handlePoolUpdated(event: SubstrateEvent<PoolCreatedUpdatedEvent>): Promise<void> {
+async function _handlePoolUpdated(event: SubstrateEvent<PoolUpdatedEvent>): Promise<void> {
   const [poolId] = event.event.data
-  const pool = await PoolService.getById(poolId.toString())
   logger.info(`Pool ${poolId.toString()} updated on block ${event.block.block.header.number}`)
-  await pool.initData(async (ticker) => (await CurrencyService.getOrInit(ticker)).currency.id)
+
+  const pool = await PoolService.getById(poolId.toString())
+  if (pool === undefined) throw new Error('Pool not found!')
+
+  await pool.initData()
   await pool.save()
 
   // Deactivate active tranches
@@ -72,56 +82,60 @@ async function _handlePoolUpdated(event: SubstrateEvent<PoolCreatedUpdatedEvent>
 }
 
 export const handleEpochClosed = errorHandler(_handleEpochClosed)
-async function _handleEpochClosed(event: SubstrateEvent<EpochEvent>): Promise<void> {
+async function _handleEpochClosed(event: SubstrateEvent<EpochClosedExecutedEvent>): Promise<void> {
   const [poolId, epochId] = event.event.data
   logger.info(
     `Epoch ${epochId.toNumber()} closed for pool ${poolId.toString()} in block ${event.block.block.header.number}`
   )
   // Close the current epoch and open a new one
-  const tranches = await TrancheService.getByPoolId(poolId.toString())
+  const tranches = await TrancheService.getActives(poolId.toString())
   const epoch = await EpochService.getById(poolId.toString(), epochId.toNumber())
   await epoch.closeEpoch(event.block.timestamp)
-  await epoch.save()
+  await epoch.saveWithStates()
 
-  const trancheIds = tranches.map((tranche) => tranche.tranche.trancheId)
-  const epochNext = await EpochService.init(
+  const trancheIds = tranches.map((tranche) => tranche.trancheId)
+  const nextEpoch = await EpochService.init(
     poolId.toString(),
     epochId.toNumber() + 1,
     trancheIds,
     event.block.timestamp
   )
-  await epochNext.save()
+  await nextEpoch.saveWithStates()
 
   const pool = await PoolService.getById(poolId.toString())
+  if (pool === undefined) throw new Error('Pool not found!')
+
   await pool.closeEpoch(epochId.toNumber())
   await pool.save()
 }
 
 export const handleEpochExecuted = errorHandler(_handleEpochExecuted)
-async function _handleEpochExecuted(event: SubstrateEvent<EpochEvent>): Promise<void> {
+async function _handleEpochExecuted(event: SubstrateEvent<EpochClosedExecutedEvent>): Promise<void> {
   const [poolId, epochId] = event.event.data
   logger.info(
     `Epoch ${epochId.toString()} executed event for pool ${poolId.toString()} ` +
       `at block ${event.block.block.header.number.toString()}`
   )
 
-  const poolService = await PoolService.getById(poolId.toString())
+  const pool = await PoolService.getById(poolId.toString())
+  if (pool === undefined) throw new Error('Pool not found!')
+
   const epoch = await EpochService.getById(poolId.toString(), epochId.toNumber())
-  const digits = (await CurrencyService.getById(poolService.pool.currencyId)).currency.decimals
+  const digits = ((await CurrencyService.get(pool.currencyId)) as CurrencyService).decimals
 
   await epoch.executeEpoch(event.block.timestamp, digits)
-  await epoch.save()
+  await epoch.saveWithStates()
 
-  await poolService.executeEpoch(epochId.toNumber())
-  await poolService.increaseTotalInvested(epoch.epoch.totalInvested)
-  await poolService.increaseTotalRedeemed(epoch.epoch.totalRedeemed)
-  await poolService.save()
+  await pool.executeEpoch(epochId.toNumber())
+  await pool.increaseTotalInvested(epoch.totalInvested)
+  await pool.increaseTotalRedeemed(epoch.totalRedeemed)
+  await pool.save()
 
   // Compute and save aggregated order fulfillment
   const tranches = await TrancheService.getByPoolId(poolId.toString())
   const nextEpoch = await EpochService.getById(poolId.toString(), epochId.toNumber() + 1)
   for (const tranche of tranches) {
-    const epochState = epoch.epochStates.find((epochState) => epochState.trancheId === tranche.tranche.trancheId)
+    const epochState = epoch.states.find((epochState) => epochState.trancheId === tranche.trancheId)
     await tranche.updateSupply()
     await tranche.updatePrice(epochState.price)
     await tranche.updateFulfilledInvestOrders(epochState.fulfilledInvestOrders)
@@ -130,12 +144,12 @@ async function _handleEpochExecuted(event: SubstrateEvent<EpochEvent>): Promise<
 
     // Carry over aggregated unfulfilled orders to next epoch
     await nextEpoch.updateOutstandingInvestOrders(
-      tranche.tranche.trancheId,
+      tranche.trancheId,
       epochState.outstandingInvestOrders - epochState.fulfilledInvestOrders,
       BigInt(0)
     )
     await nextEpoch.updateOutstandingRedeemOrders(
-      tranche.tranche.trancheId,
+      tranche.trancheId,
       epochState.outstandingRedeemOrders - epochState.fulfilledRedeemOrders,
       BigInt(0),
       epochState.price,
@@ -143,19 +157,17 @@ async function _handleEpochExecuted(event: SubstrateEvent<EpochEvent>): Promise<
     )
 
     // Find single outstanding orders posted for this tranche and fulfill them to investorTransactions
-    const oos = await OutstandingOrderService.getByTrancheId(poolId.toString(), tranche.tranche.trancheId)
-    logger.info(`Fulfilling ${oos.length} outstanding orders for tranche ${tranche.tranche.trancheId}`)
+    const oos = await OutstandingOrderService.getAllByTrancheId(poolId.toString(), tranche.trancheId)
+    logger.info(`Fulfilling ${oos.length} outstanding orders for tranche ${tranche.trancheId}`)
     for (const oo of oos) {
-      logger.info(
-        `Outstanding invest before fulfillment: ${oo.outstandingOrder.invest} redeem:${oo.outstandingOrder.redeem}`
-      )
+      logger.info(`Outstanding invest before fulfillment: ${oo.invest} redeem:${oo.redeem}`)
       const orderData = {
         poolId: poolId.toString(),
-        trancheId: tranche.tranche.trancheId,
+        trancheId: tranche.trancheId,
         epochNumber: epochId.toNumber(),
-        address: oo.outstandingOrder.accountId,
-        hash: oo.outstandingOrder.hash,
-        digits: (await CurrencyService.getById(poolService.pool.currencyId)).currency.decimals,
+        address: oo.accountId,
+        hash: oo.hash,
+        digits: ((await CurrencyService.get(pool.currencyId)) as CurrencyService).decimals,
         price: epochState.price,
         fee: BigInt(0),
         timestamp: event.block.timestamp,
@@ -167,208 +179,38 @@ async function _handleEpochExecuted(event: SubstrateEvent<EpochEvent>): Promise<
         orderData.trancheId
       )
 
-      if (oo.outstandingOrder.invest > BigInt(0) && epochState.investFulfillment > BigInt(0)) {
+      if (oo.invest > BigInt(0) && epochState.investFulfillment > BigInt(0)) {
         const it = InvestorTransactionService.executeInvestOrder({
           ...orderData,
-          amount: oo.outstandingOrder.invest,
+          amount: oo.invest,
           fulfillmentRate: epochState.investFulfillment,
         })
         await it.save()
-        await oo.updateUnfulfilledInvest(it.investorTransaction.currencyAmount)
-        await trancheBalance.investExecuted(it.investorTransaction.currencyAmount, it.investorTransaction.tokenAmount)
+        await oo.updateUnfulfilledInvest(it.currencyAmount)
+        await trancheBalance.investExecute(it.currencyAmount, it.tokenAmount)
       }
 
-      if (oo.outstandingOrder.redeem > BigInt(0) && epochState.redeemFulfillment > BigInt(0)) {
+      if (oo.redeem > BigInt(0) && epochState.redeemFulfillment > BigInt(0)) {
         const it = InvestorTransactionService.executeRedeemOrder({
           ...orderData,
-          amount: oo.outstandingOrder.redeem,
+          amount: oo.redeem,
           fulfillmentRate: epochState.redeemFulfillment,
         })
         await it.save()
-        await oo.updateUnfulfilledRedeem(it.investorTransaction.tokenAmount)
-        await trancheBalance.redeemExecuted(it.investorTransaction.tokenAmount, it.investorTransaction.currencyAmount)
+        await oo.updateUnfulfilledRedeem(it.tokenAmount)
+        await trancheBalance.redeemExecute(it.tokenAmount, it.currencyAmount)
       }
 
       await trancheBalance.save()
 
       // Remove outstandingOrder if completely fulfilled
-      if (oo.outstandingOrder.invest > BigInt(0) || oo.outstandingOrder.redeem > BigInt(0)) {
+      if (oo.invest > BigInt(0) || oo.redeem > BigInt(0)) {
         await oo.save()
       } else {
-        await oo.remove()
+        await OutstandingOrderService.remove(oo.id)
       }
-      logger.info(
-        `Outstanding invest after fulfillment: ${oo.outstandingOrder.invest} redeem:${oo.outstandingOrder.redeem}`
-      )
+      logger.info(`Outstanding invest after fulfillment: ${oo.invest} redeem:${oo.redeem}`)
     }
   }
-  await nextEpoch.save()
-}
-
-export const handleInvestOrderUpdated = errorHandler(_handleInvestOrderUpdated)
-async function _handleInvestOrderUpdated(event: SubstrateEvent<OrderEvent>): Promise<void> {
-  const [poolId, trancheId, address, oldAmount, newAmount] = event.event.data
-  logger.info(
-    `Invest order updated for tranche ${poolId.toString()}-${trancheId.toString()}. ` +
-      `New: ${newAmount.toString()} Old: ${oldAmount.toString()} at ` +
-      `block ${event.block.block.header.number.toString()}`
-  )
-
-  const pool = await PoolService.getById(poolId.toString())
-  const account = await AccountService.getOrInit(address.toString())
-  const tranche = await TrancheService.getById(poolId.toString(), trancheId.toHex())
-
-  // Update tranche price
-  await tranche.updatePriceFromRpc()
-
-  const orderData: InvestorTransactionData = {
-    poolId: poolId.toString(),
-    trancheId: trancheId.toString(),
-    epochNumber: pool.pool.currentEpoch,
-    address: account.account.id,
-    hash: event.extrinsic.extrinsic.hash.toString(),
-    amount: newAmount.toBigInt(),
-    digits: (await CurrencyService.getById(pool.pool.currencyId)).currency.decimals,
-    price: tranche.trancheState.price,
-    fee: BigInt(0),
-    timestamp: event.block.timestamp,
-  }
-
-  if (newAmount.toBigInt() > BigInt(0)) {
-    // Post investor transaction
-    const it = InvestorTransactionService.updateInvestOrder(orderData)
-    await it.save()
-  } else {
-    // Cancel transaction
-    const it = InvestorTransactionService.cancelInvestOrder(orderData)
-    await it.save()
-  }
-
-  // Initialise or update outstanding transaction
-  const oo = OutstandingOrderService.initInvest(orderData)
-  await oo.save()
-
-  // Update tranche outstanding total
-  await tranche.updateOutstandingInvestOrders(newAmount.toBigInt(), oldAmount.toBigInt())
-  await tranche.save()
-
-  // Update epochState outstanding total
-  const epoch = await EpochService.getById(poolId.toString(), pool.pool.currentEpoch)
-  await epoch.updateOutstandingInvestOrders(trancheId.toHex(), newAmount.toBigInt(), oldAmount.toBigInt())
-  await epoch.save()
-
-  // Update trancheBalance
-  const trancheBalance = await TrancheBalanceService.getOrInit(orderData.address, orderData.poolId, orderData.trancheId)
-  await trancheBalance.investOrdered(orderData.amount)
-  await trancheBalance.save()
-}
-
-export const handleRedeemOrderUpdated = errorHandler(_handleRedeemOrderUpdated)
-async function _handleRedeemOrderUpdated(event: SubstrateEvent<OrderEvent>): Promise<void> {
-  const [poolId, trancheId, address, oldAmount, newAmount] = event.event.data
-  logger.info(
-    `Redeem order updated for tranche ${poolId.toString()}-${trancheId.toString()}. ` +
-      `New: ${newAmount.toString()} Old: ${oldAmount.toString()} at ` +
-      `block ${event.block.block.header.number.toString()}`
-  )
-  // Get corresponding pool
-  const pool = await PoolService.getById(poolId.toString())
-  const account = await AccountService.getOrInit(address.toString())
-  const tranche = await TrancheService.getById(poolId.toString(), trancheId.toHex())
-  const digits = (await CurrencyService.getById(pool.pool.currencyId)).currency.decimals
-
-  await tranche.updatePriceFromRpc()
-
-  const orderData: InvestorTransactionData = {
-    poolId: poolId.toString(),
-    trancheId: trancheId.toString(),
-    epochNumber: pool.pool.currentEpoch,
-    address: account.account.id,
-    hash: event.extrinsic.extrinsic.hash.toString(),
-    amount: newAmount.toBigInt(),
-    digits: digits,
-    price: tranche.trancheState.price,
-    fee: BigInt(0),
-    timestamp: event.block.timestamp,
-  }
-
-  if (newAmount.toBigInt() > BigInt(0)) {
-    // Post investor transaction
-    const it = InvestorTransactionService.updateRedeemOrder(orderData)
-    await it.save()
-  } else {
-    // Cancel transaction
-    const it = InvestorTransactionService.cancelRedeemOrder(orderData)
-    await it.save()
-  }
-
-  // Initialise outstanding transaction
-  const oo = OutstandingOrderService.initInvest(orderData)
-  await oo.save()
-
-  // Update tranche outstanding total
-  await tranche.updateOutstandingRedeemOrders(newAmount.toBigInt(), oldAmount.toBigInt(), digits)
-  await tranche.save()
-
-  // Update epochState outstanding total
-  const epoch = await EpochService.getById(poolId.toString(), pool.pool.currentEpoch)
-  await epoch.updateOutstandingRedeemOrders(
-    trancheId.toHex(),
-    newAmount.toBigInt(),
-    oldAmount.toBigInt(),
-    tranche.trancheState.price,
-    digits
-  )
-  await epoch.save()
-
-  // Update trancheBalance
-  const trancheBalance = await TrancheBalanceService.getOrInit(orderData.address, orderData.poolId, orderData.trancheId)
-  await trancheBalance.redeemOrdered(orderData.amount)
-  await trancheBalance.save()
-}
-
-export const handleOrdersCollected = errorHandler(_handleOrdersCollected)
-async function _handleOrdersCollected(event: SubstrateEvent<OrdersCollectedEvent>): Promise<void> {
-  const [poolId, trancheId, endEpochId, address, outstandingCollections] = event.event.data
-  logger.info(
-    `Orders collected for tranche ${poolId.toString()}-${trancheId.toString()}. ` +
-      `Address: ${address.toString()} endEpoch: ${endEpochId.toNumber()} at ` +
-      `block ${event.block.block.header.number.toString()} hash:${event.extrinsic.extrinsic.hash.toString()}`
-  )
-
-  const pool = await PoolService.getById(poolId.toString())
-  const account = await AccountService.getOrInit(address.toString())
-  const tranche = await TrancheService.getById(poolId.toString(), trancheId.toHex())
-
-  // Update tranche price
-  await tranche.updatePriceFromRpc()
-  await tranche.save()
-
-  const { payoutTokenAmount, payoutCurrencyAmount } = outstandingCollections
-
-  const orderData = {
-    poolId: poolId.toString(),
-    trancheId: trancheId.toString(),
-    epochNumber: endEpochId.toNumber(),
-    address: account.account.id,
-    hash: event.extrinsic.extrinsic.hash.toString(),
-    timestamp: event.block.timestamp,
-    digits: (await CurrencyService.getById(pool.pool.currencyId)).currency.decimals,
-    price: tranche.trancheState.price,
-  }
-
-  const trancheBalance = await TrancheBalanceService.getOrInit(orderData.address, orderData.poolId, orderData.trancheId)
-
-  if (payoutTokenAmount.toBigInt() > 0) {
-    const it = InvestorTransactionService.collectInvestOrder({ ...orderData, amount: payoutTokenAmount.toBigInt() })
-    await it.save()
-    await trancheBalance.investCollected(payoutTokenAmount.toBigInt())
-  }
-
-  if (payoutCurrencyAmount.toBigInt() > 0) {
-    const it = InvestorTransactionService.collectRedeemOrder({ ...orderData, amount: payoutCurrencyAmount.toBigInt() })
-    await it.save()
-    await trancheBalance.redeemCollected(payoutCurrencyAmount.toBigInt())
-  }
-  await trancheBalance.save()
+  await nextEpoch.saveWithStates()
 }

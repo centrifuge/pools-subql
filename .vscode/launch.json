@@ -13,7 +13,16 @@
       "name": "Debug SubQL Node",
       "type": "node",
       "request": "launch",
-      "runtimeArgs": ["--inspect-brk", "${workspaceRoot}/node_modules/.bin/subql-node", "-f", "${workspaceRoot}"],
+      "runtimeArgs": [
+        "--inspect-brk",
+        "${workspaceRoot}/node_modules/.bin/subql-node",
+        "-f",
+        "${workspaceRoot}/",
+        "--db-schema",
+        "app",
+        "--disable-historical",
+        "true"
+      ],
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen"
     }
