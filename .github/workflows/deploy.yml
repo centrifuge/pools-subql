@@ -57,8 +57,6 @@ jobs:
           IPFSCID=$(npx subql publish -o -f .)
           sleep 5
           npx subql deployment:deploy \
-          --useDefaults \
-          --indexerHistoricalData=false \
           --org="$SUBQL_PROJ_ORG" \
           --endpoint="$SUBQL_ENDPOINT" \
           --projectName="$SUBQL_PROJ_NAME" \
