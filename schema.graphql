@@ -17,7 +17,7 @@ type Pool @entity {
   metadata: String!
 
   minEpochTime: Int!
-  maxNavAge: Int!
+  maxPortfolioValuationAge: Int!
 
   # This cannot reference Pool directly, since this leads to a cyclic dependency.
   currentEpoch: Int!
@@ -25,27 +25,27 @@ type Pool @entity {
   lastEpochExecuted: Int
 
   #States
-  netAssetValue: BigInt!
+  portfolioValuation: BigInt!
   totalReserve: BigInt!
   availableReserve: BigInt!
   maxReserve: BigInt!
-  totalDebt: BigInt!
+  sumDebt: BigInt!
   value: BigInt!
 
   # Aggregated transaction data over the last period
-  totalBorrowed_: BigInt
-  totalRepaid_: BigInt
-  totalInvested_: BigInt
-  totalRedeemed_: BigInt
-  totalNumberOfLoans_: BigInt
+  sumBorrowedAmount_R: BigInt
+  sumRepaidAmount_R: BigInt
+  sumInvestedAmount_R: BigInt
+  sumRedeemedAmount_R: BigInt
+  sumNumberOfLoans_R: BigInt
 
-  totalNumberOfActiveLoans: BigInt!
-  totalDebtOverdue: BigInt!
-  totalWrittenOff_: BigInt!
+  sumNumberOfActiveLoans: BigInt!
+  sumDebtOverdue: BigInt!
+  sumDebtWrittenOff_R: BigInt!
 
   # Cumulated transaction data since pool creation
-  totalEverBorrowed: BigInt
-  totalEverNumberOfLoans: BigInt
+  sumBorrowedAmount: BigInt
+  sumNumberOfLoans: BigInt
 
   tranches: [Tranche] @derivedFrom(field: "pool")
 }
@@ -60,25 +60,25 @@ type PoolSnapshot @entity {
   periodStart: Date! @index
 
   #States
-  netAssetValue: BigInt!
+  portfolioValuation: BigInt!
   totalReserve: BigInt!
   availableReserve: BigInt!
   maxReserve: BigInt!
-  totalDebt: BigInt!
+  sumDebt: BigInt!
   value: BigInt!
 
   # Aggregated transaction data over the last period
-  totalBorrowed_: BigInt
-  totalRepaid_: BigInt
-  totalInvested_: BigInt
-  totalRedeemed_: BigInt
-  totalNumberOfLoans_: BigInt
+  sumBorrowedAmount_R: BigInt
+  sumRepaidAmount_R: BigInt
+  sumInvestedAmount_R: BigInt
+  sumRedeemedAmount_R: BigInt
+  sumNumberOfLoans_R: BigInt
 
-  totalNumberOfActiveLoans: BigInt!
+  sumNumberOfActiveLoans: BigInt!
 
   # Cumulated transaction data since pool creation
-  totalEverBorrowed: BigInt
-  totalEverNumberOfLoans: BigInt
+  sumBorrowedAmount: BigInt
+  sumNumberOfLoans: BigInt
 }
 
 type Tranche @entity {
@@ -94,19 +94,19 @@ type Tranche @entity {
   interestRatePerSec: BigInt
   minRiskBuffer: BigInt
 
-  active: Boolean! @index
+  isActive: Boolean! @index
 
-  supply: BigInt
-  price: BigInt
-  debt: BigInt
+  tokenSupply: BigInt
+  tokenPrice: BigInt
+  sumDebt: BigInt
 
-  outstandingInvestOrders_: BigInt!
-  outstandingRedeemOrders_: BigInt!
-  outstandingRedeemOrdersCurrency_: BigInt!
+  sumOutstandingInvestOrders_R: BigInt!
+  sumOutstandingRedeemOrders_R: BigInt!
+  sumOutstandingRedeemOrdersCurrency_R: BigInt!
 
-  fulfilledInvestOrders_: BigInt!
-  fulfilledRedeemOrders_: BigInt!
-  fulfilledRedeemOrdersCurrency_: BigInt!
+  sumFulfilledInvestOrders_R: BigInt!
+  sumFulfilledRedeemOrders_R: BigInt!
+  sumFulfilledRedeemOrdersCurrency_R: BigInt!
 
   yield30DaysAnnualized: BigInt
   yield90DaysAnnualized: BigInt
@@ -122,17 +122,17 @@ type TrancheSnapshot @entity {
   blockNumber: Int!
   periodStart: Date! @index
 
-  supply: BigInt
-  price: BigInt
-  debt: BigInt
+  tokenSupply: BigInt
+  tokenPrice: BigInt
+  sumDebt: BigInt
 
-  outstandingInvestOrders_: BigInt!
-  outstandingRedeemOrders_: BigInt!
-  outstandingRedeemOrdersCurrency_: BigInt!
+  sumOutstandingInvestOrders_R: BigInt!
+  sumOutstandingRedeemOrders_R: BigInt!
+  sumOutstandingRedeemOrdersCurrency_R: BigInt!
 
-  fulfilledInvestOrders_: BigInt!
-  fulfilledRedeemOrders_: BigInt!
-  fulfilledRedeemOrdersCurrency_: BigInt!
+  sumFulfilledInvestOrders_R: BigInt!
+  sumFulfilledRedeemOrders_R: BigInt!
+  sumFulfilledRedeemOrdersCurrency_R: BigInt!
 
   yield30DaysAnnualized: BigInt
   yield90DaysAnnualized: BigInt
@@ -151,10 +151,10 @@ type Epoch @entity {
   executedAt: Date
 
   # Aggregated data during this epoch
-  totalBorrowed: BigInt!
-  totalRepaid: BigInt!
-  totalInvested: BigInt!
-  totalRedeemed: BigInt!
+  sumBorrowedAmount: BigInt!
+  sumRepaidAmount: BigInt!
+  sumInvestedAmount: BigInt!
+  sumRedeemedAmount: BigInt!
 
   epochStates: [EpochState] @derivedFrom(field: "epoch")
 
@@ -166,17 +166,17 @@ type EpochState @entity {
   epoch: Epoch! @index
   trancheId: String!
 
-  price: BigInt
+  tokenPrice: BigInt
 
-  outstandingInvestOrders: BigInt!
-  outstandingRedeemOrders: BigInt!
-  outstandingRedeemOrdersCurrency: BigInt!
-  fulfilledInvestOrders: BigInt
-  fulfilledRedeemOrders: BigInt
-  fulfilledRedeemOrdersCurrency: BigInt
+  sumOutstandingInvestOrders: BigInt!
+  sumOutstandingRedeemOrders: BigInt!
+  sumOutstandingRedeemOrdersCurrency: BigInt!
+  sumFulfilledInvestOrders: BigInt
+  sumFulfilledRedeemOrders: BigInt
+  sumFulfilledRedeemOrdersCurrency: BigInt
 
-  investFulfillment: BigInt
-  redeemFulfillment: BigInt
+  investFulfillmentPercentage: BigInt
+  redeemFulfillmentPercentage: BigInt
 }
 
 enum InvestorTransactionType {
@@ -201,8 +201,8 @@ type OutstandingOrder @entity {
   epochNumber: Int!
   timestamp: Date!
 
-  invest: BigInt!
-  redeem: BigInt!
+  investAmount: BigInt!
+  redeemAmount: BigInt!
 }
 
 type InvestorTransaction @entity {
@@ -265,13 +265,13 @@ type TrancheBalance @entity {
   pool: Pool! @index
   tranche: Tranche! @index
 
-  investOrdered: BigInt!
-  investUncollected: BigInt!
-  investCollected: BigInt!
+  sumInvestOrderedAmount: BigInt!
+  sumInvestUncollectedAmount: BigInt!
+  sumInvestCollectedAmount: BigInt!
 
-  redeemOrdered: BigInt!
-  redeemUncollected: BigInt!
-  redeemCollected: BigInt!
+  sumRedeemOrderedAmount: BigInt!
+  sumRedeemUncollectedAmount: BigInt!
+  sumRedeemCollectedAmount: BigInt!
 }
 
 type CurrencyBalance @entity {
@@ -315,21 +315,21 @@ type Loan @entity {
 
   interestRatePerSec: BigInt
 
-  adminWrittenOff: Boolean
+  isAdminWrittenOff: Boolean
 
   pool: Pool!
 
-  active: Boolean! @index
+  isActive: Boolean! @index
   status: LoanStatus!
 
   outstandingDebt: BigInt
 
-  totalBorrowed_: BigInt
-  totalRepaid_: BigInt
+  borrowedAmount_R: BigInt
+  repaidAmount_R: BigInt
 
   writeOffIndex: Int
-  writtenOffPercentage_: BigInt
-  writtenOffAmount_: BigInt
+  writtenOffPercentage_R: BigInt
+  writtenOffAmount_R: BigInt
   penaltyInterestRatePerSec: BigInt
 }
 
@@ -343,12 +343,12 @@ type LoanSnapshot @entity {
 
   outstandingDebt: BigInt
 
-  totalBorrowed_: BigInt
-  totalRepaid_: BigInt
+  borrowedAmount_R: BigInt
+  repaidAmount_R: BigInt
 
   writeOffIndex: Int
-  writtenOffPercentage_: BigInt
-  writtenOffAmount_: BigInt
+  writtenOffPercentage_R: BigInt
+  writtenOffAmount_R: BigInt
   penaltyInterestRatePerSec: BigInt
 }
 
@@ -366,7 +366,7 @@ type Proxy @entity {
   delegator: String!
   delegatee: String!
   proxyType: String
-  removed: Boolean
+  isRemoved: Boolean
   delay: Int
 }
 

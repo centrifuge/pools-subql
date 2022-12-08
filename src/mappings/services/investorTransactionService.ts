@@ -29,7 +29,7 @@ export interface InvestorTransactionData {
   readonly digits: number
   readonly price?: bigint
   readonly fee?: bigint
-  readonly fulfillmentRate?: bigint
+  readonly fulfillmentPercentage?: bigint
 }
 
 export class InvestorTransactionService extends InvestorTransaction {
@@ -56,7 +56,7 @@ export class InvestorTransactionService extends InvestorTransaction {
   static executeInvestOrder(data: InvestorTransactionData) {
     logger.info(
       `Executing invest order for address ${data.address} in pool ${data.poolId} tranche ${data.trancheId} ` +
-        `with amount: ${data.amount} fulfillmentRate: ${data.fulfillmentRate} ` +
+        `with amount: ${data.amount} fulfillmentPercentage: ${data.fulfillmentPercentage} ` +
         `price: ${data.price} digits: ${data.digits}`
     )
     const extendedData = {
@@ -70,7 +70,7 @@ export class InvestorTransactionService extends InvestorTransaction {
   static executeRedeemOrder(data: InvestorTransactionData) {
     logger.info(
       `Executing redeem order for address ${data.address} in pool ${data.poolId} tranche ${data.trancheId} ` +
-        `with amount: ${data.amount} fulfillmentRate: ${data.fulfillmentRate} ` +
+        `with amount: ${data.amount} fulfillmentPercentage: ${data.fulfillmentPercentage} ` +
         `price: ${data.price} digits: ${data.digits}`
     )
     const extendedData = {
@@ -139,6 +139,6 @@ export class InvestorTransactionService extends InvestorTransaction {
   }
 
   static computeFulfilledAmount(data: InvestorTransactionData) {
-    return nToBigInt(bnToBn(data.amount).mul(bnToBn(data.fulfillmentRate)).div(WAD))
+    return nToBigInt(bnToBn(data.amount).mul(bnToBn(data.fulfillmentPercentage)).div(WAD))
   }
 }

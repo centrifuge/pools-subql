@@ -15,12 +15,12 @@ const orderData = <InvestorTransactionData>{
   digits: WAD_DIGITS,
   price: nToBigInt(RAY.muln(10)),
   fee: BigInt(0),
-  fulfillmentRate: BigInt('500000000000000000'),
+  fulfillmentPercentage: BigInt('500000000000000000'),
 }
 
-const executedInvestCurrency = nToBigInt(bnToBn(orderData.amount).mul(bnToBn(orderData.fulfillmentRate)).div(WAD))
+const executedInvestCurrency = nToBigInt(bnToBn(orderData.amount).mul(bnToBn(orderData.fulfillmentPercentage)).div(WAD))
 const executedInvestToken = nToBigInt(bnToBn(executedInvestCurrency).mul(RAY).div(bnToBn(orderData.price)))
-const executedRedeemToken = nToBigInt(bnToBn(orderData.amount).mul(bnToBn(orderData.fulfillmentRate)).div(WAD))
+const executedRedeemToken = nToBigInt(bnToBn(orderData.amount).mul(bnToBn(orderData.fulfillmentPercentage)).div(WAD))
 const executedRedeemCurrency = nToBigInt(bnToBn(executedRedeemToken).mul(bnToBn(orderData.price)).div(RAY))
 
 describe('Given an invest/redeem order update, when the transaction is saved,', () => {

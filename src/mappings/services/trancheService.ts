@@ -9,14 +9,14 @@ import { TrancheProps } from 'centrifuge-subql/types/models/Tranche'
 export class TrancheService extends Tranche {
   static init(poolId: string, trancheId: string, index: number, trancheData: TrancheDetails) {
     const tranche = new this(`${poolId}-${trancheId}`)
-    tranche.active = true
-    tranche.outstandingInvestOrders_ = BigInt(0)
-    tranche.outstandingRedeemOrders_ = BigInt(0)
-    tranche.outstandingRedeemOrdersCurrency_ = BigInt(0)
-    tranche.fulfilledInvestOrders_ = BigInt(0)
-    tranche.fulfilledRedeemOrders_ = BigInt(0)
-    tranche.fulfilledRedeemOrdersCurrency_ = BigInt(0)
-    tranche.price = nToBigInt(RAY)
+    tranche.isActive = true
+    tranche.sumOutstandingInvestOrders_R = BigInt(0)
+    tranche.sumOutstandingRedeemOrders_R = BigInt(0)
+    tranche.sumOutstandingRedeemOrdersCurrency_R = BigInt(0)
+    tranche.sumFulfilledInvestOrders_R = BigInt(0)
+    tranche.sumFulfilledRedeemOrders_R = BigInt(0)
+    tranche.sumFulfilledRedeemOrdersCurrency_R = BigInt(0)
+    tranche.tokenPrice = nToBigInt(RAY)
 
     tranche.type = 'ALL'
     tranche.poolId = poolId
@@ -24,7 +24,7 @@ export class TrancheService extends Tranche {
     tranche.index = index
     tranche.isResidual = trancheData.trancheType.isResidual
     tranche.seniority = trancheData.seniority.toNumber()
-    tranche.debt = trancheData.debt.toBigInt()
+    tranche.sumDebt = trancheData.debt.toBigInt()
 
     if (!tranche.isResidual) {
       tranche.interestRatePerSec = trancheData.trancheType.asNonResidual.interestRatePerSec.toBigInt()
@@ -57,7 +57,7 @@ export class TrancheService extends Tranche {
 
   static async getActives(poolId: string) {
     const tranches = (await this.getByPoolId(poolId)) as TrancheService[]
-    const activeTranches = tranches.filter((state) => state.active === true)
+    const activeTranches = tranches.filter((state) => state.isActive === true)
     return activeTranches
   }
 
@@ -65,13 +65,13 @@ export class TrancheService extends Tranche {
     const requestPayload = { Tranche: [this.poolId, this.trancheId] }
     const supplyResponse = await api.query.ormlTokens.totalIssuance<u128>(requestPayload)
     logger.info(`SupplyResponse: ${JSON.stringify(supplyResponse)}`)
-    this.supply = supplyResponse.toBigInt()
+    this.tokenSupply = supplyResponse.toBigInt()
     return this
   }
 
   public updatePrice(price: bigint) {
     logger.info(`Updating price for tranche ${this.id} to :${price}`)
-    this.price = price
+    this.tokenPrice = price
     return this
   }
 
@@ -87,7 +87,7 @@ export class TrancheService extends Tranche {
 
   public updateDebt(debt: bigint) {
     logger.info(`Updating debt for tranche ${this.id} to :${debt}`)
-    this.debt = debt
+    this.sumDebt = debt
     return this
   }
 
@@ -113,13 +113,13 @@ export class TrancheService extends Tranche {
         )
         return this
       }
-      if (typeof this.price !== 'bigint') {
+      if (typeof this.tokenPrice !== 'bigint') {
         logger.warn('Price information missing')
         return this
       }
     }
-    const priceCurrent = bnToBn(this.price)
-    const priceOld = referencePeriodStart ? bnToBn(trancheSnapshot.price) : RAY
+    const priceCurrent = bnToBn(this.tokenPrice)
+    const priceOld = referencePeriodStart ? bnToBn(trancheSnapshot.tokenPrice) : RAY
     this[yieldField] = nToBigInt(priceCurrent.mul(RAY).div(priceOld).sub(RAY))
     return this
   }
@@ -144,54 +144,54 @@ export class TrancheService extends Tranche {
       )
       return this
     }
-    if (typeof this.price !== 'bigint') {
+    if (typeof this.tokenPrice !== 'bigint') {
       logger.warn('Price information missing')
       return this
     }
     const annualizationFactor = bnToBn(365 * 24 * 3600 * 1000).div(
       bnToBn(currentPeriodStart.valueOf() - referencePeriodStart.valueOf())
     )
-    const priceCurrent = bnToBn(this.price)
-    const priceOld = bnToBn(trancheSnapshot.price)
+    const priceCurrent = bnToBn(this.tokenPrice)
+    const priceOld = bnToBn(trancheSnapshot.tokenPrice)
     this[yieldField] = nToBigInt(priceCurrent.mul(RAY).div(priceOld).sub(RAY).mul(annualizationFactor))
     return this
   }
 
   public updateOutstandingInvestOrders = (newAmount: bigint, oldAmount: bigint) => {
-    this.outstandingInvestOrders_ = this.outstandingInvestOrders_ + newAmount - oldAmount
+    this.sumOutstandingInvestOrders_R = this.sumOutstandingInvestOrders_R + newAmount - oldAmount
     return this
   }
 
   public updateOutstandingRedeemOrders(newAmount: bigint, oldAmount: bigint, digits: number) {
-    this.outstandingRedeemOrders_ = this.outstandingRedeemOrders_ + newAmount - oldAmount
-    this.outstandingRedeemOrdersCurrency_ = this.computeCurrencyAmount(this.outstandingRedeemOrders_, digits)
+    this.sumOutstandingRedeemOrders_R = this.sumOutstandingRedeemOrders_R + newAmount - oldAmount
+    this.sumOutstandingRedeemOrdersCurrency_R = this.computeCurrencyAmount(this.sumOutstandingRedeemOrders_R, digits)
     return this
   }
 
   public updateFulfilledInvestOrders(amount: bigint) {
-    this.fulfilledInvestOrders_ = this.fulfilledInvestOrders_ + amount
+    this.sumFulfilledInvestOrders_R = this.sumFulfilledInvestOrders_R + amount
     return this
   }
 
   public updateFulfilledRedeemOrders(amount: bigint, digits: number) {
-    this.fulfilledRedeemOrders_ = this.fulfilledRedeemOrders_ + amount
-    this.fulfilledRedeemOrdersCurrency_ = this.computeCurrencyAmount(this.fulfilledRedeemOrders_, digits)
+    this.sumFulfilledRedeemOrders_R = this.sumFulfilledRedeemOrders_R + amount
+    this.sumFulfilledRedeemOrdersCurrency_R = this.computeCurrencyAmount(this.sumFulfilledRedeemOrders_R, digits)
     return this
   }
 
   private computeCurrencyAmount(amount: bigint, digits: number) {
     return nToBigInt(
       bnToBn(amount)
-        .mul(bnToBn(this.price))
+        .mul(bnToBn(this.tokenPrice))
         .div(CPREC(RAY_DIGITS + WAD_DIGITS - digits))
     )
   }
 
   public deactivate() {
-    this.active = false
+    this.isActive = false
   }
 
   public activate() {
-    this.active = true
+    this.isActive = true
   }
 }

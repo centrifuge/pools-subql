@@ -69,7 +69,7 @@ describe('Given a pool with non zero accumulators, ', () => {
   getByField.mockReturnValue([pool])
 
   test('when a entity is snapshotted, then the accumulators are reset to 0', async () => {
-    const accumulatorProps = Object.getOwnPropertyNames(pool).filter((prop) => prop.endsWith('_'))
+    const accumulatorProps = Object.getOwnPropertyNames(pool).filter((prop) => prop.endsWith('_R'))
     const zeroedProps = accumulatorProps.reduce((acc, currentProp) => ({ ...acc, [currentProp]: BigInt(0) }), {})
     const accumulatedProps = accumulatorProps.reduce(
       (acc, currentProp) => ({ ...acc, [currentProp]: BigInt('999999999999999999') }),

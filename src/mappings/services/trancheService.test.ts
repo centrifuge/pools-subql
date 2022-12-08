@@ -49,7 +49,7 @@ describe('Given a new tranche, when initialised', () => {
   })
 
   test('then reset accumulators are set to 0', () => {
-    const resetAccumulators = Object.getOwnPropertyNames(tranches[0]).filter((prop) => prop.endsWith('_'))
+    const resetAccumulators = Object.getOwnPropertyNames(tranches[0]).filter((prop) => prop.endsWith('_R'))
     for (const resetAccumulator of resetAccumulators) {
       expect(tranches[0][resetAccumulator]).toBe(BigInt(0))
       expect(tranches[1][resetAccumulator]).toBe(BigInt(0))
@@ -59,7 +59,7 @@ describe('Given a new tranche, when initialised', () => {
   test('when the supply data is fetched, then the correct values are fetched and set', async () => {
     await tranches[0].updateSupply()
     expect(api.query.ormlTokens.totalIssuance).toBeCalledWith({ Tranche: [poolId, trancheIds[0]] })
-    expect(tranches[0]).toMatchObject({ supply: BigInt('9999000000000000000000') })
+    expect(tranches[0]).toMatchObject({ tokenSupply: BigInt('9999000000000000000000') })
   })
 
   test('then it can be saved to the database', async () => {
@@ -72,13 +72,13 @@ describe('Given an existing tranche,', () => {
   test('when the rpc price is updated, then the value is fetched and set correctly', async () => {
     await tranches[0].updatePriceFromRpc().catch(errorLogger)
     expect((api.rpc as ExtendedRpc).pools.trancheTokenPrices).toBeCalled()
-    expect(tranches[0].price).toBe(BigInt('2000000000000000000'))
+    expect(tranches[0].tokenPrice).toBe(BigInt('2000000000000000000'))
   })
 
   test('when a 0 rpc price is delivered, then the value is skipped and logged', async () => {
     await tranches[1].updatePriceFromRpc().catch(errorLogger)
     expect((api.rpc as ExtendedRpc).pools.trancheTokenPrices).toBeCalled()
     expect(logger.error).toBeCalled()
-    expect(tranches[1].price).toBe(BigInt('1000000000000000000000000000'))
+    expect(tranches[1].tokenPrice).toBe(BigInt('1000000000000000000000000000'))
   })
 })

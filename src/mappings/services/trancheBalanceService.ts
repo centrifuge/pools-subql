@@ -7,12 +7,12 @@ export class TrancheBalanceService extends TrancheBalance {
     trancheBalance.accountId = address
     trancheBalance.poolId = poolId
     trancheBalance.trancheId = `${poolId}-${trancheId}`
-    trancheBalance.investOrdered = BigInt(0)
-    trancheBalance.investUncollected = BigInt(0)
-    trancheBalance.investCollected = BigInt(0)
-    trancheBalance.redeemOrdered = BigInt(0)
-    trancheBalance.redeemUncollected = BigInt(0)
-    trancheBalance.redeemCollected = BigInt(0)
+    trancheBalance.sumInvestOrderedAmount = BigInt(0)
+    trancheBalance.sumInvestUncollectedAmount = BigInt(0)
+    trancheBalance.sumInvestCollectedAmount = BigInt(0)
+    trancheBalance.sumRedeemOrderedAmount = BigInt(0)
+    trancheBalance.sumRedeemUncollectedAmount = BigInt(0)
+    trancheBalance.sumRedeemCollectedAmount = BigInt(0)
     return trancheBalance
   }
 
@@ -31,30 +31,30 @@ export class TrancheBalanceService extends TrancheBalance {
   }
 
   public investOrder(currencyAmount: bigint) {
-    this.investOrdered += currencyAmount
+    this.sumInvestOrderedAmount += currencyAmount
   }
 
   public redeemOrder(tokenAmount: bigint) {
-    this.redeemOrdered += tokenAmount
+    this.sumRedeemOrderedAmount += tokenAmount
   }
 
   public investExecute(currencyAmount: bigint, tokenAmount: bigint) {
-    this.investOrdered -= currencyAmount
-    this.investUncollected += tokenAmount
+    this.sumInvestOrderedAmount -= currencyAmount
+    this.sumInvestUncollectedAmount += tokenAmount
   }
 
   public redeemExecute(tokenAmount: bigint, currencyAmount: bigint) {
-    this.redeemOrdered -= tokenAmount
-    this.redeemUncollected += currencyAmount
+    this.sumRedeemOrderedAmount -= tokenAmount
+    this.sumRedeemUncollectedAmount += currencyAmount
   }
 
   public investCollect(tokenAmount: bigint) {
-    this.investUncollected -= tokenAmount
-    this.investCollected += tokenAmount
+    this.sumInvestUncollectedAmount -= tokenAmount
+    this.sumInvestCollectedAmount += tokenAmount
   }
 
   public redeemCollect(currencyAmount: bigint) {
-    this.redeemUncollected -= currencyAmount
-    this.redeemCollected += currencyAmount
+    this.sumRedeemUncollectedAmount -= currencyAmount
+    this.sumRedeemCollectedAmount += currencyAmount
   }
 }

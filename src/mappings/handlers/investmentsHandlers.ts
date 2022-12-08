@@ -36,7 +36,7 @@ async function _handleInvestOrderUpdated(event: SubstrateEvent<OrderUpdatedEvent
     hash: event.extrinsic.extrinsic.hash.toString(),
     amount: newAmount.toBigInt(),
     digits: ((await CurrencyService.get(pool.currencyId)) as CurrencyService).decimals,
-    price: tranche.price,
+    price: tranche.tokenPrice,
     fee: BigInt(0),
     timestamp: event.block.timestamp,
   }
@@ -53,7 +53,7 @@ async function _handleInvestOrderUpdated(event: SubstrateEvent<OrderUpdatedEvent
 
   // Initialise or update outstanding transaction
   const oo = await OutstandingOrderService.getOrInit(orderData)
-  const oldAmount = oo.invest
+  const oldAmount = oo.investAmount
   await oo.updateInvest(orderData)
   await oo.save()
 
@@ -98,7 +98,7 @@ async function _handleRedeemOrderUpdated(event: SubstrateEvent<OrderUpdatedEvent
     hash: event.extrinsic.extrinsic.hash.toString(),
     amount: amount.toBigInt(),
     digits: digits,
-    price: tranche.price,
+    price: tranche.tokenPrice,
     fee: BigInt(0),
     timestamp: event.block.timestamp,
   }
@@ -115,7 +115,7 @@ async function _handleRedeemOrderUpdated(event: SubstrateEvent<OrderUpdatedEvent
 
   // Initialise outstanding transaction
   const oo = await OutstandingOrderService.getOrInit(orderData)
-  const oldAmount = oo.redeem
+  const oldAmount = oo.redeemAmount
   await oo.updateRedeem(orderData)
   await oo.save()
 
@@ -125,7 +125,7 @@ async function _handleRedeemOrderUpdated(event: SubstrateEvent<OrderUpdatedEvent
 
   // Update epochState outstanding total
   const epoch = await EpochService.getById(poolId.toString(), pool.currentEpoch)
-  await epoch.updateOutstandingRedeemOrders(trancheId.toHex(), orderData.amount, oldAmount, tranche.price, digits)
+  await epoch.updateOutstandingRedeemOrders(trancheId.toHex(), orderData.amount, oldAmount, tranche.tokenPrice, digits)
   await epoch.saveWithStates()
 
   // Update trancheBalance
@@ -165,7 +165,7 @@ async function _handleInvestOrdersCollected(event: SubstrateEvent<InvestOrdersCo
     hash: event.extrinsic.extrinsic.hash.toString(),
     timestamp: event.block.timestamp,
     digits: ((await CurrencyService.get(pool.currencyId)) as CurrencyService).decimals,
-    price: tranche.price,
+    price: tranche.tokenPrice,
     amount: payoutInvestmentInvest.toBigInt(),
   }
 
@@ -211,7 +211,7 @@ async function _handleRedeemOrdersCollected(event: SubstrateEvent<RedeemOrdersCo
     hash: event.extrinsic.extrinsic.hash.toString(),
     timestamp: event.block.timestamp,
     digits: ((await CurrencyService.get(pool.currencyId)) as CurrencyService).decimals,
-    price: tranche.price,
+    price: tranche.tokenPrice,
     amount: payoutInvestmentRedeem.toBigInt(),
   }
 

@@ -4,7 +4,7 @@ import { OutstandingOrder } from '../../types'
 import { InvestorTransactionData } from './investorTransactionService'
 
 export class OutstandingOrderService extends OutstandingOrder {
-  static init(data: InvestorTransactionData, invest: bigint, redeem: bigint) {
+  static init(data: InvestorTransactionData, investAmount: bigint, redeemAmount: bigint) {
     const oo = new this(`${data.poolId}-${data.trancheId}-${data.address}`)
     oo.hash = data.hash
     oo.accountId = data.address
@@ -13,8 +13,8 @@ export class OutstandingOrderService extends OutstandingOrder {
     oo.epochNumber = data.epochNumber
     oo.timestamp = data.timestamp
 
-    oo.invest = invest
-    oo.redeem = redeem
+    oo.investAmount = investAmount
+    oo.redeemAmount = redeemAmount
     return oo
   }
 
@@ -43,20 +43,20 @@ export class OutstandingOrderService extends OutstandingOrder {
   }
 
   updateInvest(data: InvestorTransactionData) {
-    this.invest = data.amount
+    this.investAmount = data.amount
   }
 
   updateRedeem(data: InvestorTransactionData) {
-    this.redeem = data.amount
+    this.redeemAmount = data.amount
   }
 
-  updateUnfulfilledInvest(investFulfillment: bigint) {
-    this.invest = nToBigInt(bnToBn(this.invest).sub(bnToBn(investFulfillment)))
+  updateUnfulfilledInvest(investFulfillmentPercentage: bigint) {
+    this.investAmount = nToBigInt(bnToBn(this.investAmount).sub(bnToBn(investFulfillmentPercentage)))
     return this
   }
 
-  updateUnfulfilledRedeem(redeemFulfillment: bigint) {
-    this.redeem = nToBigInt(bnToBn(this.redeem).sub(bnToBn(redeemFulfillment)))
+  updateUnfulfilledRedeem(redeemFulfillmentPercentage: bigint) {
+    this.redeemAmount = nToBigInt(bnToBn(this.redeemAmount).sub(bnToBn(redeemFulfillmentPercentage)))
     return this
   }
 }

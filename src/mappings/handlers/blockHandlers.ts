@@ -25,9 +25,9 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
     const pools = await PoolService.getAll()
     for (const pool of pools) {
       await pool.updateState()
-      await pool.updateNav()
+      await pool.updatePortfolioValuation()
       await pool.computePoolValue()
-      await pool.resetTotalDebtOverdue()
+      await pool.resetDebtOverdue()
 
       // Update tranche states
       const tranches = await TrancheService.getActives(pool.id)
@@ -52,17 +52,17 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
         await loan.updateOutstandingDebt(normalizedDebt, interestRate)
         await loan.save()
 
-        if (loan.maturityDate < block.timestamp) await pool.increaseTotalDebtOverdue(loan.outstandingDebt)
+        if (loan.maturityDate < block.timestamp) await pool.increaseDebtOverdue(loan.outstandingDebt)
       }
 
-      await pool.updateTotalNumberOfActiveLoans(BigInt(Object.keys(activeLoanData).length))
+      await pool.updateNumberOfActiveLoans(BigInt(Object.keys(activeLoanData).length))
       await pool.save()
     }
 
     //Perform Snapshots and reset accumulators
     await stateSnapshotter('Pool', 'PoolSnapshot', block, 'poolId')
-    await stateSnapshotter('Tranche', 'TrancheSnapshot', block, 'trancheId', 'active', true)
-    await stateSnapshotter('Loan', 'LoanSnapshot', block, 'loanId', 'active', true)
+    await stateSnapshotter('Tranche', 'TrancheSnapshot', block, 'trancheId', 'isActive', true)
+    await stateSnapshotter('Loan', 'LoanSnapshot', block, 'loanId', 'isActive', true)
 
     //Update tracking of period and continue
     await (await timekeeper).update(blockPeriodStart)

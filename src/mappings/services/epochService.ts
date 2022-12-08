@@ -21,18 +21,18 @@ export class EpochService extends Epoch {
     epoch.poolId = poolId
     epoch.openedAt = timestamp
 
-    epoch.totalBorrowed = BigInt(0)
-    epoch.totalRepaid = BigInt(0)
-    epoch.totalInvested = BigInt(0)
-    epoch.totalRedeemed = BigInt(0)
+    epoch.sumBorrowedAmount = BigInt(0)
+    epoch.sumRepaidAmount = BigInt(0)
+    epoch.sumInvestedAmount = BigInt(0)
+    epoch.sumRedeemedAmount = BigInt(0)
 
     for (const trancheId of trancheIds) {
       const epochState = new EpochState(`${poolId}-${epochNr}-${trancheId}`)
       epochState.epochId = epoch.id
       epochState.trancheId = trancheId
-      epochState.outstandingInvestOrders = BigInt(0)
-      epochState.outstandingRedeemOrders = BigInt(0)
-      epochState.outstandingRedeemOrdersCurrency = BigInt(0)
+      epochState.sumOutstandingInvestOrders = BigInt(0)
+      epochState.sumOutstandingRedeemOrders = BigInt(0)
+      epochState.sumOutstandingRedeemOrdersCurrency = BigInt(0)
       epoch.states.push(epochState)
     }
     return epoch
@@ -87,23 +87,23 @@ export class EpochService extends Epoch {
       const investSolution = investOrderFulfillment.unwrap(),
         redeemSolution = redeemOrderFulfillment.unwrap()
 
-      epochState.price = investSolution.price.toBigInt()
-      epochState.investFulfillment = investSolution.ofAmount.toBigInt()
-      epochState.redeemFulfillment = redeemSolution.ofAmount.toBigInt()
-      epochState.fulfilledInvestOrders = nToBigInt(
-        bnToBn(epochState.outstandingInvestOrders).mul(investSolution.ofAmount.toBn()).div(WAD)
+      epochState.tokenPrice = investSolution.price.toBigInt()
+      epochState.investFulfillmentPercentage = investSolution.ofAmount.toBigInt()
+      epochState.redeemFulfillmentPercentage = redeemSolution.ofAmount.toBigInt()
+      epochState.sumFulfilledInvestOrders = nToBigInt(
+        bnToBn(epochState.sumOutstandingInvestOrders).mul(investSolution.ofAmount.toBn()).div(WAD)
       )
-      epochState.fulfilledRedeemOrders = nToBigInt(
-        bnToBn(epochState.outstandingRedeemOrders).mul(redeemSolution.ofAmount.toBn()).div(WAD)
+      epochState.sumFulfilledRedeemOrders = nToBigInt(
+        bnToBn(epochState.sumOutstandingRedeemOrders).mul(redeemSolution.ofAmount.toBn()).div(WAD)
       )
-      epochState.fulfilledRedeemOrdersCurrency = this.computeCurrencyAmount(
-        epochState.fulfilledRedeemOrders,
-        epochState.price,
+      epochState.sumFulfilledRedeemOrdersCurrency = this.computeCurrencyAmount(
+        epochState.sumFulfilledRedeemOrders,
+        epochState.tokenPrice,
         digits
       )
 
-      this.totalInvested += epochState.fulfilledInvestOrders
-      this.totalRedeemed += epochState.fulfilledRedeemOrdersCurrency
+      this.sumInvestedAmount += epochState.sumFulfilledInvestOrders
+      this.sumRedeemedAmount += epochState.sumFulfilledRedeemOrdersCurrency
     }
     return this
   }
@@ -111,7 +111,7 @@ export class EpochService extends Epoch {
   public updateOutstandingInvestOrders(trancheId: string, newAmount: bigint, oldAmount: bigint) {
     const trancheState = this.states.find((epochState) => epochState.trancheId === trancheId)
     if (trancheState === undefined) throw new Error(`No epochState with could be found for tranche: ${trancheId}`)
-    trancheState.outstandingInvestOrders = trancheState.outstandingInvestOrders + newAmount - oldAmount
+    trancheState.sumOutstandingInvestOrders = trancheState.sumOutstandingInvestOrders + newAmount - oldAmount
     return this
   }
 
@@ -124,9 +124,9 @@ export class EpochService extends Epoch {
   ) {
     const trancheState = this.states.find((trancheState) => trancheState.trancheId === trancheId)
     if (trancheState === undefined) throw new Error(`No epochState with could be found for tranche: ${trancheId}`)
-    trancheState.outstandingRedeemOrders = trancheState.outstandingRedeemOrders + newAmount - oldAmount
-    trancheState.outstandingRedeemOrdersCurrency = this.computeCurrencyAmount(
-      trancheState.outstandingRedeemOrders,
+    trancheState.sumOutstandingRedeemOrders = trancheState.sumOutstandingRedeemOrders + newAmount - oldAmount
+    trancheState.sumOutstandingRedeemOrdersCurrency = this.computeCurrencyAmount(
+      trancheState.sumOutstandingRedeemOrders,
       tokenPrice,
       digits
     )

@@ -35,12 +35,12 @@ const loan = LoanService.init(poolId, loanId, nftClassId, nftItemId, timestamp)
 
 describe('Given a new loan, when initialised', () => {
   test('then type is inactive', () => {
-    expect(loan.active).toBe(false)
+    expect(loan.isActive).toBe(false)
     expect(loan.status).toBe('CREATED')
   })
 
   test('then reset accumulators are set to 0', () => {
-    const resetAccumulators = Object.getOwnPropertyNames(loan).filter((prop) => prop.endsWith('_'))
+    const resetAccumulators = Object.getOwnPropertyNames(loan).filter((prop) => prop.endsWith('_R'))
     for (const resetAccumulator of resetAccumulators) {
       expect(loan[resetAccumulator]).toBe(BigInt(0))
     }

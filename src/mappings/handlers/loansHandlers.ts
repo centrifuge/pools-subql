@@ -71,7 +71,7 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedRepaidEvent
   await bt.save()
 
   // Update poolState info
-  await pool.increaseTotalBorrowings(amount.toBigInt())
+  await pool.increaseBorrowings(amount.toBigInt())
   await pool.save()
 }
 
@@ -153,7 +153,7 @@ async function _handleLoanWrittenOff(event: SubstrateEvent<LoanWrittenOffEvent>)
   const pool = await PoolService.getById(poolId.toString())
   if (pool === undefined) throw new Error('Pool not found!')
 
-  await pool.increaseTotalWrittenOff(loan.writtenOffAmount_)
+  await pool.increaseWriteOff(loan.writtenOffAmount_R)
   await pool.save()
 }
 

@@ -51,7 +51,7 @@ async function _handleTokenTransfer(event: SubstrateEvent<TokensTransferEvent>):
       hash: event.extrinsic.extrinsic.hash.toString(),
       timestamp: event.block.timestamp,
       digits: ((await CurrencyService.get(pool.currencyId)) as CurrencyService).decimals,
-      price: tranche.price,
+      price: tranche.tokenPrice,
       amount: amount.toBigInt(),
     }
 

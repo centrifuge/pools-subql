@@ -127,8 +127,8 @@ async function _handleEpochExecuted(event: SubstrateEvent<EpochClosedExecutedEve
   await epoch.saveWithStates()
 
   await pool.executeEpoch(epochId.toNumber())
-  await pool.increaseTotalInvested(epoch.totalInvested)
-  await pool.increaseTotalRedeemed(epoch.totalRedeemed)
+  await pool.increaseInvestments(epoch.sumInvestedAmount)
+  await pool.increaseRedemptions(epoch.sumRedeemedAmount)
   await pool.save()
 
   // Compute and save aggregated order fulfillment
@@ -137,22 +137,22 @@ async function _handleEpochExecuted(event: SubstrateEvent<EpochClosedExecutedEve
   for (const tranche of tranches) {
     const epochState = epoch.states.find((epochState) => epochState.trancheId === tranche.trancheId)
     await tranche.updateSupply()
-    await tranche.updatePrice(epochState.price)
-    await tranche.updateFulfilledInvestOrders(epochState.fulfilledInvestOrders)
-    await tranche.updateFulfilledRedeemOrders(epochState.fulfilledRedeemOrders, digits)
+    await tranche.updatePrice(epochState.tokenPrice)
+    await tranche.updateFulfilledInvestOrders(epochState.sumFulfilledInvestOrders)
+    await tranche.updateFulfilledRedeemOrders(epochState.sumFulfilledRedeemOrders, digits)
     await tranche.save()
 
     // Carry over aggregated unfulfilled orders to next epoch
     await nextEpoch.updateOutstandingInvestOrders(
       tranche.trancheId,
-      epochState.outstandingInvestOrders - epochState.fulfilledInvestOrders,
+      epochState.sumOutstandingInvestOrders - epochState.sumFulfilledInvestOrders,
       BigInt(0)
     )
     await nextEpoch.updateOutstandingRedeemOrders(
       tranche.trancheId,
-      epochState.outstandingRedeemOrders - epochState.fulfilledRedeemOrders,
+      epochState.sumOutstandingRedeemOrders - epochState.sumFulfilledRedeemOrders,
       BigInt(0),
-      epochState.price,
+      epochState.tokenPrice,
       digits
     )
 
@@ -160,7 +160,7 @@ async function _handleEpochExecuted(event: SubstrateEvent<EpochClosedExecutedEve
     const oos = await OutstandingOrderService.getAllByTrancheId(poolId.toString(), tranche.trancheId)
     logger.info(`Fulfilling ${oos.length} outstanding orders for tranche ${tranche.trancheId}`)
     for (const oo of oos) {
-      logger.info(`Outstanding invest before fulfillment: ${oo.invest} redeem:${oo.redeem}`)
+      logger.info(`Outstanding invest before fulfillment: ${oo.investAmount} redeem:${oo.redeemAmount}`)
       const orderData = {
         poolId: poolId.toString(),
         trancheId: tranche.trancheId,
@@ -168,7 +168,7 @@ async function _handleEpochExecuted(event: SubstrateEvent<EpochClosedExecutedEve
         address: oo.accountId,
         hash: oo.hash,
         digits: ((await CurrencyService.get(pool.currencyId)) as CurrencyService).decimals,
-        price: epochState.price,
+        price: epochState.tokenPrice,
         fee: BigInt(0),
         timestamp: event.block.timestamp,
       }
@@ -179,22 +179,22 @@ async function _handleEpochExecuted(event: SubstrateEvent<EpochClosedExecutedEve
         orderData.trancheId
       )
 
-      if (oo.invest > BigInt(0) && epochState.investFulfillment > BigInt(0)) {
+      if (oo.investAmount > BigInt(0) && epochState.investFulfillmentPercentage > BigInt(0)) {
         const it = InvestorTransactionService.executeInvestOrder({
           ...orderData,
-          amount: oo.invest,
-          fulfillmentRate: epochState.investFulfillment,
+          amount: oo.investAmount,
+          fulfillmentPercentage: epochState.investFulfillmentPercentage,
         })
         await it.save()
         await oo.updateUnfulfilledInvest(it.currencyAmount)
         await trancheBalance.investExecute(it.currencyAmount, it.tokenAmount)
       }
 
-      if (oo.redeem > BigInt(0) && epochState.redeemFulfillment > BigInt(0)) {
+      if (oo.redeemAmount > BigInt(0) && epochState.redeemFulfillmentPercentage > BigInt(0)) {
         const it = InvestorTransactionService.executeRedeemOrder({
           ...orderData,
-          amount: oo.redeem,
-          fulfillmentRate: epochState.redeemFulfillment,
+          amount: oo.redeemAmount,
+          fulfillmentPercentage: epochState.redeemFulfillmentPercentage,
         })
         await it.save()
         await oo.updateUnfulfilledRedeem(it.tokenAmount)
@@ -204,12 +204,12 @@ async function _handleEpochExecuted(event: SubstrateEvent<EpochClosedExecutedEve
       await trancheBalance.save()
 
       // Remove outstandingOrder if completely fulfilled
-      if (oo.invest > BigInt(0) || oo.redeem > BigInt(0)) {
+      if (oo.investAmount > BigInt(0) || oo.redeemAmount > BigInt(0)) {
         await oo.save()
       } else {
         await OutstandingOrderService.remove(oo.id)
       }
-      logger.info(`Outstanding invest after fulfillment: ${oo.invest} redeem:${oo.redeem}`)
+      logger.info(`Outstanding invest after fulfillment: ${oo.investAmount} redeem:${oo.redeemAmount}`)
     }
   }
   await nextEpoch.saveWithStates()

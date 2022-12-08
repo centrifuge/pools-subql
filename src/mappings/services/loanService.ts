@@ -14,11 +14,11 @@ export class LoanService extends Loan {
     loan.poolId = poolId
     loan.collateralNftClassId = nftClassId
     loan.collateralNftItemId = nftItemId
-    loan.active = false
+    loan.isActive = false
     loan.status = LoanStatus.CREATED
     loan.outstandingDebt = BigInt(0)
-    loan.totalBorrowed_ = BigInt(0)
-    loan.totalRepaid_ = BigInt(0)
+    loan.borrowedAmount_R = BigInt(0)
+    loan.repaidAmount_R = BigInt(0)
 
     return loan
   }
@@ -30,12 +30,12 @@ export class LoanService extends Loan {
 
   public borrow(amount: bigint) {
     logger.info(`Increasing outstanding debt for loan ${this.id} by ${amount}`)
-    this.totalBorrowed_ += amount
+    this.borrowedAmount_R += amount
   }
 
   public repay(amount: bigint) {
     logger.info(`Decreasing outstanding debt for loan ${this.id} by ${amount}`)
-    this.totalRepaid_ += amount
+    this.repaidAmount_R += amount
   }
 
   public updateInterestRate(interestRatePerSec: bigint) {
@@ -45,11 +45,11 @@ export class LoanService extends Loan {
 
   public writeOff(percentage: bigint, penaltyInterestRatePerSec: bigint, writeOffIndex: number) {
     logger.info(`Writing off loan ${this.id} with ${percentage}`)
-    this.writtenOffPercentage_ = percentage
+    this.writtenOffPercentage_R = percentage
     this.penaltyInterestRatePerSec = penaltyInterestRatePerSec
     this.writeOffIndex = writeOffIndex
 
-    this.writtenOffAmount_ = nToBigInt(bnToBn(this.outstandingDebt).mul(bnToBn(percentage)).div(WAD))
+    this.writtenOffAmount_R = nToBigInt(bnToBn(this.outstandingDebt).mul(bnToBn(percentage)).div(WAD))
   }
 
   public updateLoanType(loanType: string, loanSpec?: AnyJson) {
@@ -65,13 +65,13 @@ export class LoanService extends Loan {
 
   public activate() {
     logger.info(`Activating loan ${this.id}`)
-    this.active = true
+    this.isActive = true
     this.status = LoanStatus.ACTIVE
   }
 
   public close() {
     logger.info(`Closing loan ${this.id}`)
-    this.active = false
+    this.isActive = false
     this.status = LoanStatus.CLOSED
   }
 

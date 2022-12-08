@@ -16,7 +16,7 @@ export class PoolService extends Pool {
     poolId: string,
     currencyId: string,
     maxReserve: bigint,
-    maxNavAge: number,
+    maxPortfolioValuationAge: number,
     minEpochTime: number,
     timestamp: Date,
     blockNumber: number
@@ -25,26 +25,26 @@ export class PoolService extends Pool {
 
     pool.currencyId = currencyId
     pool.maxReserve = maxReserve
-    pool.maxNavAge = maxNavAge
+    pool.maxPortfolioValuationAge = maxPortfolioValuationAge
     pool.minEpochTime = minEpochTime
 
-    pool.netAssetValue = BigInt(0)
+    pool.portfolioValuation = BigInt(0)
     pool.totalReserve = BigInt(0)
     pool.availableReserve = BigInt(0)
-    pool.totalDebt = BigInt(0)
+    pool.sumDebt = BigInt(0)
     pool.value = BigInt(0)
 
-    pool.totalBorrowed_ = BigInt(0)
-    pool.totalRepaid_ = BigInt(0)
-    pool.totalInvested_ = BigInt(0)
-    pool.totalRedeemed_ = BigInt(0)
-    pool.totalNumberOfLoans_ = BigInt(0)
-    pool.totalNumberOfActiveLoans = BigInt(0)
-    pool.totalWrittenOff_ = BigInt(0)
-    pool.totalDebtOverdue = BigInt(0)
+    pool.sumBorrowedAmount_R = BigInt(0)
+    pool.sumRepaidAmount_R = BigInt(0)
+    pool.sumInvestedAmount_R = BigInt(0)
+    pool.sumRedeemedAmount_R = BigInt(0)
+    pool.sumNumberOfLoans_R = BigInt(0)
+    pool.sumNumberOfActiveLoans = BigInt(0)
+    pool.sumDebtWrittenOff_R = BigInt(0)
+    pool.sumDebtOverdue = BigInt(0)
 
-    pool.totalEverBorrowed = BigInt(0)
-    pool.totalEverNumberOfLoans = BigInt(0)
+    pool.sumBorrowedAmount = BigInt(0)
+    pool.sumNumberOfLoans = BigInt(0)
 
     //Create the pool
     const currentEpoch = 1
@@ -68,7 +68,7 @@ export class PoolService extends Pool {
     const poolData = poolReq.unwrap()
     this.metadata = metadataReq.isSome ? metadataReq.unwrap().metadata.toUtf8() : 'NA'
     this.minEpochTime = poolData.parameters.minEpochTime.toNumber()
-    this.maxNavAge = poolData.parameters.maxNavAge.toNumber()
+    this.maxPortfolioValuationAge = poolData.parameters.maxNavAge.toNumber()
     return this
   }
 
@@ -94,32 +94,32 @@ export class PoolService extends Pool {
     return this
   }
 
-  public async updateNav() {
+  public async updatePortfolioValuation() {
     const navResponse = await api.query.loans.poolNAV<Option<NavDetails>>(this.id)
     if (navResponse.isSome) {
       const navData = navResponse.unwrap()
-      this.netAssetValue = navData.latest.toBigInt()
+      this.portfolioValuation = navData.latest.toBigInt()
     }
     return this
   }
 
-  public updateTotalNumberOfActiveLoans(activeLoans: bigint) {
-    this.totalNumberOfActiveLoans = activeLoans
+  public updateNumberOfActiveLoans(numberOfActiveLoans: bigint) {
+    this.sumNumberOfActiveLoans = numberOfActiveLoans
   }
 
-  public increaseTotalBorrowings(borrowedAmount: bigint) {
-    this.totalBorrowed_ += borrowedAmount
-    this.totalEverBorrowed += borrowedAmount
-    this.totalNumberOfLoans_ += BigInt(1)
-    this.totalEverNumberOfLoans += BigInt(1)
+  public increaseBorrowings(borrowedAmount: bigint) {
+    this.sumBorrowedAmount_R += borrowedAmount
+    this.sumBorrowedAmount += borrowedAmount
+    this.sumNumberOfLoans_R += BigInt(1)
+    this.sumNumberOfLoans += BigInt(1)
   }
 
-  public increaseTotalInvested(currencyAmount: bigint) {
-    this.totalInvested_ += currencyAmount
+  public increaseInvestments(currencyAmount: bigint) {
+    this.sumInvestedAmount_R += currencyAmount
   }
 
-  public increaseTotalRedeemed(currencyAmount: bigint) {
-    this.totalRedeemed_ += currencyAmount
+  public increaseRedemptions(currencyAmount: bigint) {
+    this.sumRedeemedAmount_R += currencyAmount
   }
 
   public closeEpoch(epochId: number) {
@@ -132,21 +132,21 @@ export class PoolService extends Pool {
   }
 
   public computePoolValue() {
-    const nav = bnToBn(this.netAssetValue)
+    const nav = bnToBn(this.portfolioValuation)
     const totalReserve = bnToBn(this.totalReserve)
     this.value = nToBigInt(nav.add(totalReserve))
   }
 
-  public resetTotalDebtOverdue() {
-    this.totalDebtOverdue = BigInt(0)
+  public resetDebtOverdue() {
+    this.sumDebtOverdue = BigInt(0)
   }
 
-  public increaseTotalDebtOverdue(amount: bigint) {
-    this.totalDebtOverdue += amount
+  public increaseDebtOverdue(amount: bigint) {
+    this.sumDebtOverdue += amount
   }
 
-  public increaseTotalWrittenOff(amount: bigint) {
-    this.totalWrittenOff_ += amount
+  public increaseWriteOff(amount: bigint) {
+    this.sumDebtWrittenOff_R += amount
   }
 
   public async getTranches() {
