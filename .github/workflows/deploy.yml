@@ -63,5 +63,6 @@ jobs:
           --projectName="$SUBQL_PROJ_NAME" \
           --ipfsCID="$IPFSCID" \
           --type=primary \
+          --indexerHistoricalData=false \
           --indexerVersion="v1.15.1" \
           --queryVersion="v1.9.1"
