@@ -2510,24 +2510,24 @@
     ethers "^5.6.8"
     jwt-decode "^3.1.2"
 
-"@subql/cli@latest":
-  version "1.9.0"
-  resolved "https://registry.yarnpkg.com/@subql/cli/-/cli-1.9.0.tgz#aae3afec168ccca729189a130f4848f8f0584bc3"
-  integrity sha512-G9TvR9mEnyKVnpKlS0kvdCTdOxLu/Uo8T4vFC/FVCuOEt6C1tYUe51mi/o4jtgpIxpgIh2YNq25IU7JarLOifw==
+"@subql/cli@1.9.1":
+  version "1.9.1"
+  resolved "https://registry.yarnpkg.com/@subql/cli/-/cli-1.9.1.tgz#21b8331bf3a41e94134d1ab342b4858646a0a490"
+  integrity sha512-UQMuu1ttlkTyvNB4uksvjWT+ivZq7YbnznVID2Hk0xThP6Hh/Mzm4MNVJ06+f6RQwjgYmS0BJesOXQwjq8R1KA==
   dependencies:
     "@oclif/command" "^1.8.16"
     "@oclif/config" "^1.18.3"
     "@oclif/core" "^1.3.3"
     "@oclif/plugin-help" "^3.2.3"
-    "@subql/common" "1.4.4"
+    "@subql/common" "1.5.0"
     "@subql/common-algorand" latest
     "@subql/common-avalanche" latest
     "@subql/common-cosmos" latest
     "@subql/common-ethereum" latest
     "@subql/common-flare" latest
-    "@subql/common-substrate" "1.3.0"
+    "@subql/common-substrate" "1.4.0"
     "@subql/common-terra" latest
-    "@subql/utils" "1.3.0"
+    "@subql/utils" "1.3.1"
     "@subql/validator" "1.7.0"
     "@types/ejs" "^3.1.0"
     "@types/inquirer" "^8.2.0"
@@ -2646,6 +2646,18 @@
     js-yaml "^4.1.0"
     reflect-metadata "^0.1.13"
 
+"@subql/common-substrate@1.4.0":
+  version "1.4.0"
+  resolved "https://registry.yarnpkg.com/@subql/common-substrate/-/common-substrate-1.4.0.tgz#4427c1c7f9d2208953c0a07bec166bad8dc8a7f4"
+  integrity sha512-wvPlEjK/FHpmdG7eIUu11spOgnIjLr2h4gOq2HJ2I8zOMMEo80/CZgS+MRhZrJLe1+kCjzPQDFBNb7VaJ6XlKA==
+  dependencies:
+    "@subql/common" "1.5.0"
+    "@subql/types" "1.7.0"
+    class-transformer "0.4.0"
+    class-validator "^0.13.2"
+    js-yaml "^4.1.0"
+    reflect-metadata "^0.1.13"
+
 "@subql/common-terra@latest":
   version "0.6.0"
   resolved "https://registry.yarnpkg.com/@subql/common-terra/-/common-terra-0.6.0.tgz#0dfe0f25df02d7643c530283cafab46d660b4b99"
@@ -2675,6 +2687,20 @@
   version "1.4.4"
   resolved "https://registry.yarnpkg.com/@subql/common/-/common-1.4.4.tgz#c5311d631e6b96006c0d80b6e322e57e78c251aa"
   integrity sha512-LwZ45aOblYxF969/WOVsrNvCjIKoUjrZdRGb7OS8Iqyg+VAfP8Sur+JyB6LbG4h9B+d3+3oQ//pCo3GT+B5I9g==
+  dependencies:
+    axios "^0.27.2"
+    class-transformer "0.5.1"
+    class-validator "^0.13.2"
+    fs-extra "^10.1.0"
+    ipfs-http-client "^52.0.3"
+    js-yaml "^4.1.0"
+    reflect-metadata "^0.1.13"
+    semver "^7.3.5"
+
+"@subql/common@1.5.0":
+  version "1.5.0"
+  resolved "https://registry.yarnpkg.com/@subql/common/-/common-1.5.0.tgz#4523b053f6b571c861724cbc37c5332b85452925"
+  integrity sha512-yRQRRK5W3ouAdDLpqQDkbLQS/e2Fv9ygfXYkb/pQ461OOcrCtn30b4WTzMt7+JskSRQ68aRCE3w2EyUSsq5leQ==
   dependencies:
     axios "^0.27.2"
     class-transformer "0.5.1"
@@ -2789,25 +2815,10 @@
   resolved "https://registry.yarnpkg.com/@subql/types/-/types-1.6.0.tgz#c06ca7dc649f8669954892a444f67ed0ab66e402"
   integrity sha512-xJ4FsKx51YCq7hv6dSTbdgB6jW08MiwxIqRGv533UNKwXm+zg4YEKDpMPYKn2NJK2ttqLVTQCUCDNocRxbSC5Q==
 
-"@subql/utils@1.3.0":
-  version "1.3.0"
-  resolved "https://registry.yarnpkg.com/@subql/utils/-/utils-1.3.0.tgz#01c111709ab079852b97a698956ebf50640e7c44"
-  integrity sha512-AmyB0RzqAxyEkgeowDTeRsxkuQywTwdLGD2L9SVnbTfttIaUHg6agLEXJdS+F1D5alOix7u2VIXD/E05rqH3kA==
-  dependencies:
-    "@polkadot/util" "^10"
-    "@polkadot/util-crypto" "^10"
-    ansi-styles "^6.1.0"
-    axios "^0.27.1"
-    chalk "^4.1.2"
-    detect-port "^1.3.0"
-    flatted "^3.2.5"
-    graphql "^15.8.0"
-    graphql-tag "^2.12.6"
-    pino "^6.13.3"
-    rotating-file-stream "^3.0.2"
-    semver "^7.3.7"
-    sequelize "6.23.0"
-    tar "^6.1.11"
+"@subql/types@1.7.0":
+  version "1.7.0"
+  resolved "https://registry.yarnpkg.com/@subql/types/-/types-1.7.0.tgz#2e3d1b706ba674117313d4b4f5fb5c740cd981de"
+  integrity sha512-K9BFBa/X1oa1Ycv6eU1XCsByFGIlMKig1XF6n1jc30+cgcYIH7Z6O5vkwn3ivLQ1oHlnnYaRLrYn2YXUT7T2Vw==
 
 "@subql/utils@1.3.1":
   version "1.3.1"
