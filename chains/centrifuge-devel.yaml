@@ -1,0 +1,5 @@
+network:
+  endpoint: wss://fullnode.development.cntrfg.com
+  genesisHash: '0xb59f31491c2dd2760c7a5aa3d3d3694678bbfffce99ab487228b980921a027d3'
+  chaintypes:
+    file: ./dist/chaintypes.js
