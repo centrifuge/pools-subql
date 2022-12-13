@@ -30,7 +30,7 @@ jobs:
       - name: Generate and update chain specific project.yaml
         uses: mikefarah/yq@master
         with:
-          cmd: yq ". *= load(''chains/${CHAIN_ID}.yaml'')" chains/base.yaml > project.yaml
+          cmd: yq ". *= load(\'chains/${CHAIN_ID}.yaml\')" chains/base.yaml > project.yaml
       - name: Extract Chain Parameters to ENV
         uses: mikefarah/yq@master
         with:
