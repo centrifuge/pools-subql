@@ -62,7 +62,7 @@ describe('Given a new pool, when initialised', () => {
   })
 
   test('then reset accumulators are set to 0', () => {
-    const resetAccumulators = Object.getOwnPropertyNames(pool).filter((prop) => prop.endsWith('_R'))
+    const resetAccumulators = Object.getOwnPropertyNames(pool).filter((prop) => prop.endsWith('ByPeriod'))
     for (const resetAccumulator of resetAccumulators) {
       expect(pool[resetAccumulator]).toBe(BigInt(0))
     }
@@ -105,9 +105,9 @@ describe('Given an existing pool,', () => {
   test('when total borrowings are registered, then values are incremented correctly', async () => {
     await pool.increaseBorrowings(BigInt('34999000000000000'))
     expect(pool).toMatchObject({
-      sumBorrowedAmount_R: BigInt('34999000000000000'),
+      sumBorrowedAmountByPeriod: BigInt('34999000000000000'),
       sumBorrowedAmount: BigInt('34999000000000000'),
-      sumNumberOfLoans_R: BigInt(1),
+      sumNumberOfLoansByPeriod: BigInt(1),
       sumNumberOfLoans: BigInt(1),
     })
   })

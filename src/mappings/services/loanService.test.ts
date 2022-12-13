@@ -40,7 +40,7 @@ describe('Given a new loan, when initialised', () => {
   })
 
   test('then reset accumulators are set to 0', () => {
-    const resetAccumulators = Object.getOwnPropertyNames(loan).filter((prop) => prop.endsWith('_R'))
+    const resetAccumulators = Object.getOwnPropertyNames(loan).filter((prop) => prop.endsWith('ByPeriod'))
     for (const resetAccumulator of resetAccumulators) {
       expect(loan[resetAccumulator]).toBe(BigInt(0))
     }

@@ -34,13 +34,13 @@ export class PoolService extends Pool {
     pool.sumDebt = BigInt(0)
     pool.value = BigInt(0)
 
-    pool.sumBorrowedAmount_R = BigInt(0)
-    pool.sumRepaidAmount_R = BigInt(0)
-    pool.sumInvestedAmount_R = BigInt(0)
-    pool.sumRedeemedAmount_R = BigInt(0)
-    pool.sumNumberOfLoans_R = BigInt(0)
+    pool.sumBorrowedAmountByPeriod = BigInt(0)
+    pool.sumRepaidAmountByPeriod = BigInt(0)
+    pool.sumInvestedAmountByPeriod = BigInt(0)
+    pool.sumRedeemedAmountByPeriod = BigInt(0)
+    pool.sumNumberOfLoansByPeriod = BigInt(0)
     pool.sumNumberOfActiveLoans = BigInt(0)
-    pool.sumDebtWrittenOff_R = BigInt(0)
+    pool.sumDebtWrittenOffByPeriod = BigInt(0)
     pool.sumDebtOverdue = BigInt(0)
 
     pool.sumBorrowedAmount = BigInt(0)
@@ -108,18 +108,18 @@ export class PoolService extends Pool {
   }
 
   public increaseBorrowings(borrowedAmount: bigint) {
-    this.sumBorrowedAmount_R += borrowedAmount
+    this.sumBorrowedAmountByPeriod += borrowedAmount
     this.sumBorrowedAmount += borrowedAmount
-    this.sumNumberOfLoans_R += BigInt(1)
+    this.sumNumberOfLoansByPeriod += BigInt(1)
     this.sumNumberOfLoans += BigInt(1)
   }
 
   public increaseInvestments(currencyAmount: bigint) {
-    this.sumInvestedAmount_R += currencyAmount
+    this.sumInvestedAmountByPeriod += currencyAmount
   }
 
   public increaseRedemptions(currencyAmount: bigint) {
-    this.sumRedeemedAmount_R += currencyAmount
+    this.sumRedeemedAmountByPeriod += currencyAmount
   }
 
   public closeEpoch(epochId: number) {
@@ -146,7 +146,7 @@ export class PoolService extends Pool {
   }
 
   public increaseWriteOff(amount: bigint) {
-    this.sumDebtWrittenOff_R += amount
+    this.sumDebtWrittenOffByPeriod += amount
   }
 
   public async getTranches() {

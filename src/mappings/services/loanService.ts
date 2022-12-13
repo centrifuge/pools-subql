@@ -17,8 +17,8 @@ export class LoanService extends Loan {
     loan.isActive = false
     loan.status = LoanStatus.CREATED
     loan.outstandingDebt = BigInt(0)
-    loan.borrowedAmount_R = BigInt(0)
-    loan.repaidAmount_R = BigInt(0)
+    loan.borrowedAmountByPeriod = BigInt(0)
+    loan.repaidAmountByPeriod = BigInt(0)
 
     return loan
   }
@@ -30,12 +30,12 @@ export class LoanService extends Loan {
 
   public borrow(amount: bigint) {
     logger.info(`Increasing outstanding debt for loan ${this.id} by ${amount}`)
-    this.borrowedAmount_R += amount
+    this.borrowedAmountByPeriod += amount
   }
 
   public repay(amount: bigint) {
     logger.info(`Decreasing outstanding debt for loan ${this.id} by ${amount}`)
-    this.repaidAmount_R += amount
+    this.repaidAmountByPeriod += amount
   }
 
   public updateInterestRate(interestRatePerSec: bigint) {
@@ -45,11 +45,11 @@ export class LoanService extends Loan {
 
   public writeOff(percentage: bigint, penaltyInterestRatePerSec: bigint, writeOffIndex: number) {
     logger.info(`Writing off loan ${this.id} with ${percentage}`)
-    this.writtenOffPercentage_R = percentage
+    this.writtenOffPercentageByPeriod = percentage
     this.penaltyInterestRatePerSec = penaltyInterestRatePerSec
     this.writeOffIndex = writeOffIndex
 
-    this.writtenOffAmount_R = nToBigInt(bnToBn(this.outstandingDebt).mul(bnToBn(percentage)).div(WAD))
+    this.writtenOffAmountByPeriod = nToBigInt(bnToBn(this.outstandingDebt).mul(bnToBn(percentage)).div(WAD))
   }
 
   public updateLoanType(loanType: string, loanSpec?: AnyJson) {

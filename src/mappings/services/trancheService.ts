@@ -10,12 +10,12 @@ export class TrancheService extends Tranche {
   static init(poolId: string, trancheId: string, index: number, trancheData: TrancheDetails) {
     const tranche = new this(`${poolId}-${trancheId}`)
     tranche.isActive = true
-    tranche.sumOutstandingInvestOrders_R = BigInt(0)
-    tranche.sumOutstandingRedeemOrders_R = BigInt(0)
-    tranche.sumOutstandingRedeemOrdersCurrency_R = BigInt(0)
-    tranche.sumFulfilledInvestOrders_R = BigInt(0)
-    tranche.sumFulfilledRedeemOrders_R = BigInt(0)
-    tranche.sumFulfilledRedeemOrdersCurrency_R = BigInt(0)
+    tranche.sumOutstandingInvestOrdersByPeriod = BigInt(0)
+    tranche.sumOutstandingRedeemOrdersByPeriod = BigInt(0)
+    tranche.sumOutstandingRedeemOrdersCurrencyByPeriod = BigInt(0)
+    tranche.sumFulfilledInvestOrdersByPeriod = BigInt(0)
+    tranche.sumFulfilledRedeemOrdersByPeriod = BigInt(0)
+    tranche.sumFulfilledRedeemOrdersCurrencyByPeriod = BigInt(0)
     tranche.tokenPrice = nToBigInt(RAY)
 
     tranche.type = 'ALL'
@@ -158,24 +158,30 @@ export class TrancheService extends Tranche {
   }
 
   public updateOutstandingInvestOrders = (newAmount: bigint, oldAmount: bigint) => {
-    this.sumOutstandingInvestOrders_R = this.sumOutstandingInvestOrders_R + newAmount - oldAmount
+    this.sumOutstandingInvestOrdersByPeriod = this.sumOutstandingInvestOrdersByPeriod + newAmount - oldAmount
     return this
   }
 
   public updateOutstandingRedeemOrders(newAmount: bigint, oldAmount: bigint, digits: number) {
-    this.sumOutstandingRedeemOrders_R = this.sumOutstandingRedeemOrders_R + newAmount - oldAmount
-    this.sumOutstandingRedeemOrdersCurrency_R = this.computeCurrencyAmount(this.sumOutstandingRedeemOrders_R, digits)
+    this.sumOutstandingRedeemOrdersByPeriod = this.sumOutstandingRedeemOrdersByPeriod + newAmount - oldAmount
+    this.sumOutstandingRedeemOrdersCurrencyByPeriod = this.computeCurrencyAmount(
+      this.sumOutstandingRedeemOrdersByPeriod,
+      digits
+    )
     return this
   }
 
   public updateFulfilledInvestOrders(amount: bigint) {
-    this.sumFulfilledInvestOrders_R = this.sumFulfilledInvestOrders_R + amount
+    this.sumFulfilledInvestOrdersByPeriod = this.sumFulfilledInvestOrdersByPeriod + amount
     return this
   }
 
   public updateFulfilledRedeemOrders(amount: bigint, digits: number) {
-    this.sumFulfilledRedeemOrders_R = this.sumFulfilledRedeemOrders_R + amount
-    this.sumFulfilledRedeemOrdersCurrency_R = this.computeCurrencyAmount(this.sumFulfilledRedeemOrders_R, digits)
+    this.sumFulfilledRedeemOrdersByPeriod = this.sumFulfilledRedeemOrdersByPeriod + amount
+    this.sumFulfilledRedeemOrdersCurrencyByPeriod = this.computeCurrencyAmount(
+      this.sumFulfilledRedeemOrdersByPeriod,
+      digits
+    )
     return this
   }
 

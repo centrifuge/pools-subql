@@ -49,7 +49,7 @@ describe('Given a new tranche, when initialised', () => {
   })
 
   test('then reset accumulators are set to 0', () => {
-    const resetAccumulators = Object.getOwnPropertyNames(tranches[0]).filter((prop) => prop.endsWith('_R'))
+    const resetAccumulators = Object.getOwnPropertyNames(tranches[0]).filter((prop) => prop.endsWith('ByPeriod'))
     for (const resetAccumulator of resetAccumulators) {
       expect(tranches[0][resetAccumulator]).toBe(BigInt(0))
       expect(tranches[1][resetAccumulator]).toBe(BigInt(0))
