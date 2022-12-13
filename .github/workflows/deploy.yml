@@ -17,19 +17,28 @@ jobs:
     name: Deploy to SubQL
     runs-on: ubuntu-latest
     env:
+      CHAIN_ID: devel
       SUBQL_ACCESS_TOKEN: ${{ secrets.SUBQL_ACCESS_TOKEN }}
       SUBQL_PROJ_ORG: embrio-tech
       SUBQL_PROJ_NAME: centrifuge-subql
       SUBQL_PROJ_DESCRIPTION: 'SubQuery API powered by EMBRIO.tech to query Centrifuge chain data for analytics insights on how Centrifuge is unlocking economic opportunity for all by connecting people to borrow and lend money transparently and cost-effectively.'
       SUBQL_PROJ_IMAGE: 'https://explorer.subquery.network/uploads/1660216119964.png'
-      SUBQL_ENDPOINT: wss://fullnode.development.cntrfg.com
+      #SUBQL_ENDPOINT: wss://fullnode.development.cntrfg.com
     steps:
       - name: Check out repo's default branch
         uses: actions/checkout@v3
+      - name: Generate and update chain specific project.yaml
+        uses: mikefarah/yq@master
+        with:
+          cmd: yq ". *= load(\"chains/${CHAIN_ID}.yaml\")" 'chains/base.yaml' > project.yaml
+      - name: Extract Chain Parameters to ENV
+        uses: mikefarah/yq@master
+        with:
+          cmd: echo "SUBQL_ENDPOINT=$(yq '.network.endpoint' project.yaml) >> $GITHUB_ENV
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 18
           cache: npm
       - name: Setup Yarn
         run: yarn
