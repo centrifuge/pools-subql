@@ -1,7 +1,7 @@
 import { u128 } from '@polkadot/types'
 import { bnToBn, nToBigInt } from '@polkadot/util'
 import { paginatedGetter } from '../../helpers/paginatedGetter'
-import { CPREC, RAY, RAY_DIGITS, WAD_DIGITS } from '../../config'
+import { RAY } from '../../config'
 import { ExtendedRpc, TrancheDetails } from '../../helpers/types'
 import { Tranche, TrancheSnapshot } from '../../types'
 import { TrancheProps } from 'centrifuge-subql/types/models/Tranche'
@@ -162,11 +162,10 @@ export class TrancheService extends Tranche {
     return this
   }
 
-  public updateOutstandingRedeemOrders(newAmount: bigint, oldAmount: bigint, digits: number) {
+  public updateOutstandingRedeemOrders(newAmount: bigint, oldAmount: bigint) {
     this.sumOutstandingRedeemOrdersByPeriod = this.sumOutstandingRedeemOrdersByPeriod + newAmount - oldAmount
     this.sumOutstandingRedeemOrdersCurrencyByPeriod = this.computeCurrencyAmount(
-      this.sumOutstandingRedeemOrdersByPeriod,
-      digits
+      this.sumOutstandingRedeemOrdersByPeriod
     )
     return this
   }
@@ -176,21 +175,14 @@ export class TrancheService extends Tranche {
     return this
   }
 
-  public updateFulfilledRedeemOrders(amount: bigint, digits: number) {
+  public updateFulfilledRedeemOrders(amount: bigint) {
     this.sumFulfilledRedeemOrdersByPeriod = this.sumFulfilledRedeemOrdersByPeriod + amount
-    this.sumFulfilledRedeemOrdersCurrencyByPeriod = this.computeCurrencyAmount(
-      this.sumFulfilledRedeemOrdersByPeriod,
-      digits
-    )
+    this.sumFulfilledRedeemOrdersCurrencyByPeriod = this.computeCurrencyAmount(this.sumFulfilledRedeemOrdersByPeriod)
     return this
   }
 
-  private computeCurrencyAmount(amount: bigint, digits: number) {
-    return nToBigInt(
-      bnToBn(amount)
-        .mul(bnToBn(this.tokenPrice))
-        .div(CPREC(RAY_DIGITS + WAD_DIGITS - digits))
-    )
+  private computeCurrencyAmount(amount: bigint) {
+    return nToBigInt(bnToBn(amount).mul(bnToBn(this.tokenPrice)).div(RAY))
   }
 
   public deactivate() {

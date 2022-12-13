@@ -6,7 +6,6 @@ import { TrancheService } from '../services/trancheService'
 import { InvestOrdersCollectedEvent, OrderUpdatedEvent, RedeemOrdersCollectedEvent } from '../../helpers/types'
 import { OutstandingOrderService } from '../services/outstandingOrderService'
 import { InvestorTransactionData, InvestorTransactionService } from '../services/investorTransactionService'
-import { CurrencyService } from '../services/currencyService'
 import { AccountService } from '../services/accountService'
 import { TrancheBalanceService } from '../services/trancheBalanceService'
 
@@ -35,7 +34,6 @@ async function _handleInvestOrderUpdated(event: SubstrateEvent<OrderUpdatedEvent
     address: account.id,
     hash: event.extrinsic.extrinsic.hash.toString(),
     amount: newAmount.toBigInt(),
-    digits: ((await CurrencyService.get(pool.currencyId)) as CurrencyService).decimals,
     price: tranche.tokenPrice,
     fee: BigInt(0),
     timestamp: event.block.timestamp,
@@ -86,7 +84,6 @@ async function _handleRedeemOrderUpdated(event: SubstrateEvent<OrderUpdatedEvent
 
   const account = await AccountService.getOrInit(address.toString())
   const tranche = await TrancheService.getById(poolId.toString(), trancheId.toHex())
-  const digits = ((await CurrencyService.get(pool.currencyId)) as CurrencyService).decimals
 
   await tranche.updatePriceFromRpc()
 
@@ -97,7 +94,6 @@ async function _handleRedeemOrderUpdated(event: SubstrateEvent<OrderUpdatedEvent
     address: account.id,
     hash: event.extrinsic.extrinsic.hash.toString(),
     amount: amount.toBigInt(),
-    digits: digits,
     price: tranche.tokenPrice,
     fee: BigInt(0),
     timestamp: event.block.timestamp,
@@ -120,12 +116,12 @@ async function _handleRedeemOrderUpdated(event: SubstrateEvent<OrderUpdatedEvent
   await oo.save()
 
   // Update tranche outstanding total
-  await tranche.updateOutstandingRedeemOrders(orderData.amount, oldAmount, digits)
+  await tranche.updateOutstandingRedeemOrders(orderData.amount, oldAmount)
   await tranche.save()
 
   // Update epochState outstanding total
   const epoch = await EpochService.getById(poolId.toString(), pool.currentEpoch)
-  await epoch.updateOutstandingRedeemOrders(trancheId.toHex(), orderData.amount, oldAmount, tranche.tokenPrice, digits)
+  await epoch.updateOutstandingRedeemOrders(trancheId.toHex(), orderData.amount, oldAmount, tranche.tokenPrice)
   await epoch.saveWithStates()
 
   // Update trancheBalance
@@ -164,7 +160,6 @@ async function _handleInvestOrdersCollected(event: SubstrateEvent<InvestOrdersCo
     address: account.id,
     hash: event.extrinsic.extrinsic.hash.toString(),
     timestamp: event.block.timestamp,
-    digits: ((await CurrencyService.get(pool.currencyId)) as CurrencyService).decimals,
     price: tranche.tokenPrice,
     amount: payoutInvestmentInvest.toBigInt(),
   }
@@ -210,7 +205,6 @@ async function _handleRedeemOrdersCollected(event: SubstrateEvent<RedeemOrdersCo
     address: account.id,
     hash: event.extrinsic.extrinsic.hash.toString(),
     timestamp: event.block.timestamp,
-    digits: ((await CurrencyService.get(pool.currencyId)) as CurrencyService).decimals,
     price: tranche.tokenPrice,
     amount: payoutInvestmentRedeem.toBigInt(),
   }

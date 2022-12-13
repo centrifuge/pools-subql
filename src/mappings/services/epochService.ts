@@ -1,7 +1,7 @@
 import { Option } from '@polkadot/types'
 import { bnToBn, nToBigInt } from '@polkadot/util'
 import { u64 } from '@polkadot/types'
-import { CPREC, RAY_DIGITS, WAD, WAD_DIGITS } from '../../config'
+import { RAY, WAD } from '../../config'
 import { OrdersFulfillment } from '../../helpers/types'
 import { Epoch, EpochState } from '../../types'
 
@@ -55,7 +55,7 @@ export class EpochService extends Epoch {
     this.closedAt = timestamp
   }
 
-  public async executeEpoch(timestamp: Date, digits: number) {
+  public async executeEpoch(timestamp: Date) {
     logger.info(`Updating OrderFulfillmentData for pool ${this.poolId} on epoch ${this.index}`)
     this.executedAt = timestamp
 
@@ -98,8 +98,7 @@ export class EpochService extends Epoch {
       )
       epochState.sumFulfilledRedeemOrdersCurrency = this.computeCurrencyAmount(
         epochState.sumFulfilledRedeemOrders,
-        epochState.tokenPrice,
-        digits
+        epochState.tokenPrice
       )
 
       this.sumInvestedAmount += epochState.sumFulfilledInvestOrders
@@ -115,29 +114,18 @@ export class EpochService extends Epoch {
     return this
   }
 
-  public updateOutstandingRedeemOrders(
-    trancheId: string,
-    newAmount: bigint,
-    oldAmount: bigint,
-    tokenPrice: bigint,
-    digits: number
-  ) {
+  public updateOutstandingRedeemOrders(trancheId: string, newAmount: bigint, oldAmount: bigint, tokenPrice: bigint) {
     const trancheState = this.states.find((trancheState) => trancheState.trancheId === trancheId)
     if (trancheState === undefined) throw new Error(`No epochState with could be found for tranche: ${trancheId}`)
     trancheState.sumOutstandingRedeemOrders = trancheState.sumOutstandingRedeemOrders + newAmount - oldAmount
     trancheState.sumOutstandingRedeemOrdersCurrency = this.computeCurrencyAmount(
       trancheState.sumOutstandingRedeemOrders,
-      tokenPrice,
-      digits
+      tokenPrice
     )
     return this
   }
 
-  private computeCurrencyAmount(amount: bigint, price: bigint, digits: number) {
-    return nToBigInt(
-      bnToBn(amount)
-        .mul(bnToBn(price))
-        .div(CPREC(RAY_DIGITS + WAD_DIGITS - digits))
-    )
+  private computeCurrencyAmount(amount: bigint, price: bigint) {
+    return nToBigInt(bnToBn(amount).mul(bnToBn(price)).div(RAY))
   }
 }

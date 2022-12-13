@@ -1,5 +1,5 @@
 import { bnToBn, nToBigInt } from '@polkadot/util'
-import { CPREC, RAY_DIGITS, WAD_DIGITS, WAD } from '../../config'
+import { WAD, RAY } from '../../config'
 import { InvestorTransaction, InvestorTransactionType } from '../../types'
 
 const currencyTypes = [
@@ -26,7 +26,6 @@ export interface InvestorTransactionData {
   readonly hash: string
   readonly amount: bigint
   readonly timestamp: Date
-  readonly digits: number
   readonly price?: bigint
   readonly fee?: bigint
   readonly fulfillmentPercentage?: bigint
@@ -57,7 +56,7 @@ export class InvestorTransactionService extends InvestorTransaction {
     logger.info(
       `Executing invest order for address ${data.address} in pool ${data.poolId} tranche ${data.trancheId} ` +
         `with amount: ${data.amount} fulfillmentPercentage: ${data.fulfillmentPercentage} ` +
-        `price: ${data.price} digits: ${data.digits}`
+        `price: ${data.price}`
     )
     const extendedData = {
       ...data,
@@ -71,7 +70,7 @@ export class InvestorTransactionService extends InvestorTransaction {
     logger.info(
       `Executing redeem order for address ${data.address} in pool ${data.poolId} tranche ${data.trancheId} ` +
         `with amount: ${data.amount} fulfillmentPercentage: ${data.fulfillmentPercentage} ` +
-        `price: ${data.price} digits: ${data.digits}`
+        `price: ${data.price}`
     )
     const extendedData = {
       ...data,
@@ -119,23 +118,11 @@ export class InvestorTransactionService extends InvestorTransaction {
   }
 
   static computeTokenAmount(data: InvestorTransactionData) {
-    return data.price
-      ? nToBigInt(
-          bnToBn(data.amount)
-            .mul(CPREC(RAY_DIGITS + WAD_DIGITS - data.digits))
-            .div(bnToBn(data.price))
-        )
-      : null
+    return data.price ? nToBigInt(bnToBn(data.amount).mul(RAY).div(bnToBn(data.price))) : null
   }
 
   static computeCurrencyAmount(data: InvestorTransactionData) {
-    return data.price
-      ? nToBigInt(
-          bnToBn(data.amount)
-            .mul(bnToBn(data.price))
-            .div(CPREC(RAY_DIGITS + WAD_DIGITS - data.digits))
-        )
-      : null
+    return data.price ? nToBigInt(bnToBn(data.amount).mul(bnToBn(data.price)).div(RAY)) : null
   }
 
   static computeFulfilledAmount(data: InvestorTransactionData) {

@@ -121,9 +121,8 @@ async function _handleEpochExecuted(event: SubstrateEvent<EpochClosedExecutedEve
   if (pool === undefined) throw new Error('Pool not found!')
 
   const epoch = await EpochService.getById(poolId.toString(), epochId.toNumber())
-  const digits = ((await CurrencyService.get(pool.currencyId)) as CurrencyService).decimals
 
-  await epoch.executeEpoch(event.block.timestamp, digits)
+  await epoch.executeEpoch(event.block.timestamp)
   await epoch.saveWithStates()
 
   await pool.executeEpoch(epochId.toNumber())
@@ -139,7 +138,7 @@ async function _handleEpochExecuted(event: SubstrateEvent<EpochClosedExecutedEve
     await tranche.updateSupply()
     await tranche.updatePrice(epochState.tokenPrice)
     await tranche.updateFulfilledInvestOrders(epochState.sumFulfilledInvestOrders)
-    await tranche.updateFulfilledRedeemOrders(epochState.sumFulfilledRedeemOrders, digits)
+    await tranche.updateFulfilledRedeemOrders(epochState.sumFulfilledRedeemOrders)
     await tranche.save()
 
     // Carry over aggregated unfulfilled orders to next epoch
@@ -152,8 +151,7 @@ async function _handleEpochExecuted(event: SubstrateEvent<EpochClosedExecutedEve
       tranche.trancheId,
       epochState.sumOutstandingRedeemOrders - epochState.sumFulfilledRedeemOrders,
       BigInt(0),
-      epochState.tokenPrice,
-      digits
+      epochState.tokenPrice
     )
 
     // Find single outstanding orders posted for this tranche and fulfill them to investorTransactions
@@ -167,7 +165,6 @@ async function _handleEpochExecuted(event: SubstrateEvent<EpochClosedExecutedEve
         epochNumber: epochId.toNumber(),
         address: oo.accountId,
         hash: oo.hash,
-        digits: ((await CurrencyService.get(pool.currencyId)) as CurrencyService).decimals,
         price: epochState.tokenPrice,
         fee: BigInt(0),
         timestamp: event.block.timestamp,

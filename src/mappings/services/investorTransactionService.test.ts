@@ -1,6 +1,6 @@
 import { bnToBn, nToBigInt } from '@polkadot/util'
 import { InvestorTransactionType } from '../../types'
-import { RAY, WAD, WAD_DIGITS } from '../../config'
+import { RAY, WAD } from '../../config'
 import { InvestorTransactionData, InvestorTransactionService } from './investorTransactionService'
 
 const set = store.set as jest.Mock
@@ -12,7 +12,6 @@ const orderData = <InvestorTransactionData>{
   hash: 'wejr23orjwelkfn34oijwe',
   amount: nToBigInt(WAD.muln(100)),
   timestamp: new Date(),
-  digits: WAD_DIGITS,
   price: nToBigInt(RAY.muln(10)),
   fee: BigInt(0),
   fulfillmentPercentage: BigInt('500000000000000000'),
