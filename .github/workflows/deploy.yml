@@ -27,14 +27,22 @@ jobs:
     steps:
       - name: Check out repo's default branch
         uses: actions/checkout@v3
+      - name: List directory
+        run: ls -alh
       - name: Generate and update chain specific project.yaml
+        id: project_gen
         uses: mikefarah/yq@master
         with:
-          cmd: yq ". *= load(./chains/${CHAIN_ID}.yaml)" chains/base.yaml > project.yaml
+          cmd: yq ". *= load('chains/${{ env.CHAIN_ID }}.yaml')" "chains/base.yaml"
+      - name: Write new project.yaml
+        run: echo "${{ steps.project_gen.output.result }}" > project.yaml
       - name: Extract Chain Parameters to ENV
+        id: subql_endpoint
         uses: mikefarah/yq@master
         with:
-          cmd: echo "SUBQL_ENDPOINT=$(yq '.network.endpoint' project.yaml)" >> $GITHUB_ENV
+          cmd: yq '.network.endpoint' project.yaml
+      - name: Extract subql endpoint to env
+        run: echo "SUBQL_ENDPOINT=${{ steps.subql_endpoint.output.result }}" >> $GITHUB_ENV
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
