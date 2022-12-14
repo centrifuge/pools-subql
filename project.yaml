@@ -12,11 +12,6 @@ description: 'SubQuery API powered by EMBRIO.tech to query Centrifuge chain data
 repository: https://github.com/embrio-tech/centrifuge-subql
 schema:
   file: ./schema.graphql
-network:
-  endpoint: wss://fullnode.development.cntrfg.com
-  genesisHash: '0xb59f31491c2dd2760c7a5aa3d3d3694678bbfffce99ab487228b980921a027d3'
-  chaintypes:
-    file: ./dist/chaintypes.js
 dataSources:
   - kind: substrate/Runtime
     startBlock: 1
