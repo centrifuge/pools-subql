@@ -28,12 +28,7 @@ jobs:
       - name: Check out repo's default branch
         uses: actions/checkout@v3
       - name: List directory
-        run: ls -alh
-      - name: Generate and update chain specific project.yaml
-        id: project_gen
-        uses: mikefarah/yq@master
-        with:
-          cmd: yq ". *= load('chains/${{ env.CHAIN_ID }}.yaml')" "chains/base.yaml"
+        run: yq --help
       - name: Write new project.yaml
         run: echo "${{ steps.project_gen.output.result }}" > project.yaml
       - name: Extract Chain Parameters to ENV
