@@ -40,8 +40,13 @@ jobs:
         run: yarn
       - name: Codegen
         run: yarn codegen
-      - name: Version
+      - name: SubQL CLI Version
         run: npx subql --version
+      - name: Publish SubQL version
+        run: |
+          IPFSCID=$(npx subql publish -o -f .)
+          echo "IPFSCID=$IPFSCID" >> $GITHUB_ENV
+          echo "CID: $IPFSCID"
       - name: Delete Project
         run: |
           npx subql project:delete-project \
@@ -59,8 +64,6 @@ jobs:
           --logoURL="$SUBQL_PROJ_IMAGE"
       - name: Deploy Version
         run: |
-          IPFSCID=$(npx subql publish -o -f .)
-          sleep 5
           npx subql deployment:deploy \
           --org="$SUBQL_PROJ_ORG" \
           --endpoint="$SUBQL_ENDPOINT" \
@@ -68,5 +71,6 @@ jobs:
           --projectName="$SUBQL_PROJ_NAME" \
           --ipfsCID="$IPFSCID" \
           --type=primary \
+          --disableHistorical \
           --indexerVersion="v1.15.1" \
           --queryVersion="v1.9.1"
