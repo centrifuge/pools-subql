@@ -31,7 +31,7 @@
     "@jest/globals": "^29.2.0",
     "@polkadot/api": "^9",
     "@polkadot/typegen": "^9",
-    "@subql/cli": "^1.9.2",
+    "@subql/cli": "^1.9.2-0",
     "@subql/node": "^1.15.1",
     "@subql/types": "latest",
     "@types/jest": "^29.1.2",
