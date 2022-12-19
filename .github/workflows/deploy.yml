@@ -17,22 +17,21 @@ jobs:
     if: true # USE LOGIC TO CONTROL DEPLOYMENTS
     name: Deploy to SubQL
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        chainId: [ centrifuge-devel ] # ADD ARRAY OF CHAINS TO DEPLOY
     env:
-      #CHAIN_ID: centrifuge-devel
+      CHAIN_ID: ${{ matrix.chainId }}
       SUBQL_ACCESS_TOKEN: ${{ secrets.SUBQL_ACCESS_TOKEN }}
       SUBQL_PROJ_ORG: embrio-tech
       SUBQL_PROJ_NAME: centrifuge-subql
       SUBQL_PROJ_DESCRIPTION: 'SubQuery API powered by EMBRIO.tech to query Centrifuge chain data for analytics insights on how Centrifuge is unlocking economic opportunity for all by connecting people to borrow and lend money transparently and cost-effectively.'
       SUBQL_PROJ_IMAGE: 'https://explorer.subquery.network/uploads/1660216119964.png'
-      #SUBQL_ENDPOINT: wss://fullnode.development.cntrfg.com
-    strategy:
-      matrix:
-        chainId: [ centrifuge-devel ]
     steps:
       - name: Check out repo's default branch
         uses: actions/checkout@v3
       - name: Generate new project.yaml
-        run: yq ". *= load(\"chains/${{ matrix.chainId }}.yaml\")" chains/base.yaml > project.yaml
+        run: yq ". *= load(\"chains/$CHAIN_ID.yaml\")" chains/base.yaml > project.yaml
       - name: Extract Chain Parameters to ENV
         run: echo "SUBQL_ENDPOINT=$(yq '.network.endpoint' project.yaml)" >> $GITHUB_ENV
       - name: Setup Node
@@ -48,18 +47,18 @@ jobs:
         run: yarn subql --version
       - name: Publish SubQL version
         run: |
-          IPFSCID=$(npx subql publish -o -f .)
+          IPFSCID=$(yarn subql publish -o -f .)
           echo "IPFSCID=$IPFSCID" >> $GITHUB_ENV
           echo "CID: $IPFSCID"
       - name: Delete Project
         run: |
-          npx subql project:delete-project \
+          yarn subql project:delete-project \
           --org="$SUBQL_PROJ_ORG" \
           --projectName="$SUBQL_PROJ_NAME"
         continue-on-error: true
       - name: Create Project
         run: |
-          npx subql project:create-project \
+          yarn subql project:create-project \
           --apiVersion=2 \
           --description="$SUBQL_PROJ_DESCRIPTION" \
           --gitRepo="https://github.com/$GITHUB_REPOSITORY" \
@@ -68,7 +67,7 @@ jobs:
           --logoURL="$SUBQL_PROJ_IMAGE"
       - name: Deploy Version
         run: |
-          npx subql deployment:deploy \
+          yarn subql deployment:deploy \
           --org="$SUBQL_PROJ_ORG" \
           --endpoint="$SUBQL_ENDPOINT" \
           --dict=' ' \
