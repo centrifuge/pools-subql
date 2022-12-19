@@ -37,11 +37,11 @@ jobs:
           node-version: 18
           cache: npm
       - name: Setup Yarn
-        run: yarn
+        run: yarn install --frozen-lockfile
       - name: Codegen
         run: yarn codegen
       - name: SubQL CLI Version
-        run: npx subql --version
+        run: yarn subql --version
       - name: Publish SubQL version
         run: |
           IPFSCID=$(npx subql publish -o -f .)
