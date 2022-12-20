@@ -17,9 +17,10 @@ on:
         required: true
         type: string
       deploymentType:
-        required: true
-        type: choice
-        options: [ primary, stage ]
+        description: stage or primary
+        required: false
+        type: string
+        default: stage
       resetProject:
         default: false
         type: boolean
