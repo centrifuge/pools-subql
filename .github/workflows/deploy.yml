@@ -14,8 +14,8 @@ permissions:
   issues: write
 
 env:
-  indexerVersion: v1.15.1
-  queryVersion: v1.9.1
+  INDEXER_VERSION: v1.15.1
+  QUERY_VERSION: v1.9.1
 
 jobs:
   subql_deploy_embrio_staging:
@@ -31,8 +31,8 @@ jobs:
       projImage: 'https://explorer.subquery.network/uploads/1660216119964.png'
       deploymentType: primary
       resetProject: true
-      indexerVersion: ${{ env.indexerVersion }}
-      queryVersion: ${{ env.queryVersion }}
+      indexerVersion: ${{ env.INDEXER_VERSION }}
+      queryVersion: ${{ env.QUERY_VERSION }}
     secrets:
       accessToken: ${{ secrets.SUBQL_ACCESS_TOKEN }}
     
@@ -49,8 +49,8 @@ jobs:
       projImage: 'https://explorer.subquery.network/uploads/1660216119964.png'
       deploymentType: primary
       resetProject: true
-      indexerVersion: ${{ env.indexerVersion }}
-      queryVersion: ${{ env.queryVersion }}
+      indexerVersion: ${{ env.INDEXER_VERSION }}
+      queryVersion: ${{ env.QUERY_VERSION }}
     secrets:
       accessToken: ${{ secrets.SUBQL_ACCESS_TOKEN }}
 
@@ -66,7 +66,7 @@ jobs:
       projOrg: centrifuge
       deploymentType: stage
       resetProject: false
-      indexerVersion: ${{ env.indexerVersion }}
-      queryVersion: ${{ env.queryVersion }}
+      indexerVersion: ${{ env.INDEXER_VERSION }}
+      queryVersion: ${{ env.QUERY_VERSION }}
     secrets:
       accessToken: ${{ secrets.SUBQL_ACCESS_TOKEN }}
