@@ -74,13 +74,13 @@ jobs:
       - name: Delete Project
         if: ${{ inputs.resetProject }}
         run: |
-          yarn subql project:delete-project \
+          npx subql project:delete-project \
           --org="$SUBQL_PROJ_ORG" \
           --projectName="$SUBQL_PROJ_NAME"
         continue-on-error: true
       - name: Create Project
         run: |
-          yarn subql project:create-project \
+          npx subql project:create-project \
           --apiVersion=2 \
           --description="$SUBQL_PROJ_DESCRIPTION" \
           --gitRepo="https://github.com/$GITHUB_REPOSITORY" \
@@ -89,10 +89,10 @@ jobs:
           --logoURL="$SUBQL_PROJ_IMAGE"
       - name: Deploy Version
         run: |
-          yarn subql deployment:deploy \
+          npx subql deployment:deploy \
           --org="$SUBQL_PROJ_ORG" \
           --endpoint="$SUBQL_ENDPOINT" \
-          --dict=" " \
+          --dict=' ' \
           --projectName="$SUBQL_PROJ_NAME" \
           --ipfsCID="$IPFSCID" \
           --type=$SUBQL_DEPLOYMENT_TYPE \
