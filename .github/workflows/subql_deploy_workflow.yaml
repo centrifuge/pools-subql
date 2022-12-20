@@ -72,7 +72,7 @@ jobs:
           echo "IPFSCID=$IPFSCID" >> $GITHUB_ENV
           echo "CID: $IPFSCID"
       - name: Delete Project
-        if: ${{ input.resetProject }}
+        if: ${{ inputs.resetProject }}
         run: |
           yarn subql project:delete-project \
           --org="$SUBQL_PROJ_ORG" \
