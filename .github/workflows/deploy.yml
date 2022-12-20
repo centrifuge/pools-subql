@@ -6,6 +6,7 @@ on:
   push:
     branches:
       - main
+      - release-*
   workflow_dispatch:
 
 permissions:
@@ -13,25 +14,22 @@ permissions:
   issues: write
 
 jobs:
-  subql_deploy:
+  subql_deploy_staging:
     if: true # USE LOGIC TO CONTROL DEPLOYMENTS
     name: Deploy to SubQL (staging)
-    runs-on: ubuntu-latest
     strategy:
       matrix:
         chainId: [ centrifuge-devel ] # ADD ARRAY OF CHAINS TO DEPLOY
-    steps:
-      - name: SubQL Deploy
-        uses: ./.github/workflows/subql_deploy_jobs.yaml
-        with:
-          chainId: ${{ matrix.chainId }}
-          projOrg: embrio-tech
-          projName: centrifuge-subql
-          projDescription: 'SubQuery API powered by EMBRIO.tech to query Centrifuge chain data for analytics insights on how Centrifuge is unlocking economic opportunity for all by connecting people to borrow and lend money transparently and cost-effectively.'
-          projImage: 'https://explorer.subquery.network/uploads/1660216119964.png'
-          deploymentType: primary
-          resetProject: true
-          indexerVersion: v1.15.1
-          queryVersion: v1.9.1
-        secrets:
-          accessToken: ${{ secrets.SUBQL_ACCESS_TOKEN }}
+    uses: ./.github/workflows/subql_deploy_workflow.yaml
+    with:
+      chainId: ${{ matrix.chainId }}
+      projOrg: embrio-tech
+      projName: centrifuge-subql
+      projDescription: 'SubQuery API powered by EMBRIO.tech to query Centrifuge chain data for analytics insights on how Centrifuge is unlocking economic opportunity for all by connecting people to borrow and lend money transparently and cost-effectively.'
+      projImage: 'https://explorer.subquery.network/uploads/1660216119964.png'
+      deploymentType: primary
+      resetProject: true
+      indexerVersion: v1.15.1
+      queryVersion: v1.9.1
+    secrets:
+      accessToken: ${{ secrets.SUBQL_ACCESS_TOKEN }}

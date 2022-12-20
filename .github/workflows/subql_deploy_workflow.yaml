@@ -35,7 +35,7 @@ on:
 
 
 jobs:
-  subql_deploy_reusable:
+  subql_deploy_workflow:
     runs-on: ubuntu-latest
     env:
       CHAIN_ID: ${{ input.chainId }}
