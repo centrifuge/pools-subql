@@ -13,10 +13,14 @@ permissions:
   contents: read
   issues: write
 
+env:
+  indexerVersion: v1.15.1
+  queryVersion: v1.9.1
+
 jobs:
-  subql_deploy_staging:
-    if: true # USE LOGIC TO CONTROL DEPLOYMENTS
-    name: Deploy to SubQL (staging)
+  subql_deploy_embrio_staging:
+    if: ${{ github.repository == 'embrio-tech/centrifuge-subql'}}
+    name: Deploy to SubQL (EMBRIO staging)
     strategy:
       matrix:
         chainId: [ centrifuge-devel ] # ADD ARRAY OF CHAINS TO DEPLOY
@@ -24,12 +28,45 @@ jobs:
     with:
       chainId: ${{ matrix.chainId }}
       projOrg: embrio-tech
-      projName: centrifuge-subql
-      projDescription: 'SubQuery API powered by EMBRIO.tech to query Centrifuge chain data for analytics insights on how Centrifuge is unlocking economic opportunity for all by connecting people to borrow and lend money transparently and cost-effectively.'
       projImage: 'https://explorer.subquery.network/uploads/1660216119964.png'
       deploymentType: primary
       resetProject: true
-      indexerVersion: v1.15.1
-      queryVersion: v1.9.1
+      indexerVersion: ${{ env.indexerVersion }}
+      queryVersion: ${{ env.queryVersion }}
+    secrets:
+      accessToken: ${{ secrets.SUBQL_ACCESS_TOKEN }}
+    
+  subql_deploy_centrifuge_staging:
+    if: ${{ github.repository == 'centrifuge/pools-subql' && github.ref_name == 'main' }}
+    name: Deploy to SubQL (CENTRIFUGE staging)
+    strategy:
+      matrix:
+        chainId: [ altair ] # ADD ARRAY OF CHAINS TO DEPLOY
+    uses: ./.github/workflows/subql_deploy_workflow.yaml
+    with:
+      chainId: ${{ matrix.chainId }}
+      projOrg: centrifuge
+      projImage: 'https://explorer.subquery.network/uploads/1660216119964.png'
+      deploymentType: primary
+      resetProject: true
+      indexerVersion: ${{ env.indexerVersion }}
+      queryVersion: ${{ env.queryVersion }}
+    secrets:
+      accessToken: ${{ secrets.SUBQL_ACCESS_TOKEN }}
+
+  subql_deploy_centrifuge_production:
+    if: ${{ github.repository == 'centrifuge/pools-subql' && startsWith(github.ref_name, 'release-') }}
+    name: Deploy to SubQL (CENTRIFUGE production)
+    strategy:
+      matrix:
+        chainId: [ altair ] # ADD ARRAY OF CHAINS TO DEPLOY
+    uses: ./.github/workflows/subql_deploy_workflow.yaml
+    with:
+      chainId: ${{ matrix.chainId }}
+      projOrg: centrifuge
+      deploymentType: stage
+      resetProject: false
+      indexerVersion: ${{ env.indexerVersion }}
+      queryVersion: ${{ env.queryVersion }}
     secrets:
       accessToken: ${{ secrets.SUBQL_ACCESS_TOKEN }}
