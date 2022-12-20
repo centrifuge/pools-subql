@@ -39,15 +39,15 @@ jobs:
   subql_deploy_workflow:
     runs-on: ubuntu-latest
     env:
-      CHAIN_ID: ${{ input.chainId }}
+      CHAIN_ID: ${{ inputs.chainId }}
       SUBQL_ACCESS_TOKEN: ${{ secrets.accessToken }}
-      SUBQL_PROJ_ORG: ${{ input.projOrg }}
-      SUBQL_PROJ_NAME: ${{ input.projName }}
-      SUBQL_PROJ_DESCRIPTION: ${{ input.projDescription }}
-      SUBQL_PROJ_IMAGE: ${{ input.projImage }}
-      SUBQL_DEPLOYMENT_TYPE: ${{ input.deploymentType }}
-      SUBQL_INDEXER_VERSION: ${{ input.indexerVersion }}
-      SUBQL_QUERY_VERSION: ${{ input.queryVersion }}
+      SUBQL_PROJ_ORG: ${{ inputs.projOrg }}
+      SUBQL_PROJ_NAME: ${{ inputs.projName }}
+      SUBQL_PROJ_DESCRIPTION: ${{ inputs.projDescription }}
+      SUBQL_PROJ_IMAGE: ${{ inputs.projImage }}
+      SUBQL_DEPLOYMENT_TYPE: ${{ inputs.deploymentType }}
+      SUBQL_INDEXER_VERSION: ${{ inputs.indexerVersion }}
+      SUBQL_QUERY_VERSION: ${{ inputs.queryVersion }}
     steps:
       - name: Check out repo's default branch
         uses: actions/checkout@v3
