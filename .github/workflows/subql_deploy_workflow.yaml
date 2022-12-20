@@ -68,7 +68,7 @@ jobs:
         run: yarn subql --version
       - name: Publish SubQL version
         run: |
-          IPFSCID=$(yarn subql publish -o -f .)
+          IPFSCID=$(npx subql publish -o -f .)
           echo "IPFSCID=$IPFSCID" >> $GITHUB_ENV
           echo "CID: $IPFSCID"
       - name: Delete Project
