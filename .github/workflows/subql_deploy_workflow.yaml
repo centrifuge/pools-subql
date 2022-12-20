@@ -92,7 +92,7 @@ jobs:
           yarn subql deployment:deploy \
           --org="$SUBQL_PROJ_ORG" \
           --endpoint="$SUBQL_ENDPOINT" \
-          --dict=' ' \
+          --dict='null' \
           --projectName="$SUBQL_PROJ_NAME" \
           --ipfsCID="$IPFSCID" \
           --type=$SUBQL_DEPLOYMENT_TYPE \
