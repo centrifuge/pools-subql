@@ -5,7 +5,8 @@ import { getPeriodStart } from './timekeeperService'
 /**
  * Creates a snapshot of a generic stateModel to a snapshotModel.
  * A snapshotModel has the same fields as the originating stateModel, however a timestamp and a blockNumber are added.
- * Fields ending with an _ underscore are reset to 0 at the end of a period. All such resettable fields must be of type
+ * Fields ending with an ByPeriod underscore are reset to 0 at the end of a period.
+ * All such resettable fields must be of type
  * BigInt.
  * @param stateModel - the data model to be snapshotted
  * @param snapshotModel - the data model where the snapshot is saved. (must have additional timestamp and
@@ -38,7 +39,7 @@ async function _stateSnapshotter(
     if (fkReferenceName) snapshotEntity[fkReferenceName] = stateEntity.id
 
     const propNames = Object.getOwnPropertyNames(stateEntity)
-    const propNamesToReset = propNames.filter((propName) => propName.endsWith('_'))
+    const propNamesToReset = propNames.filter((propName) => propName.endsWith('ByPeriod'))
     for (const propName of propNamesToReset) {
       stateEntity[propName] = BigInt(0)
     }

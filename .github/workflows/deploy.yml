@@ -6,6 +6,7 @@ on:
   push:
     branches:
       - main
+      - release-*
   workflow_dispatch:
 
 permissions:
@@ -13,55 +14,49 @@ permissions:
   issues: write
 
 jobs:
-  subql_deploy:
-    name: Deploy to SubQL
-    runs-on: ubuntu-latest
-    env:
-      SUBQL_ACCESS_TOKEN: ${{ secrets.SUBQL_ACCESS_TOKEN }}
-      SUBQL_PROJ_ORG: embrio-tech
-      SUBQL_PROJ_NAME: centrifuge-subql
-      SUBQL_PROJ_DESCRIPTION: 'SubQuery API powered by EMBRIO.tech to query Centrifuge chain data for analytics insights on how Centrifuge is unlocking economic opportunity for all by connecting people to borrow and lend money transparently and cost-effectively.'
-      SUBQL_PROJ_IMAGE: 'https://explorer.subquery.network/uploads/1660216119964.png'
-      SUBQL_ENDPOINT: wss://fullnode.development.cntrfg.com
-    steps:
-      - name: Check out repo's default branch
-        uses: actions/checkout@v3
-      - name: Setup Node
-        uses: actions/setup-node@v3
-        with:
-          node-version: 16
-          cache: npm
-      - name: Setup Yarn
-        run: yarn
-      - name: Codegen
-        run: yarn codegen
-      - name: Version
-        run: npx subql --version
-      - name: Delete Project
-        run: |
-          npx subql project:delete-project \
-          --org="$SUBQL_PROJ_ORG" \
-          --projectName="$SUBQL_PROJ_NAME"
-        continue-on-error: true
-      - name: Create Project
-        run: |
-          npx subql project:create-project \
-          --apiVersion=2 \
-          --description="$SUBQL_PROJ_DESCRIPTION" \
-          --gitRepo="https://github.com/$GITHUB_REPOSITORY" \
-          --org="$SUBQL_PROJ_ORG" \
-          --projectName="$SUBQL_PROJ_NAME" \
-          --logoURL="$SUBQL_PROJ_IMAGE"
-      - name: Deploy Version
-        run: |
-          IPFSCID=$(npx subql publish -o -f .)
-          sleep 5
-          npx subql deployment:deploy \
-          --org="$SUBQL_PROJ_ORG" \
-          --endpoint="$SUBQL_ENDPOINT" \
-          --dict=" " \
-          --projectName="$SUBQL_PROJ_NAME" \
-          --ipfsCID="$IPFSCID" \
-          --type=primary \
-          --indexerVersion="v1.9.2" \
-          --queryVersion="v1.6.0"
+  subql_deploy_embrio_staging:
+    if: ${{ github.repository == 'embrio-tech/centrifuge-subql'}}
+    name: Deploy to SubQL (EMBRIO staging)
+    strategy:
+      matrix:
+        chainId: [ centrifuge-devel-embrio ] # ADD ARRAY OF CHAINS TO DEPLOY
+    uses: ./.github/workflows/subql_deploy_workflow.yaml
+    with:
+      chainId: ${{ matrix.chainId }}
+      projOrg: embrio-tech
+      projImage: 'https://explorer.subquery.network/uploads/1660216119964.png'
+      deploymentType: primary
+      resetProject: true
+    secrets:
+      accessToken: ${{ secrets.SUBQL_ACCESS_TOKEN }}
+    
+  subql_deploy_centrifuge_staging:
+    if: ${{ github.repository == 'centrifuge/pools-subql' && github.ref_name == 'main' }}
+    name: Deploy to SubQL (CENTRIFUGE staging)
+    strategy:
+      matrix:
+        chainId: [ centrifuge-devel, altair,  ] # ADD ARRAY OF CHAINS TO DEPLOY
+    uses: ./.github/workflows/subql_deploy_workflow.yaml
+    with:
+      chainId: ${{ matrix.chainId }}
+      projOrg: centrifuge
+      projImage: 'https://explorer.subquery.network/uploads/1660216119964.png'
+      deploymentType: primary
+      resetProject: true
+    secrets:
+      accessToken: ${{ secrets.SUBQL_ACCESS_TOKEN }}
+
+  subql_deploy_centrifuge_production:
+    if: ${{ github.repository == 'centrifuge/pools-subql' && startsWith(github.ref_name, 'release-') }}
+    name: Deploy to SubQL (CENTRIFUGE mainnet)
+    strategy:
+      matrix:
+        chainId: [ altair ] # ADD ARRAY OF CHAINS TO DEPLOY
+    uses: ./.github/workflows/subql_deploy_workflow.yaml
+    with:
+      chainId: ${{ matrix.chainId }}
+      projOrg: centrifuge
+      deploymentType: stage
+      resetProject: false
+    secrets:
+      accessToken: ${{ secrets.SUBQL_ACCESS_TOKEN }}

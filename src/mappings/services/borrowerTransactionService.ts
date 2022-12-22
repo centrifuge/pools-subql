@@ -10,15 +10,9 @@ export interface BorrowerTransactionData {
   readonly loanId: string
 }
 
-export class BorrowerTransactionService {
-  readonly borrowerTransaction: BorrowerTransaction
-
-  constructor(borrowerTransaction: BorrowerTransaction) {
-    this.borrowerTransaction = borrowerTransaction
-  }
-
+export class BorrowerTransactionService extends BorrowerTransaction {
   static init = (data: BorrowerTransactionData, type: BorrowerTransactionType) => {
-    const tx = new BorrowerTransaction(`${data.hash}-${data.epochNumber.toString()}-${type.toString()}`)
+    const tx = new BorrowerTransactionService(`${data.hash}-${data.epochNumber.toString()}-${type.toString()}`)
     tx.poolId = data.poolId.toString()
     tx.epochNumber = data.epochNumber
     tx.accountId = data.address
@@ -30,10 +24,10 @@ export class BorrowerTransactionService {
     tx.type = type
     tx.amount = data.amount ?? null
 
-    return new BorrowerTransactionService(tx)
+    return tx
   }
 
-  static created = (data: BorrowerTransactionData) => {
+  static created(data: BorrowerTransactionData) {
     logger.info(
       `Borrower transaction of type created for address ${data.address} in pool ${data.poolId} for loan ${data.loanId}`
     )
@@ -41,7 +35,7 @@ export class BorrowerTransactionService {
     return tx
   }
 
-  static priced = (data: BorrowerTransactionData) => {
+  static priced(data: BorrowerTransactionData) {
     logger.info(
       `Borrower transaction of type priced for address ${data.address} in pool ${data.poolId} for loan ${data.loanId}`
     )
@@ -49,7 +43,7 @@ export class BorrowerTransactionService {
     return tx
   }
 
-  static borrowed = (data: BorrowerTransactionData) => {
+  static borrowed(data: BorrowerTransactionData) {
     logger.info(
       `Borrower transaction of type borrowed for address ${data.address} in pool ${data.poolId} ` +
         `for loan ${data.loanId} amount: ${data.amount}`
@@ -58,7 +52,7 @@ export class BorrowerTransactionService {
     return tx
   }
 
-  static repaid = (data: BorrowerTransactionData) => {
+  static repaid(data: BorrowerTransactionData) {
     logger.info(
       `Borrower transaction of type repaid for address ${data.address} in pool ${data.poolId} ` +
         `for loan ${data.loanId} amount: ${data.amount}`
@@ -67,23 +61,12 @@ export class BorrowerTransactionService {
     return tx
   }
 
-  static closed = (data: BorrowerTransactionData) => {
+  static closed(data: BorrowerTransactionData) {
     logger.info(
       `Borrower transaction of type closed for address ${data.address} in pool ${data.poolId} ` +
         `for loan ${data.loanId} amount: ${data.amount}`
     )
     const tx = this.init(data, BorrowerTransactionType.CLOSED)
     return tx
-  }
-
-  save = async () => {
-    await this.borrowerTransaction.save()
-    return this
-  }
-
-  static getById = async (hash: string) => {
-    const tx = await BorrowerTransaction.get(hash)
-    if (tx === undefined) return undefined
-    return new BorrowerTransactionService(tx)
   }
 }

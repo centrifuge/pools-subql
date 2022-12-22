@@ -1,7 +1,7 @@
 //find out types: const a = createType(api.registry, '[u8;32]', 18)
 import { AugmentedRpc, PromiseRpcResult } from '@polkadot/api/types'
 import { Enum, Null, Struct, u128, u32, u64, U8aFixed, Option, Vec, Bytes } from '@polkadot/types'
-import { AccountId32, Address, Perquintill } from '@polkadot/types/interfaces'
+import { AccountId32, Perquintill } from '@polkadot/types/interfaces'
 import { ITuple, Observable } from '@polkadot/types/types'
 
 export interface PoolDetails extends Struct {
@@ -13,20 +13,47 @@ export interface PoolDetails extends Struct {
   metadata: Option<Bytes>
 }
 
+export interface PoolEssence extends Struct {
+  currency: TokensCurrencyId
+  maxReserve: u128
+  maxNavAge: u64
+  minEpochTime: u64
+  tranches: TrancheEssence[]
+}
+
+export interface PoolMetadata extends Struct {
+  metadata: Bytes
+}
+
 export interface TrancheData extends Struct {
   tranches: TrancheDetails[]
-  ids: Vec<U8aFixed>
+  ids: U8aFixed[]
   salt: ITuple<[u64, u64]>
+}
+
+export interface TrancheEssence extends Struct {
+  currency: TrancheCurrency
+  ty: TrancheTypeEnum
+  metadata: TrancheMetadata
+}
+
+export interface TrancheCurrency extends Struct {
+  poolId: u64
+  trancheId: U8aFixed
+}
+
+export interface TrancheMetadata extends Struct {
+  tokenName: Bytes
+  tokenSymbol: Bytes
 }
 
 export interface TrancheDetails extends Struct {
   trancheType: TrancheTypeEnum
   seniority: u32
-  currency: TokensCurrencyId
-  outstandingInvestOrders: u128
-  outstandingRedeemOrders: u128
+  currency: TrancheCurrency
   debt: u128
   reserve: u128
+  loss: u128
   ratio: Perquintill
   lastUpdatedInterest: u64
   index?: number
@@ -55,6 +82,7 @@ export interface EpochExecutionInfo extends Struct {
 }
 
 export interface EpochExecutionTranche extends Struct {
+  currency: TrancheCurrency
   supply: u128
   price: u128
   invest: u128
@@ -88,22 +116,24 @@ export interface TokensCurrencyId extends Enum {
   asForeignAsset: u32
 }
 
-export interface EpochDetails extends Struct {
-  investFulfillment: Perquintill
-  redeemFulfillment: Perquintill
-  tokenPrice: u128
-}
-
 export interface TrancheSolution extends Struct {
   investFulfillment: Perquintill
   redeemFulfillment: Perquintill
 }
 
-export interface OutstandingCollections extends Struct {
-  payoutCurrencyAmount: u128
-  payoutTokenAmount: u128
-  remainingInvestCurrency: u128
-  remainingRedeemToken: u128
+export interface InvestCollection extends Struct {
+  payoutInvestmentInvest: u128
+  remainingInvestmentInvest: u128
+}
+
+export interface RedeemCollection extends Struct {
+  payoutInvestmentRedeem: u128
+  remainingInvestmentRedeem: u128
+}
+
+export interface OrdersFulfillment extends Struct {
+  ofAmount: Perquintill
+  price: u128
 }
 
 export interface AssetMetadata extends Struct {
@@ -136,7 +166,7 @@ export interface PricedLoanDetails extends Struct {
 
 export interface InterestAccrualRateDetails extends Struct {
   accumulatedRate: u128
-  lastUpdated: u64
+  referenceCount: u32
 }
 
 export interface AccountData extends Struct {
@@ -151,11 +181,14 @@ export interface NftItemMetadata extends Struct {
   isFrozen: boolean
 }
 
-// ClassId, ItemId
+// collectionId, itemId
 export type LoanAsset = ITuple<[u64, u128]>
 
-// poolId
-export type PoolCreatedUpdatedEvent = ITuple<[u64, Address]>
+// admin, depositor, poolId, essence
+export type PoolCreatedEvent = ITuple<[AccountId32, AccountId32, u64, PoolEssence]>
+
+// poolId, old, new
+export type PoolUpdatedEvent = ITuple<[AccountId32, PoolEssence, PoolEssence]>
 
 // poolId, loanId, collateral
 export type LoanCreatedClosedEvent = ITuple<[u64, u128, LoanAsset]>
@@ -166,13 +199,23 @@ export type LoanPricedEvent = ITuple<[u64, u128, u128, Enum]>
 //poolId, loanId, percentage, penaltyInterestRatePerSec, writeOffGroupIndex
 export type LoanWrittenOffEvent = ITuple<[u64, u128, u128, u128, Option<u32>]>
 
-export type EpochEvent = ITuple<[u64, u32]>
+// poolId, epochId
+export type EpochClosedExecutedEvent = ITuple<[u64, u32]>
+
+// poolId, epochId, solution
 export type EpochSolutionEvent = ITuple<[u64, u32, EpochSolution]>
 
-export type OrderEvent = ITuple<[u64, U8aFixed, AccountId32, u128, u128]>
+// investmentId, who, processedOrders, collection, outcome(FullyCollected OR PartiallyCollected )
+export type InvestOrdersCollectedEvent = ITuple<[TrancheCurrency, AccountId32, Vec<u64>, InvestCollection, Enum]>
 
-// poolId, trancheId, endEpochId, account, outstandingCollections
-export type OrdersCollectedEvent = ITuple<[u64, U8aFixed, u32, AccountId32, OutstandingCollections]>
+// investmentId, who, processedOrders, collection, outcome(FullyCollected OR PartiallyCollected )
+export type RedeemOrdersCollectedEvent = ITuple<[TrancheCurrency, AccountId32, Vec<u64>, RedeemCollection, Enum]>
+
+// investmentId, submittedAt, who, amount
+export type OrderUpdatedEvent = ITuple<[TrancheCurrency, u64, AccountId32, u128]>
+
+// investmentId, orderId, fulfillment
+export type OrdersClearedEvent = ITuple<[TrancheCurrency, u64, OrdersFulfillment]>
 
 // currencyId: 'CommonTypesTokensCurrencyId'from,to,amount
 export type TokensTransferEvent = ITuple<[TokensCurrencyId, AccountId32, AccountId32, u128]>
