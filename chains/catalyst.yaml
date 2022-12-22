@@ -1,4 +1,4 @@
-name: catalyst-pools #CHANGE BASED ON SUBQL PROJECT NAME
+name: pools-catalyst #CHANGE BASED ON SUBQL PROJECT NAME
 network:
   endpoint: wss://fullnode.catalyst.cntrfg.com
   genesisHash: '0x6cb9c6d7d3c9150a1f3cd75784834c53a12d5e0c2d4ed9bf694a901be564eac9'

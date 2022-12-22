@@ -19,7 +19,7 @@ jobs:
     name: Deploy to SubQL (EMBRIO staging)
     strategy:
       matrix:
-        chainId: [ centrifuge-devel-embrio ] # ADD ARRAY OF CHAINS TO DEPLOY
+        chainId: [ development-embrio ] # ADD ARRAY OF CHAINS TO DEPLOY
     uses: ./.github/workflows/subql_deploy_workflow.yaml
     with:
       chainId: ${{ matrix.chainId }}
@@ -35,12 +35,12 @@ jobs:
     name: Deploy to SubQL (CENTRIFUGE staging)
     strategy:
       matrix:
-        chainId: [ centrifuge-devel, altair,  ] # ADD ARRAY OF CHAINS TO DEPLOY
+        chainId: [ development, demo ] # ADD ARRAY OF CHAINS TO DEPLOY
     uses: ./.github/workflows/subql_deploy_workflow.yaml
     with:
       chainId: ${{ matrix.chainId }}
       projOrg: centrifuge
-      projImage: 'https://explorer.subquery.network/uploads/1660216119964.png'
+      projImage: 'https://centrifuge.io/static/bfb7682cb6ed4aa422d9d2c90cd9351a/centrifuge-logomark-black.svg'
       deploymentType: primary
       resetProject: true
     secrets:
@@ -56,6 +56,7 @@ jobs:
     with:
       chainId: ${{ matrix.chainId }}
       projOrg: centrifuge
+      projImage: 'https://centrifuge.io/static/bfb7682cb6ed4aa422d9d2c90cd9351a/centrifuge-logomark-black.svg'
       deploymentType: stage
       resetProject: false
     secrets:

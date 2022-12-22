@@ -1,6 +1,0 @@
-name: antares-pools #CHANGE BASED ON SUBQL PROJECT NAME
-network:
-  endpoint: wss://fullnode-collator.antares.centrifuge.io
-  genesisHash: '???' # CHANGE ME
-  chaintypes:
-    file: ./dist/chaintypes.js
