@@ -10,9 +10,10 @@ type InferReturn<T> = T extends (...t: [...infer Arg]) => infer Res ? Res : neve
 export function errorHandler<TFunc extends (...args: any[]) => any>(
   method: TFunc
 ): (...args: InferArgs<TFunc>) => InferReturn<TFunc> {
-  return function <E extends Error>(...args: InferArgs<TFunc>) {
-    return method(...args).catch((err: E) => {
-      logger.error(err)
-    })
+  return function (...args: InferArgs<TFunc>) {
+    return method(...args).catch(errorLogger)
   }
+}
+export function errorLogger<E extends Error>(err: E) {
+  logger.error(err)
 }

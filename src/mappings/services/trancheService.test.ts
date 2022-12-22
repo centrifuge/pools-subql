@@ -1,4 +1,5 @@
-import { ExtendedRpc } from 'centrifuge-subql/helpers/types'
+import { errorLogger } from '../../helpers/errorHandler'
+import { ExtendedRpc } from '../../helpers/types'
 import { TrancheService } from './trancheService'
 
 api.query['ormlTokens'] = {
@@ -8,8 +9,8 @@ api.query['ormlTokens'] = {
 
 api.rpc['pools'] = {
   trancheTokenPrices: jest.fn(() => [
-    { toBigInt: () => BigInt('1000000000000000000') },
     { toBigInt: () => BigInt('2000000000000000000') },
+    { toBigInt: () => BigInt('0') },
   ]),
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as any
@@ -17,7 +18,11 @@ api.rpc['pools'] = {
 const poolId = '4355663',
   trancheIds = ['0x855f5572a85a957c48ef266a3f240ea0', '0x855f5572a85a957c48ef266a3f240ea1']
 
-const trancheDataResidual = { trancheType: { isResidual: true }, seniority: { toNumber: () => 0 } }
+const trancheDataResidual = {
+  trancheType: { isResidual: true },
+  seniority: { toNumber: () => 0 },
+  debt: { toBigInt: () => BigInt(0) },
+}
 const trancheDataNonResidual = {
   trancheType: {
     isResidual: false,
@@ -27,6 +32,7 @@ const trancheDataNonResidual = {
     },
   },
   seniority: { toNumber: () => 1 },
+  debt: { toBigInt: () => BigInt(0) },
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -38,35 +44,41 @@ const tranches = trancheIds.map((trancheId, i) =>
 
 describe('Given a new tranche, when initialised', () => {
   test('then type is set to "ALL"', () => {
-    expect(tranches[0].tranche.type).toBe('ALL')
-    expect(tranches[1].tranche.type).toBe('ALL')
+    expect(tranches[0].type).toBe('ALL')
+    expect(tranches[1].type).toBe('ALL')
   })
 
   test('then reset accumulators are set to 0', () => {
-    const resetAccumulators = Object.getOwnPropertyNames(tranches[0].trancheState).filter((prop) => prop.endsWith('_'))
+    const resetAccumulators = Object.getOwnPropertyNames(tranches[0]).filter((prop) => prop.endsWith('ByPeriod'))
     for (const resetAccumulator of resetAccumulators) {
-      expect(tranches[0].trancheState[resetAccumulator]).toBe(BigInt(0))
-      expect(tranches[1].trancheState[resetAccumulator]).toBe(BigInt(0))
+      expect(tranches[0][resetAccumulator]).toBe(BigInt(0))
+      expect(tranches[1][resetAccumulator]).toBe(BigInt(0))
     }
   })
 
   test('when the supply data is fetched, then the correct values are fetched and set', async () => {
     await tranches[0].updateSupply()
     expect(api.query.ormlTokens.totalIssuance).toBeCalledWith({ Tranche: [poolId, trancheIds[0]] })
-    expect(tranches[0].trancheState).toMatchObject({ supply: BigInt('9999000000000000000000') })
+    expect(tranches[0]).toMatchObject({ tokenSupply: BigInt('9999000000000000000000') })
   })
 
   test('then it can be saved to the database', async () => {
     await tranches[0].save()
-    expect(store.set).toHaveBeenNthCalledWith(1, 'TrancheState', `${poolId}-${trancheIds[0]}`, expect.anything())
-    expect(store.set).toHaveBeenNthCalledWith(2, 'Tranche', `${poolId}-${trancheIds[0]}`, expect.anything())
+    expect(store.set).toHaveBeenCalledWith('Tranche', `${poolId}-${trancheIds[0]}`, expect.anything())
   })
 })
 
 describe('Given an existing tranche,', () => {
   test('when the rpc price is updated, then the value is fetched and set correctly', async () => {
-    await tranches[0].updatePriceFromRpc()
+    await tranches[0].updatePriceFromRpc().catch(errorLogger)
     expect((api.rpc as ExtendedRpc).pools.trancheTokenPrices).toBeCalled()
-    expect(tranches[0].trancheState.price).toBe(BigInt('1000000000000000000'))
+    expect(tranches[0].tokenPrice).toBe(BigInt('2000000000000000000'))
+  })
+
+  test('when a 0 rpc price is delivered, then the value is skipped and logged', async () => {
+    await tranches[1].updatePriceFromRpc().catch(errorLogger)
+    expect((api.rpc as ExtendedRpc).pools.trancheTokenPrices).toBeCalled()
+    expect(logger.error).toBeCalled()
+    expect(tranches[1].tokenPrice).toBe(BigInt('1000000000000000000000000000'))
   })
 })
