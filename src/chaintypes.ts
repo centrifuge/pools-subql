@@ -48,4 +48,6 @@ const definitions: OverrideBundleDefinition = {
   },
 }
 
-export default { typesBundle: { spec: { 'centrifuge-devel': definitions, altair: definitions } } }
+export default {
+  typesBundle: { spec: { 'centrifuge-devel': definitions, altair: definitions, centrifuge: definitions } },
+}

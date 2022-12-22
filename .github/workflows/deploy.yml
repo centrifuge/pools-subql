@@ -19,7 +19,7 @@ jobs:
     name: Deploy to SubQL (EMBRIO staging)
     strategy:
       matrix:
-        chainId: [ centrifuge-devel ] # ADD ARRAY OF CHAINS TO DEPLOY
+        chainId: [ centrifuge-devel-embrio ] # ADD ARRAY OF CHAINS TO DEPLOY
     uses: ./.github/workflows/subql_deploy_workflow.yaml
     with:
       chainId: ${{ matrix.chainId }}
@@ -35,7 +35,7 @@ jobs:
     name: Deploy to SubQL (CENTRIFUGE staging)
     strategy:
       matrix:
-        chainId: [ altair ] # ADD ARRAY OF CHAINS TO DEPLOY
+        chainId: [ centrifuge-devel, altair,  ] # ADD ARRAY OF CHAINS TO DEPLOY
     uses: ./.github/workflows/subql_deploy_workflow.yaml
     with:
       chainId: ${{ matrix.chainId }}
@@ -48,7 +48,7 @@ jobs:
 
   subql_deploy_centrifuge_production:
     if: ${{ github.repository == 'centrifuge/pools-subql' && startsWith(github.ref_name, 'release-') }}
-    name: Deploy to SubQL (CENTRIFUGE production)
+    name: Deploy to SubQL (CENTRIFUGE mainnet)
     strategy:
       matrix:
         chainId: [ altair ] # ADD ARRAY OF CHAINS TO DEPLOY
