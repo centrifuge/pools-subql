@@ -28,7 +28,7 @@ dataSources:
           kind: substrate/EventHandler
           filter:
             module: poolSystem
-            method: PoolCreated
+            method: Created
         - handler: handleEpochClosed
           kind: substrate/EventHandler
           filter:
