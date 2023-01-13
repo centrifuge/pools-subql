@@ -1,6 +1,6 @@
 name: 'pools-demo' #CHANGE ME BASED ON SUBQL DEPLOYMENT
 network:
   endpoint: wss://fullnode.demo.cntrfg.com
-  genesisHash: '0xb59f31491c2dd2760c7a5aa3d3d3694678bbfffce99ab487228b980921a027d3'
+  genesisHash: '0x075bcad5b03e8bd1da01538c87c8a8db3112069f738eb1a9b39b004240066582'
   chaintypes:
     file: ./dist/chaintypes.js
