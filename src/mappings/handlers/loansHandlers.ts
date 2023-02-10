@@ -11,6 +11,7 @@ import { PoolService } from '../services/poolService'
 import { LoanService } from '../services/loanService'
 import { BorrowerTransactionService } from '../services/borrowerTransactionService'
 import { AccountService } from '../services/accountService'
+import { EpochService } from '../services/epochService'
 
 export const handleLoanCreated = errorHandler(_handleLoanCreated)
 async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedClosedEvent>) {
@@ -70,9 +71,15 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedRepaidEvent
   })
   await bt.save()
 
-  // Update poolState info
+  // Update pool info
   await pool.increaseBorrowings(amount.toBigInt())
   await pool.save()
+
+  // Update epoch info
+  const epoch = await EpochService.getById(pool.id, pool.currentEpoch)
+  if (epoch === undefined) throw new Error('Epoch not found!')
+  await epoch.increaseBorrowings(amount.toBigInt())
+  await epoch.save()
 }
 
 export const handleLoanPriced = errorHandler(_handleLoanPriced)
@@ -116,7 +123,7 @@ async function _handleLoanPriced(event: SubstrateEvent<LoanPricedEvent>) {
 export const handleLoanRepaid = errorHandler(_handleLoanRepaid)
 async function _handleLoanRepaid(event: SubstrateEvent<LoanBorrowedRepaidEvent>) {
   const [poolId, loanId, amount] = event.event.data
-  logger.info(`Loan borrowed event for pool: ${poolId.toString()} amount: ${amount.toString()}`)
+  logger.info(`Loan repaid event for pool: ${poolId.toString()} amount: ${amount.toString()}`)
 
   const pool = await PoolService.getById(poolId.toString())
   if (pool === undefined) throw new Error('Pool not found!')
@@ -138,6 +145,12 @@ async function _handleLoanRepaid(event: SubstrateEvent<LoanBorrowedRepaidEvent>)
     amount: amount.toBigInt(),
   })
   await bt.save()
+
+  // Update epoch info
+  const epoch = await EpochService.getById(pool.id, pool.currentEpoch)
+  if (epoch === undefined) throw new Error('Epoch not found!')
+  await epoch.increaseRepayments(amount.toBigInt())
+  await epoch.save()
 }
 
 export const handleLoanWrittenOff = errorHandler(_handleLoanWrittenOff)
