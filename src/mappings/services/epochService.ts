@@ -128,4 +128,12 @@ export class EpochService extends Epoch {
   private computeCurrencyAmount(amount: bigint, price: bigint) {
     return nToBigInt(bnToBn(amount).mul(bnToBn(price)).div(RAY))
   }
+
+  public increaseBorrowings(amount: bigint) {
+    this.sumBorrowedAmount += amount
+  }
+
+  public increaseRepayments(amount: bigint) {
+    this.sumRepaidAmount += amount
+  }
 }
