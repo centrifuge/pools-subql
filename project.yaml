@@ -28,7 +28,7 @@ dataSources:
           kind: substrate/EventHandler
           filter:
             module: poolSystem
-            method: PoolCreated
+            method: Created
         - handler: handleEpochClosed
           kind: substrate/EventHandler
           filter:
@@ -121,6 +121,6 @@ dataSources:
             method: Withdrawn
 network:
   endpoint: wss://fullnode.development.cntrfg.com
-  genesisHash: '0xb59f31491c2dd2760c7a5aa3d3d3694678bbfffce99ab487228b980921a027d3'
+  genesisHash: '0x4c1c07295e022c3e8cade997b89cb8fa49ac0a29be623065a787a71427210dbf'
   chaintypes:
     file: ./dist/chaintypes.js
