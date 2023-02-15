@@ -367,7 +367,7 @@ type Proxy @entity {
   delegatee: String!
   proxyType: String
   isRemoved: Boolean
-  delay: Int
+  delay: BigInt
 }
 
 type Currency @entity {
