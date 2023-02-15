@@ -1,5 +1,5 @@
 import { SubstrateEvent } from '@subql/types'
-import { Proxy, AnonymousProxy } from '../../types'
+import { Proxy, PureProxy } from '../../types'
 
 export async function handleProxyAdded(event: SubstrateEvent): Promise<void> {
   logger.info(`Proxy added: ${event.toString()}`)
@@ -14,16 +14,16 @@ export async function handleProxyAdded(event: SubstrateEvent): Promise<void> {
   await proxy.save()
 }
 
-export async function handleProxyAnonymousCreated(event: SubstrateEvent): Promise<void> {
-  logger.info(`Anonymous proxy created: ${event.toString()}`)
+export async function handleProxyPureCreated(event: SubstrateEvent): Promise<void> {
+  logger.info(`Pure proxy created: ${event.toString()}`)
 
   const [account, createdBy, proxyType] = event.event.data
 
-  const anonymousProxy = new AnonymousProxy(`${account.toString()}`)
-  anonymousProxy.accountId = account.toString()
-  anonymousProxy.createdBy = createdBy.toString()
-  anonymousProxy.proxyType = proxyType.toString()
-  await anonymousProxy.save()
+  const pureProxy = new PureProxy(`${account.toString()}`)
+  pureProxy.accountId = account.toString()
+  pureProxy.createdBy = createdBy.toString()
+  pureProxy.proxyType = proxyType.toString()
+  await pureProxy.save()
 
   const proxy = new Proxy(`${account.toString()}-${createdBy.toString()}-${proxyType.toString()}}`)
   proxy.delegator = account.toString()
