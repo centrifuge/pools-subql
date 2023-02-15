@@ -10,7 +10,7 @@ export async function handleProxyAdded(event: SubstrateEvent): Promise<void> {
   proxy.delegator = delegator.toString()
   proxy.delegatee = delegatee.toString()
   proxy.proxyType = proxyType.toString()
-  proxy.delay = Number(delay.toString())
+  // TODO: store delay
   await proxy.save()
 }
 
