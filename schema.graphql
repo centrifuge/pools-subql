@@ -249,7 +249,7 @@ type BorrowerTransaction @entity {
 type Account @entity {
   id: ID!
 
-  anonymousProxies: [AnonymousProxy] @derivedFrom(field: "account")
+  pureProxies: [PureProxy] @derivedFrom(field: "account")
 
   investorTransactions: [InvestorTransaction] @derivedFrom(field: "account")
   borrowerTransactions: [BorrowerTransaction] @derivedFrom(field: "account")
@@ -352,7 +352,7 @@ type LoanSnapshot @entity {
   penaltyInterestRatePerSec: BigInt
 }
 
-type AnonymousProxy @entity {
+type PureProxy @entity {
   id: ID!
 
   account: Account! @index
