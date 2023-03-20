@@ -29,6 +29,11 @@ dataSources:
           filter:
             module: poolSystem
             method: Created
+        - handler: handlePoolUpdated
+          kind: substrate/EventHandler
+          filter:
+            module: poolSystem
+            method: Updated
         - handler: handleEpochClosed
           kind: substrate/EventHandler
           filter:

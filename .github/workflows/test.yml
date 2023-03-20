@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: 'Checkout Repository'
         uses: actions/checkout@v3
+      - name: Initialise project.yaml
+        run: cp chains/base.yaml project.yaml
       - name: 'Setup Node'
         uses: actions/setup-node@v3
         with:
@@ -32,6 +34,8 @@ jobs:
     steps:
       - name: 'Checkout Repository'
         uses: actions/checkout@v3
+      - name: Initialise project.yaml
+        run: cp chains/base.yaml project.yaml
       - name: 'Setup Node'
         uses: actions/setup-node@v3
         with:
