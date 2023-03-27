@@ -1,9 +1,8 @@
 import { Option, Vec } from '@polkadot/types'
-import { AnyJson } from '@polkadot/types/types'
 import { bnToBn, nToBigInt } from '@polkadot/util'
 import { RAY, WAD } from '../../config'
 import { InterestAccrualRateDetails, NftItemMetadata } from '../../helpers/types'
-import { Loan, LoanStatus, LoanType } from '../../types'
+import { Loan, LoanStatus } from '../../types'
 
 export class LoanService extends Loan {
   static init(poolId: string, loanId: string, nftClassId: bigint, nftItemId: bigint, timestamp: Date) {
@@ -43,23 +42,15 @@ export class LoanService extends Loan {
     this.interestRatePerSec = interestRatePerSec
   }
 
-  public writeOff(percentage: bigint, penaltyInterestRatePerSec: bigint, writeOffIndex: number) {
+  public writeOff(percentage: bigint, penaltyInterestRatePerSec: bigint) {
     logger.info(`Writing off loan ${this.id} with ${percentage}`)
     this.writtenOffPercentageByPeriod = percentage
     this.penaltyInterestRatePerSec = penaltyInterestRatePerSec
-    this.writeOffIndex = writeOffIndex
 
     this.writtenOffAmountByPeriod = nToBigInt(bnToBn(this.outstandingDebt).mul(bnToBn(percentage)).div(WAD))
   }
 
-  public updateLoanType(loanType: string, loanSpec?: AnyJson) {
-    logger.info(`Updating loan type for loan ${this.id} to ${loanType}`)
-    this.type = loanType as LoanType
-    const specBuff = Buffer.from(JSON.stringify(loanSpec))
-    this.spec = specBuff.toString('base64')
-  }
-
-  public updateLoanSpecs(decodedLoanSpecs: DecodedLoanSpecs) {
+  public updateLoanSpecs(decodedLoanSpecs: LoanSpecs) {
     Object.assign(this, decodedLoanSpecs)
   }
 
@@ -109,9 +100,9 @@ export class LoanService extends Loan {
   }
 }
 
-interface DecodedLoanSpecs {
+interface LoanSpecs {
   advanceRate: bigint
-  value: bigint
+  collateralValue: bigint
   probabilityOfDefault?: bigint
   lossGivenDefault?: bigint
   discountRate?: bigint

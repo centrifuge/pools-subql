@@ -35,14 +35,6 @@ export class BorrowerTransactionService extends BorrowerTransaction {
     return tx
   }
 
-  static priced(data: BorrowerTransactionData) {
-    logger.info(
-      `Borrower transaction of type priced for address ${data.address} in pool ${data.poolId} for loan ${data.loanId}`
-    )
-    const tx = this.init(data, BorrowerTransactionType.PRICED)
-    return tx
-  }
-
   static borrowed(data: BorrowerTransactionData) {
     logger.info(
       `Borrower transaction of type borrowed for address ${data.address} in pool ${data.poolId} ` +

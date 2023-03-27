@@ -1,11 +1,5 @@
 import { SubstrateEvent } from '@subql/types'
-import {
-  LoanBorrowedRepaidEvent,
-  LoanCreatedClosedEvent,
-  LoanPricedEvent,
-  LoanWrittenOffEvent,
-  LoanSpecs,
-} from '../../helpers/types'
+import { LoanBorrowedRepaidEvent, LoanClosedEvent, LoanCreatedEvent, LoanWrittenOffEvent } from '../../helpers/types'
 import { errorHandler } from '../../helpers/errorHandler'
 import { PoolService } from '../services/poolService'
 import { LoanService } from '../services/loanService'
@@ -14,8 +8,8 @@ import { AccountService } from '../services/accountService'
 import { EpochService } from '../services/epochService'
 
 export const handleLoanCreated = errorHandler(_handleLoanCreated)
-async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedClosedEvent>) {
-  const [poolId, loanId, [nftClassId, nftItemId]] = event.event.data
+async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedEvent>) {
+  const [poolId, loanId, loanInfo] = event.event.data
   logger.info(`Loan created event for pool: ${poolId.toString()} loan: ${loanId.toString()}`)
 
   const pool = await PoolService.getById(poolId.toString())
@@ -26,11 +20,30 @@ async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedClosedEvent>)
   const loan = await LoanService.init(
     poolId.toString(),
     loanId.toString(),
-    nftClassId.toBigInt(),
-    nftItemId.toBigInt(),
+    loanInfo.collateral[0].toBigInt(),
+    loanInfo.collateral[1].toBigInt(),
     event.block.timestamp
   )
   await loan.updateItemMetadata()
+  await loan.updateInterestRate(loanInfo.interestRate.toBigInt())
+
+  const loanSpecs = {
+    advanceRate: loanInfo.restrictions.maxBorrowAmount.value['advanceRate'].toBigInt(),
+    collateralValue: loanInfo.collateralValue.toBigInt(),
+    probabilityOfDefault: loanInfo.valuationMethod.isDiscountedCashFlow
+      ? loanInfo.valuationMethod.asDiscountedCashFlow.probabilityOfDefault.toBigInt()
+      : null,
+    lossGivenDefault: loanInfo.valuationMethod.isDiscountedCashFlow
+      ? loanInfo.valuationMethod.asDiscountedCashFlow.lossGivenDefault.toBigInt()
+      : null,
+    discountRate: loanInfo.valuationMethod.isDiscountedCashFlow
+      ? loanInfo.valuationMethod.asDiscountedCashFlow.discountRate.toBigInt()
+      : null,
+    maturityDate: loanInfo.schedule.maturity.isFixed
+      ? new Date(loanInfo.schedule.maturity.asFixed.toNumber() * 1000)
+      : null,
+  }
+  await loan.updateLoanSpecs(loanSpecs)
   await loan.save()
 
   const bt = await BorrowerTransactionService.created({
@@ -56,6 +69,7 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedRepaidEvent
 
   // Update loan amount
   const loan = await LoanService.getById(poolId.toString(), loanId.toString())
+  await loan.activate()
   await loan.borrow(amount.toBigInt())
   await loan.updateItemMetadata()
   await loan.save()
@@ -80,44 +94,6 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedRepaidEvent
   if (epoch === undefined) throw new Error('Epoch not found!')
   await epoch.increaseBorrowings(amount.toBigInt())
   await epoch.save()
-}
-
-export const handleLoanPriced = errorHandler(_handleLoanPriced)
-async function _handleLoanPriced(event: SubstrateEvent<LoanPricedEvent>) {
-  const [poolId, loanId, interestRatePerSec, loanType] = event.event.data
-  logger.info(`Loan priced event for pool: ${poolId.toString()} loan: ${loanId.toString()}`)
-
-  const pool = await PoolService.getById(poolId.toString())
-  if (pool === undefined) throw new Error('Pool not found!')
-
-  const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toString())
-
-  const loanSpecs = loanType.inner as LoanSpecs
-  const decodedLoanSpecs = {
-    advanceRate: loanSpecs.advanceRate.toBigInt(),
-    value: loanSpecs.value.toBigInt(),
-    probabilityOfDefault: loanSpecs.probabilityOfDefault ? loanSpecs.probabilityOfDefault.toBigInt() : null,
-    lossGivenDefault: loanSpecs.lossGivenDefault ? loanSpecs.lossGivenDefault.toBigInt() : null,
-    discountRate: loanSpecs.discountRate ? loanSpecs.discountRate.toBigInt() : null,
-    maturityDate: loanSpecs.maturityDate ? new Date(loanSpecs.maturityDate.toNumber() * 1000) : null,
-  }
-  const loan = await LoanService.getById(poolId.toString(), loanId.toString())
-  await loan.activate()
-  await loan.updateInterestRate(interestRatePerSec.toBigInt())
-  await loan.updateLoanType(loanType.type, loanType.inner.toJSON())
-  await loan.updateLoanSpecs(decodedLoanSpecs)
-  await loan.updateItemMetadata()
-  await loan.save()
-
-  const bt = await BorrowerTransactionService.priced({
-    poolId: poolId.toString(),
-    loanId: loanId.toString(),
-    address: account.id,
-    epochNumber: pool.currentEpoch,
-    hash: event.extrinsic.extrinsic.hash.toString(),
-    timestamp: event.block.timestamp,
-  })
-  await bt.save()
 }
 
 export const handleLoanRepaid = errorHandler(_handleLoanRepaid)
@@ -155,11 +131,11 @@ async function _handleLoanRepaid(event: SubstrateEvent<LoanBorrowedRepaidEvent>)
 
 export const handleLoanWrittenOff = errorHandler(_handleLoanWrittenOff)
 async function _handleLoanWrittenOff(event: SubstrateEvent<LoanWrittenOffEvent>) {
-  const [poolId, loanId, percentage, penaltyInterestRatePerSec, writeOffGroupIndex] = event.event.data
+  const [poolId, loanId, status] = event.event.data
   logger.info(`Loan writtenoff event for pool: ${poolId.toString()} loanId: ${loanId.toString()}`)
+  const { percentage, penalty } = status
   const loan = await LoanService.getById(poolId.toString(), loanId.toString())
-  const writeOffIndex = writeOffGroupIndex.isSome ? writeOffGroupIndex.unwrap().toNumber() : null
-  await loan.writeOff(percentage.toBigInt(), penaltyInterestRatePerSec.toBigInt(), writeOffIndex)
+  await loan.writeOff(percentage.toBigInt(), penalty.toBigInt())
   await loan.updateItemMetadata()
   await loan.save()
 
@@ -171,7 +147,7 @@ async function _handleLoanWrittenOff(event: SubstrateEvent<LoanWrittenOffEvent>)
 }
 
 export const handleLoanClosed = errorHandler(_handleLoanClosed)
-async function _handleLoanClosed(event: SubstrateEvent<LoanCreatedClosedEvent>) {
+async function _handleLoanClosed(event: SubstrateEvent<LoanClosedEvent>) {
   const [poolId, loanId] = event.event.data
   logger.info(`Loan closed event for pool: ${poolId.toString()} loanId: ${loanId.toString()}`)
 

@@ -224,7 +224,6 @@ type InvestorTransaction @entity {
 
 enum BorrowerTransactionType {
   CREATED
-  PRICED
   BORROWED
   REPAID
   CLOSED
@@ -288,12 +287,6 @@ enum LoanStatus {
   CLOSED
 }
 
-enum LoanType {
-  BulletLoan
-  CreditLine
-  CreditLineWithMaturity
-}
-
 type Loan @entity {
   id: ID! # poolId - loanId
   createdAt: Date!
@@ -304,14 +297,11 @@ type Loan @entity {
   metadata: String
 
   advanceRate: BigInt
-  value: BigInt
+  collateralValue: BigInt
   probabilityOfDefault: BigInt
   lossGivenDefault: BigInt
   discountRate: BigInt
   maturityDate: Date
-
-  type: LoanType
-  spec: String
 
   interestRatePerSec: BigInt
 
@@ -346,7 +336,6 @@ type LoanSnapshot @entity {
   borrowedAmountByPeriod: BigInt
   repaidAmountByPeriod: BigInt
 
-  writeOffIndex: Int
   writtenOffPercentageByPeriod: BigInt
   writtenOffAmountByPeriod: BigInt
   penaltyInterestRatePerSec: BigInt
