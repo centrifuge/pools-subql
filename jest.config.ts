@@ -4,14 +4,15 @@ const config: Config = {
   verbose: true,
   preset: 'ts-jest',
   testEnvironment: 'node',
-  setupFiles: ['./jest/globals.ts'],
+  setupFiles: ['./jest/globals.js'],
+  moduleFileExtensions: ['ts', 'tsx', 'js'],
   transform: {
     // '^.+\\.[tj]sx?$' to process js/ts with `ts-jest`
     // '^.+\\.m?[tj]sx?$' to process js/ts/mjs/mts with `ts-jest`
-    '^.+\\.ts?$': [
+    '^.+\\.tsx?$': [
       'ts-jest',
       {
-        tsconfig: './jest/tsconfig.jest.json',
+        tsconfig: './tsconfig.json',
       },
     ],
   },

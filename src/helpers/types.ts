@@ -165,6 +165,7 @@ export interface PricedLoanDetails extends Struct {
 }
 
 export interface InterestAccrualRateDetails extends Struct {
+  interestRatePerSec: u128
   accumulatedRate: u128
   referenceCount: u32
 }

@@ -1,4 +1,4 @@
-import { Option } from '@polkadot/types'
+import { Option, Vec } from '@polkadot/types'
 import { AnyJson } from '@polkadot/types/types'
 import { bnToBn, nToBigInt } from '@polkadot/util'
 import { RAY, WAD } from '../../config'
@@ -76,9 +76,10 @@ export class LoanService extends Loan {
   }
 
   public async updateOutstandingDebt(normalizedDebt: bigint, interestRatePerSec: bigint) {
-    const rateDetails = await api.query.interestAccrual.rate<Option<InterestAccrualRateDetails>>(interestRatePerSec)
-    if (rateDetails.isNone) return
-    const { accumulatedRate } = rateDetails.unwrap()
+    const rateDetails = await api.query.interestAccrual.rates<Vec<InterestAccrualRateDetails>>()
+    const { accumulatedRate } = rateDetails.find(
+      (rateDetails) => rateDetails.interestRatePerSec.toBigInt() === interestRatePerSec
+    )
     this.outstandingDebt = nToBigInt(bnToBn(normalizedDebt).mul(bnToBn(accumulatedRate)).div(RAY))
     logger.info(`Updating outstanding debt for loan: ${this.id} to ${this.outstandingDebt.toString()}`)
   }
