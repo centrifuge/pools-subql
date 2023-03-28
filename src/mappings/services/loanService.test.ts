@@ -16,10 +16,7 @@ const metadata = 'AAAAAA'
 const outstandingDebt = nToBigInt(bnToBn(normalizedDebt).mul(bnToBn(accumulatedRate)).div(RAY))
 
 api.query['interestAccrual'] = {
-  rate: jest.fn(() => ({
-    isNone: false,
-    unwrap: () => ({ accumulatedRate: { toBigInt: () => accumulatedRate } }),
-  })),
+  rates: jest.fn(() => [{ interestRatePerSec: { toBigInt: () => interestRate }, accumulatedRate }]),
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as any
 

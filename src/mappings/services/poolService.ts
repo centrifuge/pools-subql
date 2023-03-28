@@ -1,14 +1,7 @@
 import { Option, u128, Vec } from '@polkadot/types'
 import { bnToBn, nToBigInt } from '@polkadot/util'
 import { paginatedGetter } from '../../helpers/paginatedGetter'
-import {
-  ExtendedRpc,
-  NavDetails,
-  PoolDetails,
-  PoolMetadata,
-  PricedLoanDetails,
-  TrancheDetails,
-} from '../../helpers/types'
+import { ExtendedRpc, LoanActiveInfo, NavDetails, PoolDetails, PoolMetadata, TrancheDetails } from '../../helpers/types'
 import { Pool } from '../../types'
 
 export class PoolService extends Pool {
@@ -95,11 +88,8 @@ export class PoolService extends Pool {
   }
 
   public async updatePortfolioValuation() {
-    const navResponse = await api.query.loans.poolNAV<Option<NavDetails>>(this.id)
-    if (navResponse.isSome) {
-      const navData = navResponse.unwrap()
-      this.portfolioValuation = navData.latest.toBigInt()
-    }
+    const navResponse = await api.query.loans.portfolioValuation<NavDetails>(this.id)
+    this.portfolioValuation = navResponse.value.toBigInt()
     return this
   }
 
@@ -176,13 +166,13 @@ export class PoolService extends Pool {
 
   public async getActiveLoanData() {
     logger.info(`Querying active loan data for pool: ${this.id}`)
-    const loanDetails = await api.query.loans.activeLoans<Vec<PricedLoanDetails>>(this.id)
+    const loanDetails = await api.query.loans.activeLoans<Vec<LoanActiveInfo>>(this.id)
     const activeLoanData = loanDetails.reduce<ActiveLoanData>(
       (last, current) => ({
         ...last,
         [current.loanId.toString()]: {
           normalizedDebt: current.normalizedDebt.toBigInt(),
-          interestRate: current.interestRatePerSec.toBigInt(),
+          interestRate: current.info.interestRate.toBigInt(),
         },
       }),
       {}
