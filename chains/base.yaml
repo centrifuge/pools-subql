@@ -22,8 +22,8 @@ dataSources:
           kind: substrate/BlockHandler
           filter:
             timestamp: "1 0,12 * * *"
-        - handler: logEvents
-          kind: substrate/EventHandler
+        # - handler: logEvents
+        #   kind: substrate/EventHandler
         - handler: handlePoolCreated
           kind: substrate/EventHandler
           filter:
@@ -89,11 +89,6 @@ dataSources:
           filter:
             module: loans
             method: Borrowed
-        - handler: handleLoanPriced
-          kind: substrate/EventHandler
-          filter:
-            module: loans
-            method: Priced
         - handler: handleLoanRepaid
           kind: substrate/EventHandler
           filter:

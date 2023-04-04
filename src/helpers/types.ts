@@ -67,7 +67,7 @@ export interface TrancheTypeEnum extends Enum {
 }
 
 export interface NavDetails extends Struct {
-  latest: u128
+  value: u128
   lastUpdated: u64
 }
 
@@ -143,28 +143,65 @@ export interface AssetMetadata extends Struct {
   existentialDeposit: u128
 }
 
-export interface LoanSpecs extends Struct {
-  advanceRate: u128
-  value: u128
-  probabilityOfDefault?: u128
-  lossGivenDefault?: u128
-  discountRate?: u128
-  maturityDate?: u64
+export interface LoanInfo extends Struct {
+  schedule: LoanRepaymentSchedule
+  collateral: LoanAsset
+  collateralValue: u128
+  valuationMethod: LoanValuationMethod
+  restrictions: LoanRestrictions
+  interestRate: u128
 }
 
-export interface PricedLoanDetails extends Struct {
-  loanId: u128
-  loanType: Enum
-  interestRatePerSec: u128
-  originationDate: Option<u64>
+export interface LoanActiveInfo extends Struct {
+  loanId: u64
+  info: LoanInfo
+  borrower: AccountId32
+  writeOffStatus: LoanWriteOffStatus
+  originationDate: u64
   normalizedDebt: u128
   totalBorrowed: u128
   totalRepaid: u128
-  writeOffStatus: Enum
-  lastUpdated: u64
+}
+
+export interface LoanClosedInfo extends Struct {
+  closedAt: u32
+  info: LoanInfo
+  totalBorrowed: u128
+  totalRepaid: u128
+}
+
+export interface LoanValuationMethod extends Enum {
+  isDiscountedCashFlow: boolean
+  isOutstandingDebt: boolean
+  asDiscountedCashFlow: LoanValuationDiscountedCashFlow
+  asOutstandingDebt: Null
+}
+
+export interface LoanRepaymentSchedule extends Struct {
+  maturity: { isFixed: boolean; asFixed: u64 } & Enum
+  interestPayments: Enum
+  payDownSchedule: Enum
+}
+
+export interface LoanValuationDiscountedCashFlow extends Struct {
+  probabilityOfDefault: u128
+  lossGivenDefault: u128
+  discountRate: u128
+}
+
+export interface LoanRestrictions extends Struct {
+  maxBorrowAmount: Enum
+  borrows: Enum
+  repayments: Enum
+}
+
+export interface LoanWriteOffStatus extends Struct {
+  percentage: u128
+  penalty: u128
 }
 
 export interface InterestAccrualRateDetails extends Struct {
+  interestRatePerSec: u128
   accumulatedRate: u128
   referenceCount: u32
 }
@@ -190,14 +227,14 @@ export type PoolCreatedEvent = ITuple<[AccountId32, AccountId32, u64, PoolEssenc
 // poolId, old, new
 export type PoolUpdatedEvent = ITuple<[AccountId32, PoolEssence, PoolEssence]>
 
-// poolId, loanId, collateral
-export type LoanCreatedClosedEvent = ITuple<[u64, u128, LoanAsset]>
+// poolId, loanId, loanInfo
+export type LoanCreatedEvent = ITuple<[u64, u128, LoanInfo]>
+// poolId, loanId, collateralInfo
+export type LoanClosedEvent = ITuple<[u64, u128, LoanAsset]>
 // poolId, loanId, amount
 export type LoanBorrowedRepaidEvent = ITuple<[u64, u128, u128]>
-//poolId, loanId, interestRatePerSec, loanType
-export type LoanPricedEvent = ITuple<[u64, u128, u128, Enum]>
-//poolId, loanId, percentage, penaltyInterestRatePerSec, writeOffGroupIndex
-export type LoanWrittenOffEvent = ITuple<[u64, u128, u128, u128, Option<u32>]>
+//poolId, loanId, writeOffStatus
+export type LoanWrittenOffEvent = ITuple<[u64, u128, LoanWriteOffStatus]>
 
 // poolId, epochId
 export type EpochClosedExecutedEvent = ITuple<[u64, u32]>

@@ -1,9 +1,8 @@
-import { Option } from '@polkadot/types'
-import { AnyJson } from '@polkadot/types/types'
+import { Option, Vec } from '@polkadot/types'
 import { bnToBn, nToBigInt } from '@polkadot/util'
 import { RAY, WAD } from '../../config'
 import { InterestAccrualRateDetails, NftItemMetadata } from '../../helpers/types'
-import { Loan, LoanStatus, LoanType } from '../../types'
+import { Loan, LoanStatus } from '../../types'
 
 export class LoanService extends Loan {
   static init(poolId: string, loanId: string, nftClassId: bigint, nftItemId: bigint, timestamp: Date) {
@@ -43,23 +42,15 @@ export class LoanService extends Loan {
     this.interestRatePerSec = interestRatePerSec
   }
 
-  public writeOff(percentage: bigint, penaltyInterestRatePerSec: bigint, writeOffIndex: number) {
+  public writeOff(percentage: bigint, penaltyInterestRatePerSec: bigint) {
     logger.info(`Writing off loan ${this.id} with ${percentage}`)
     this.writtenOffPercentageByPeriod = percentage
     this.penaltyInterestRatePerSec = penaltyInterestRatePerSec
-    this.writeOffIndex = writeOffIndex
 
     this.writtenOffAmountByPeriod = nToBigInt(bnToBn(this.outstandingDebt).mul(bnToBn(percentage)).div(WAD))
   }
 
-  public updateLoanType(loanType: string, loanSpec?: AnyJson) {
-    logger.info(`Updating loan type for loan ${this.id} to ${loanType}`)
-    this.type = loanType as LoanType
-    const specBuff = Buffer.from(JSON.stringify(loanSpec))
-    this.spec = specBuff.toString('base64')
-  }
-
-  public updateLoanSpecs(decodedLoanSpecs: DecodedLoanSpecs) {
+  public updateLoanSpecs(decodedLoanSpecs: LoanSpecs) {
     Object.assign(this, decodedLoanSpecs)
   }
 
@@ -76,9 +67,10 @@ export class LoanService extends Loan {
   }
 
   public async updateOutstandingDebt(normalizedDebt: bigint, interestRatePerSec: bigint) {
-    const rateDetails = await api.query.interestAccrual.rate<Option<InterestAccrualRateDetails>>(interestRatePerSec)
-    if (rateDetails.isNone) return
-    const { accumulatedRate } = rateDetails.unwrap()
+    const rateDetails = await api.query.interestAccrual.rates<Vec<InterestAccrualRateDetails>>()
+    const { accumulatedRate } = rateDetails.find(
+      (rateDetails) => rateDetails.interestRatePerSec.toBigInt() === interestRatePerSec
+    )
     this.outstandingDebt = nToBigInt(bnToBn(normalizedDebt).mul(bnToBn(accumulatedRate)).div(RAY))
     logger.info(`Updating outstanding debt for loan: ${this.id} to ${this.outstandingDebt.toString()}`)
   }
@@ -108,9 +100,9 @@ export class LoanService extends Loan {
   }
 }
 
-interface DecodedLoanSpecs {
+interface LoanSpecs {
   advanceRate: bigint
-  value: bigint
+  collateralValue: bigint
   probabilityOfDefault?: bigint
   lossGivenDefault?: bigint
   discountRate?: bigint

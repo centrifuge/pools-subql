@@ -1,10 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-import { jest } from '@jest/globals'
-
-const globalHere: any = global
-
-globalHere.store = {
+global['store'] = {
   get: jest.fn(),
   getByField: jest.fn(),
   getOneByField: jest.fn(),
@@ -14,7 +8,7 @@ globalHere.store = {
   remove: jest.fn(),
 }
 
-globalHere.logger = {
+global['logger'] = {
   fatal: jest.fn(),
   error: jest.fn(),
   warn: jest.fn(),
@@ -23,4 +17,4 @@ globalHere.logger = {
   trace: jest.fn(),
 }
 
-globalHere.api = { query: {}, rpc: {} }
+global['api'] = { query: {}, rpc: {} }
