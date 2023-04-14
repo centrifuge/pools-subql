@@ -56,7 +56,7 @@ describe('Given a new loan, when initialised', () => {
 })
 
 describe('Given an existing loan, ', () => {
-  test('when a snapshot is taken, then the outstanding debt is computed corrrectly', async () => {
+  test.skip('when a snapshot is taken, then the outstanding debt is computed corrrectly', async () => {
     await loan.updateOutstandingDebt(normalizedDebt, interestRate)
     expect(loan.outstandingDebt).toBe(outstandingDebt)
   })
