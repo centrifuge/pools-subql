@@ -27,7 +27,7 @@ jobs:
   subql_deploy_workflow:
     runs-on: ubuntu-latest
     env:
-      SUBQL_INDEXER_VERSION: v1.18.0
+      SUBQL_INDEXER_VERSION: v1.21.1
       SUBQL_QUERY_VERSION: v1.11.0
       CHAIN_ID: ${{ inputs.chainId }}
       SUBQL_ACCESS_TOKEN: ${{ secrets.accessToken }}

@@ -4,6 +4,8 @@ import { RAY, WAD } from '../../config'
 import { InterestAccrualRateDetails, NftItemMetadata } from '../../helpers/types'
 import { Loan, LoanStatus } from '../../types'
 
+const SECONDS_PER_YEAR = bnToBn('3600').muln(24).muln(365)
+
 export class LoanService extends Loan {
   static init(poolId: string, loanId: string, nftClassId: bigint, nftItemId: bigint, timestamp: Date) {
     logger.info(`Initialising loan ${loanId} for pool ${poolId}`)
@@ -28,12 +30,12 @@ export class LoanService extends Loan {
   }
 
   public borrow(amount: bigint) {
-    logger.info(`Increasing outstanding debt for loan ${this.id} by ${amount}`)
+    logger.info(`Increasing borrowings for loan ${this.id} by ${amount}`)
     this.borrowedAmountByPeriod += amount
   }
 
   public repay(amount: bigint) {
-    logger.info(`Decreasing outstanding debt for loan ${this.id} by ${amount}`)
+    logger.info(`Increasing repayments for loan ${this.id} by ${amount}`)
     this.repaidAmountByPeriod += amount
   }
 
@@ -66,7 +68,9 @@ export class LoanService extends Loan {
     this.status = LoanStatus.CLOSED
   }
 
-  public async updateOutstandingDebt(normalizedDebt: bigint, interestRatePerSec: bigint) {
+  public async updateOutstandingDebt(normalizedDebt: bigint, interestRate: bigint) {
+    const interestRatePerSec = nToBigInt(bnToBn(interestRate).div(SECONDS_PER_YEAR).add(RAY))
+    logger.info(`Calculated IRS: ${interestRatePerSec.toString()}`)
     const rateDetails = await api.query.interestAccrual.rates<Vec<InterestAccrualRateDetails>>()
     const { accumulatedRate } = rateDetails.find(
       (rateDetails) => rateDetails.interestRatePerSec.toBigInt() === interestRatePerSec

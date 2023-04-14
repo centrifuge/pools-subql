@@ -1,4 +1,5 @@
-import { Option, u128, Vec } from '@polkadot/types'
+import { Option, u64, u128, Vec } from '@polkadot/types'
+import { ITuple } from '@polkadot/types/types'
 import { bnToBn, nToBigInt } from '@polkadot/util'
 import { paginatedGetter } from '../../helpers/paginatedGetter'
 import { ExtendedRpc, LoanActiveInfo, NavDetails, PoolDetails, PoolMetadata, TrancheDetails } from '../../helpers/types'
@@ -151,6 +152,23 @@ export class PoolService extends Pool {
     return tranches.reduce<PoolTranches>((obj, data, index) => ({ ...obj, [ids[index].toHex()]: { index, data } }), {})
   }
 
+  public async getActiveLoanData() {
+    logger.info(`Querying active loan data for pool: ${this.id}`)
+    const loanDetails = await api.query.loans.activeLoans<Vec<ITuple<[LoanActiveInfo, u64]>>>(this.id)
+    logger.info(`loanDetails: ${loanDetails}`)
+    const activeLoanData = loanDetails.reduce<ActiveLoanData>(
+      (last, current) => ({
+        ...last,
+        [current[0].loanId.toString()]: {
+          normalizedDebt: current[0].normalizedDebt.toBigInt(),
+          interestRate: current[0].info.interestRate.toBigInt(),
+        },
+      }),
+      {}
+    )
+    return activeLoanData
+  }
+
   public async getTrancheTokenPrices() {
     logger.info(`Qerying RPC tranche token prices for pool ${this.id}`)
     const poolId = this.id
@@ -162,22 +180,6 @@ export class PoolService extends Pool {
       tokenPrices = undefined
     }
     return tokenPrices
-  }
-
-  public async getActiveLoanData() {
-    logger.info(`Querying active loan data for pool: ${this.id}`)
-    const loanDetails = await api.query.loans.activeLoans<Vec<LoanActiveInfo>>(this.id)
-    const activeLoanData = loanDetails.reduce<ActiveLoanData>(
-      (last, current) => ({
-        ...last,
-        [current.loanId.toString()]: {
-          normalizedDebt: current.normalizedDebt.toBigInt(),
-          interestRate: current.info.interestRate.toBigInt(),
-        },
-      }),
-      {}
-    )
-    return activeLoanData
   }
 }
 

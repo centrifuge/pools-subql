@@ -5,7 +5,6 @@ import { stateSnapshotter } from '../../helpers/stateSnapshot'
 import { SNAPSHOT_INTERVAL_SECONDS } from '../../config'
 import { PoolService } from '../services/poolService'
 import { TrancheService } from '../services/trancheService'
-import { LoanService } from '../services/loanService'
 
 const timekeeper = TimekeeperService.init()
 
@@ -46,14 +45,15 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
       }
 
       const activeLoanData = await pool.getActiveLoanData()
-      for (const loanId in activeLoanData) {
-        const loan = await LoanService.getById(pool.id, loanId)
-        const { normalizedDebt, interestRate } = activeLoanData[loanId]
-        await loan.updateOutstandingDebt(normalizedDebt, interestRate)
-        await loan.save()
+      //  TODO: Reinclude outstanding debt calculation
+      //   for (const loanId in activeLoanData) {
+      //     const loan = await LoanService.getById(pool.id, loanId)
+      //     const { normalizedDebt, interestRate } = activeLoanData[loanId]
+      //     await loan.updateOutstandingDebt(normalizedDebt, interestRate)
+      //     await loan.save()
 
-        if (loan.maturityDate < block.timestamp) await pool.increaseDebtOverdue(loan.outstandingDebt)
-      }
+      //     if (loan.maturityDate < block.timestamp) await pool.increaseDebtOverdue(loan.outstandingDebt)
+      //   }
 
       await pool.updateNumberOfActiveLoans(BigInt(Object.keys(activeLoanData).length))
       await pool.save()
