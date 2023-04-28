@@ -5,7 +5,7 @@ import { AccountService } from '../services/accountService'
 export async function handleProxyAdded(event: SubstrateEvent): Promise<void> {
   logger.info(`Proxy added: ${event.toString()}`)
 
-  const [delegator, delegatee, proxyType, delay] = event.event.data
+  const [delegator, delegatee, proxyType] = event.event.data //delay is the fourth element
 
   const proxy = new Proxy(`${delegator.toString()}-${delegatee.toString()}-${proxyType.toString()}}`)
   proxy.delegator = delegator.toString()

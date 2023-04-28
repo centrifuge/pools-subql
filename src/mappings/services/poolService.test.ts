@@ -31,13 +31,11 @@ api.query['poolRegistry'] = {
 } as any
 
 api.query['loans'] = {
-  poolNAV: jest.fn(() => ({
-    isSome: true,
-    unwrap: jest.fn(() => ({
-      latest: {
-        toBigInt: () => BigInt(100000000000000),
-      },
-    })),
+  portfolioValuation: jest.fn(() => ({
+    value: {
+      toBigInt: () => BigInt(100000000000000),
+    },
+    lastUpdated: () => Number(100000),
   })),
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as any
@@ -88,7 +86,7 @@ describe('Given a new pool, when initialised', () => {
 describe('Given an existing pool,', () => {
   test('when the nav is updated, then the value is fetched and set correctly', async () => {
     await pool.updatePortfolioValuation()
-    expect(api.query.loans.poolNAV).toBeCalled()
+    expect(api.query.loans.portfolioValuation).toBeCalled()
     expect(pool.portfolioValuation).toBe(BigInt(100000000000000))
   })
 

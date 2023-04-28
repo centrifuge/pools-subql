@@ -4,7 +4,7 @@ import { paginatedGetter } from '../../helpers/paginatedGetter'
 import { RAY } from '../../config'
 import { ExtendedRpc, TrancheDetails } from '../../helpers/types'
 import { Tranche, TrancheSnapshot } from '../../types'
-import { TrancheProps } from 'centrifuge-subql/types/models/Tranche'
+import { TrancheProps } from '../../types/models/Tranche'
 
 export class TrancheService extends Tranche {
   static init(poolId: string, trancheId: string, index: number, trancheData: TrancheDetails) {
