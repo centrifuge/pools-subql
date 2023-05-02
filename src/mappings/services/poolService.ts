@@ -38,6 +38,7 @@ export class PoolService extends Pool {
     pool.sumDebtOverdue = BigInt(0)
 
     pool.sumBorrowedAmount = BigInt(0)
+    pool.sumRepaidAmount = BigInt(0)
     pool.sumNumberOfLoans = BigInt(0)
 
     //Create the pool
