@@ -105,6 +105,11 @@ export class PoolService extends Pool {
     this.sumNumberOfLoans += BigInt(1)
   }
 
+  public increaseRepayments(repaidAmount: bigint) {
+    this.sumRepaidAmountByPeriod += repaidAmount
+    this.sumRepaidAmount += repaidAmount
+  }
+
   public increaseInvestments(currencyAmount: bigint) {
     this.sumInvestedAmountByPeriod += currencyAmount
   }

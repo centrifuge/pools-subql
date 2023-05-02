@@ -122,6 +122,10 @@ async function _handleLoanRepaid(event: SubstrateEvent<LoanBorrowedRepaidEvent>)
   })
   await bt.save()
 
+  // Update pool info
+  await pool.increaseRepayments(amount.toBigInt())
+  await pool.save()
+
   // Update epoch info
   const epoch = await EpochService.getById(pool.id, pool.currentEpoch)
   if (epoch === undefined) throw new Error('Epoch not found!')
