@@ -78,6 +78,7 @@ type PoolSnapshot @entity {
 
   # Cumulated transaction data since pool creation
   sumBorrowedAmount: BigInt
+  sumRepaidAmount: BigInt
   sumNumberOfLoans: BigInt
 }
 
