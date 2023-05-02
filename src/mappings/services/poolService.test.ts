@@ -109,7 +109,7 @@ describe('Given an existing pool,', () => {
   })
 
   test('when total repaid are registered, then values are incremented correctly', async () => {
-    await pool.increaseBorrowings(BigInt('17500000000000000'))
+    await pool.increaseRepayments(BigInt('17500000000000000'))
     expect(pool).toMatchObject({
       sumRepaidAmountByPeriod: BigInt('17500000000000000'),
       sumRepaidAmount: BigInt('17500000000000000'),
