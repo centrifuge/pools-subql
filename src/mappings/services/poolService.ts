@@ -38,6 +38,7 @@ export class PoolService extends Pool {
     pool.sumDebtOverdue = BigInt(0)
 
     pool.sumBorrowedAmount = BigInt(0)
+    pool.sumRepaidAmount = BigInt(0)
     pool.sumNumberOfLoans = BigInt(0)
 
     //Create the pool
@@ -94,6 +95,11 @@ export class PoolService extends Pool {
     return this
   }
 
+  public increaseNumberOfLoans() {
+    this.sumNumberOfLoansByPeriod += BigInt(1)
+    this.sumNumberOfLoans += BigInt(1)
+  }
+
   public updateNumberOfActiveLoans(numberOfActiveLoans: bigint) {
     this.sumNumberOfActiveLoans = numberOfActiveLoans
   }
@@ -101,8 +107,11 @@ export class PoolService extends Pool {
   public increaseBorrowings(borrowedAmount: bigint) {
     this.sumBorrowedAmountByPeriod += borrowedAmount
     this.sumBorrowedAmount += borrowedAmount
-    this.sumNumberOfLoansByPeriod += BigInt(1)
-    this.sumNumberOfLoans += BigInt(1)
+  }
+
+  public increaseRepayments(repaidAmount: bigint) {
+    this.sumRepaidAmountByPeriod += repaidAmount
+    this.sumRepaidAmount += repaidAmount
   }
 
   public increaseInvestments(currencyAmount: bigint) {
