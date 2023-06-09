@@ -55,6 +55,10 @@ async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedEvent>) {
     timestamp: event.block.timestamp,
   })
   await bt.save()
+
+  // Update pool info
+  await pool.increaseNumberOfLoans()
+  await pool.save()
 }
 
 export const handleLoanBorrowed = errorHandler(_handleLoanBorrowed)
@@ -121,6 +125,10 @@ async function _handleLoanRepaid(event: SubstrateEvent<LoanBorrowedRepaidEvent>)
     amount: amount.toBigInt(),
   })
   await bt.save()
+
+  // Update pool info
+  await pool.increaseRepayments(amount.toBigInt())
+  await pool.save()
 
   // Update epoch info
   const epoch = await EpochService.getById(pool.id, pool.currentEpoch)
