@@ -76,7 +76,7 @@ export class TrancheService extends Tranche {
   }
 
   public async updatePriceFromRpc() {
-    logger.info(`Qerying RPC price for tranche ${this.id}`)
+    logger.info(`Querying RPC price for tranche ${this.id}`)
     const poolId = this.poolId
     const tokenPrices = await (api.rpc as ExtendedRpc).pools.trancheTokenPrices(poolId)
     const trancheTokenPrice = tokenPrices[this.index].toBigInt()

@@ -21,7 +21,7 @@ dataSources:
         - handler: handleBlock
           kind: substrate/BlockHandler
           filter:
-            timestamp: "1 0,12 * * *"
+            timestamp: '1 0,12 * * *'
         # - handler: logEvents
         #   kind: substrate/EventHandler
         - handler: handlePoolCreated
@@ -79,26 +79,26 @@ dataSources:
           filter:
             module: proxy
             method: PureCreated
-        # - handler: handleLoanCreated
-        #   kind: substrate/EventHandler
-        #   filter:
-        #     module: loans
-        #     method: Created
-        # - handler: handleLoanBorrowed
-        #   kind: substrate/EventHandler
-        #   filter:
-        #     module: loans
-        #     method: Borrowed
-        # - handler: handleLoanRepaid
-        #   kind: substrate/EventHandler
-        #   filter:
-        #     module: loans
-        #     method: Repaid
-        # - handler: handleLoanClosed
-        #   kind: substrate/EventHandler
-        #   filter:
-        #     module: loans
-        #     method: Closed
+        - handler: handleLoanCreated
+          kind: substrate/EventHandler
+          filter:
+            module: loans
+            method: Created
+        - handler: handleLoanBorrowed
+          kind: substrate/EventHandler
+          filter:
+            module: loans
+            method: Borrowed
+        - handler: handleLoanRepaid
+          kind: substrate/EventHandler
+          filter:
+            module: loans
+            method: Repaid
+        - handler: handleLoanClosed
+          kind: substrate/EventHandler
+          filter:
+            module: loans
+            method: Closed
         - handler: handleTokenTransfer
           kind: substrate/EventHandler
           filter:
