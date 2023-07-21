@@ -14,6 +14,8 @@ Use GraphQL query endpoint at [https://api.subquery.network/sq/embrio-tech/centr
 
 ## :construction_worker_man: Development
 
+We highly recommend to develop using the overarching [centrifuge-development](https://github.com/embrio-tech/centrifuge-development) repository. It allows to run all required services and databases with [Docker Compose](https://docs.docker.com/compose/).
+
 ### Environment
 
 - [Typescript](https://www.typescriptlang.org/) are required to compile project and define types.
@@ -27,14 +29,6 @@ To generate the entities based on `schema.graphql`, run:
 
 ```
 yarn codegen
-```
-
-### Run locally
-
-To build and run the subquery locally in Docker, run:
-
-```
-yarn build && docker-compose pull && docker-compose up
 ```
 
 ### Access

@@ -24,21 +24,31 @@ async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedEvent>) {
     loanInfo.collateral[1].toBigInt(),
     event.block.timestamp
   )
+
+  const internalLoanPricing = loanInfo.pricing?.isInternal ? loanInfo.pricing.asInternal : null
   await loan.updateItemMetadata()
-  await loan.updateInterestRate(loanInfo.interestRate.toBigInt())
+  if (internalLoanPricing) {
+    await loan.updateInterestRate(internalLoanPricing.interestRate.toBigInt())
+  }
 
   const loanSpecs = {
-    advanceRate: loanInfo.restrictions.maxBorrowAmount.value['advanceRate'].toBigInt(),
-    collateralValue: loanInfo.collateralValue.toBigInt(),
-    probabilityOfDefault: loanInfo.valuationMethod.isDiscountedCashFlow
-      ? loanInfo.valuationMethod.asDiscountedCashFlow.probabilityOfDefault.toBigInt()
-      : null,
-    lossGivenDefault: loanInfo.valuationMethod.isDiscountedCashFlow
-      ? loanInfo.valuationMethod.asDiscountedCashFlow.lossGivenDefault.toBigInt()
-      : null,
-    discountRate: loanInfo.valuationMethod.isDiscountedCashFlow
-      ? loanInfo.valuationMethod.asDiscountedCashFlow.discountRate.toBigInt()
-      : null,
+    advanceRate:
+      internalLoanPricing && internalLoanPricing.maxBorrowAmount.isUpToOutstandingDebt
+        ? internalLoanPricing.maxBorrowAmount.asUpToOutstandingDebt.advanceRate.toBigInt()
+        : null,
+    collateralValue: internalLoanPricing ? internalLoanPricing.collateralValue.toBigInt() : null,
+    probabilityOfDefault:
+      internalLoanPricing && internalLoanPricing.valuationMethod.isDiscountedCashFlow
+        ? internalLoanPricing.valuationMethod.asDiscountedCashFlow.probabilityOfDefault.toBigInt()
+        : null,
+    lossGivenDefault:
+      internalLoanPricing && internalLoanPricing.valuationMethod.isDiscountedCashFlow
+        ? internalLoanPricing.valuationMethod.asDiscountedCashFlow.lossGivenDefault.toBigInt()
+        : null,
+    discountRate:
+      internalLoanPricing && internalLoanPricing.valuationMethod.isDiscountedCashFlow
+        ? internalLoanPricing.valuationMethod.asDiscountedCashFlow.discountRate.toBigInt()
+        : null,
     maturityDate: loanInfo.schedule.maturity.isFixed
       ? new Date(loanInfo.schedule.maturity.asFixed.toNumber() * 1000)
       : null,

@@ -143,31 +143,94 @@ export interface AssetMetadata extends Struct {
   existentialDeposit: u128
 }
 
-export interface LoanInfo extends Struct {
+export interface LoanInfoCreated extends Struct {
   schedule: LoanRepaymentSchedule
-  collateral: LoanAsset
-  collateralValue: u128
-  valuationMethod: LoanValuationMethod
-  restrictions: LoanRestrictions
-  interestRate: u128
+  collateral: ITuple<[u64, u128]>
+  pricing: LoanPricing
+  restrictions: {
+    borrows: Enum
+    repayments: Enum
+  }
 }
 
-export interface LoanActiveInfo extends Struct {
-  loanId: u64
-  info: LoanInfo
+export interface LoanInfoActive extends Struct {
+  schedule: LoanRepaymentSchedule
+  collateral: ITuple<[u64, u128]>
+  restrictions: {
+    borrows: Enum
+    repayments: Enum
+  }
   borrower: AccountId32
-  writeOffStatus: LoanWriteOffStatus
+  writeOffPercentage: u128
   originationDate: u64
-  normalizedDebt: u128
+  pricing: LoanActivePricing
   totalBorrowed: u128
   totalRepaid: u128
+  totalRepaidUnchecked: u128
 }
 
-export interface LoanClosedInfo extends Struct {
-  closedAt: u32
-  info: LoanInfo
-  totalBorrowed: u128
-  totalRepaid: u128
+export interface LoanActivePricing extends Enum {
+  isInternal: boolean
+  isExternal: boolean
+  asInternal: LoanInternalActivePricing
+  asExternal: LoanExternalActivePricing
+}
+
+export interface LoanInternalActivePricing extends Struct {
+  info: {
+    collateralValue: u128
+    valuationMethod: LoanValuationMethod
+    interestRate: u128
+    maxBorrowAmount: LoanInternalPricingMaxBorrowAmount
+  }
+  normalizedDebt: u128
+  writeOffPenalty: u128
+}
+
+export interface LoanExternalActivePricing extends Struct {
+  info: {
+    priceId: CfgOracleKey
+    maxBorrowAmount: LoanExternalPricingMaxBorrowAmount
+  }
+  outstandingQuantity: u128
+}
+
+export interface CfgOracleKey extends Enum {
+  isIsin: boolean
+  asIsin: U8aFixed
+}
+
+export interface LoanExternalPricingMaxBorrowAmount extends Enum {
+  isNoLimit: boolean
+  isQuantity: boolean
+  asNoLimit: Null
+  asQuantity: u128
+}
+
+export interface LoanInternalPricingMaxBorrowAmount extends Enum {
+  isUpToTotalBorrowed: boolean
+  isUpToOutstandingDebt: boolean
+  asUpToTotalBorrowed: {
+    advanceRate: u128
+  }
+  asUpToOutstandingDebt: {
+    advanceRate: u128
+  }
+}
+
+export interface LoanPricing extends Enum {
+  isInternal: boolean
+  isExternal: boolean
+  asInternal: {
+    collateralValue: u128
+    valuationMethod: LoanValuationMethod
+    interestRate: u128
+    maxBorrowAmount: LoanInternalPricingMaxBorrowAmount
+  }
+  asExternal: {
+    priceId: CfgOracleKey
+    maxBorrowAmount: LoanExternalPricingMaxBorrowAmount
+  }
 }
 
 export interface LoanValuationMethod extends Enum {
@@ -228,13 +291,13 @@ export type PoolCreatedEvent = ITuple<[AccountId32, AccountId32, u64, PoolEssenc
 export type PoolUpdatedEvent = ITuple<[AccountId32, PoolEssence, PoolEssence]>
 
 // poolId, loanId, loanInfo
-export type LoanCreatedEvent = ITuple<[u64, u128, LoanInfo]>
+export type LoanCreatedEvent = ITuple<[u64, u64, LoanInfoCreated]>
 // poolId, loanId, collateralInfo
-export type LoanClosedEvent = ITuple<[u64, u128, LoanAsset]>
+export type LoanClosedEvent = ITuple<[u64, u64, LoanAsset]>
 // poolId, loanId, amount
-export type LoanBorrowedRepaidEvent = ITuple<[u64, u128, u128]>
+export type LoanBorrowedRepaidEvent = ITuple<[u64, u64, u128]>
 //poolId, loanId, writeOffStatus
-export type LoanWrittenOffEvent = ITuple<[u64, u128, LoanWriteOffStatus]>
+export type LoanWrittenOffEvent = ITuple<[u64, u64, LoanWriteOffStatus]>
 
 // poolId, epochId
 export type EpochClosedExecutedEvent = ITuple<[u64, u32]>
