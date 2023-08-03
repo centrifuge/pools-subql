@@ -169,12 +169,13 @@ export class PoolService extends Pool {
       (last, current) => ({
         ...last,
         [current[0].toString()]: {
-          normalizedDebt: current[1].pricing?.isInternal
-            ? current[1].pricing?.asInternal.normalizedDebt.toBigInt()
+          normalizedAcc: current[1].pricing?.isInternal
+            ? current[1].pricing?.asInternal.interest.normalizedAcc.toBigInt()
             : null,
-          interestRate: current[1].pricing?.isInternal
-            ? current[1].pricing?.asInternal.info.interestRate.toBigInt()
-            : null,
+          interestRate:
+            current[1].pricing?.isInternal && current[1].pricing?.asInternal.interest.interestRate.isFixed
+              ? current[1].pricing?.asInternal.interest.interestRate.asFixed.ratePerYear.toBigInt()
+              : null,
         },
       }),
       {}
@@ -197,7 +198,7 @@ export class PoolService extends Pool {
 }
 
 interface ActiveLoanData {
-  [loanId: string]: { normalizedDebt: bigint; interestRate: bigint }
+  [loanId: string]: { normalizedAcc: bigint; interestRate: bigint }
 }
 
 interface PoolTranches {
