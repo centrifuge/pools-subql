@@ -9,11 +9,11 @@ const nftClassId = BigInt(1)
 const nftItemId = BigInt(2)
 const timestamp = new Date()
 const accumulatedRate = nToBigInt(RAY.muln(2))
-const normalizedDebt = nToBigInt(WAD.muln(100))
+const normalizedAcc = nToBigInt(WAD.muln(100))
 const interestRate = nToBigInt(WAD)
 const metadata = 'AAAAAA'
 
-const outstandingDebt = nToBigInt(bnToBn(normalizedDebt).mul(bnToBn(accumulatedRate)).div(RAY))
+const outstandingDebt = nToBigInt(bnToBn(normalizedAcc).mul(bnToBn(accumulatedRate)).div(RAY))
 
 api.query['interestAccrual'] = {
   rates: jest.fn(() => [{ interestRatePerSec: { toBigInt: () => interestRate }, accumulatedRate }]),
@@ -57,7 +57,7 @@ describe('Given a new loan, when initialised', () => {
 
 describe('Given an existing loan, ', () => {
   test.skip('when a snapshot is taken, then the outstanding debt is computed corrrectly', async () => {
-    await loan.updateOutstandingDebt(normalizedDebt, interestRate)
+    await loan.updateOutstandingDebt(normalizedAcc, interestRate)
     expect(loan.outstandingDebt).toBe(outstandingDebt)
   })
 })

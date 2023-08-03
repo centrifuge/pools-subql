@@ -143,9 +143,18 @@ export interface AssetMetadata extends Struct {
   existentialDeposit: u128
 }
 
+export interface CfgInterestRate extends Enum {
+  isFixed: boolean
+  asFixed: {
+    ratePerYear: u128
+    compounding: Enum // do we need this to calculate discount rate?
+  }
+}
+
 export interface LoanInfoCreated extends Struct {
   schedule: LoanRepaymentSchedule
   collateral: ITuple<[u64, u128]>
+  interestRate: CfgInterestRate
   pricing: LoanPricing
   restrictions: {
     borrows: Enum
@@ -165,8 +174,12 @@ export interface LoanInfoActive extends Struct {
   originationDate: u64
   pricing: LoanActivePricing
   totalBorrowed: u128
-  totalRepaid: u128
-  totalRepaidUnchecked: u128
+  totalRepaid: {
+    principal: u128
+    interest: u128
+    unscheduled: u128
+  }
+  repaymentsOnScheduleUntil: u64
 }
 
 export interface LoanActivePricing extends Enum {
@@ -180,19 +193,27 @@ export interface LoanInternalActivePricing extends Struct {
   info: {
     collateralValue: u128
     valuationMethod: LoanValuationMethod
-    interestRate: u128
     maxBorrowAmount: LoanInternalPricingMaxBorrowAmount
   }
-  normalizedDebt: u128
-  writeOffPenalty: u128
+  interest: {
+    interestRate: CfgInterestRate
+    normalizedAcc: u128
+    penalty: u128
+  }
 }
 
 export interface LoanExternalActivePricing extends Struct {
   info: {
     priceId: CfgOracleKey
     maxBorrowAmount: LoanExternalPricingMaxBorrowAmount
+    notional: u128
   }
   outstandingQuantity: u128
+  interest: {
+    interestRate: CfgInterestRate
+    normalizedAcc: u128
+    penalty: u128
+  }
 }
 
 export interface CfgOracleKey extends Enum {
@@ -224,7 +245,6 @@ export interface LoanPricing extends Enum {
   asInternal: {
     collateralValue: u128
     valuationMethod: LoanValuationMethod
-    interestRate: u128
     maxBorrowAmount: LoanInternalPricingMaxBorrowAmount
   }
   asExternal: {
@@ -249,7 +269,7 @@ export interface LoanRepaymentSchedule extends Struct {
 export interface LoanValuationDiscountedCashFlow extends Struct {
   probabilityOfDefault: u128
   lossGivenDefault: u128
-  discountRate: u128
+  discountRate: CfgInterestRate
 }
 
 export interface LoanRestrictions extends Struct {
@@ -267,6 +287,22 @@ export interface InterestAccrualRateDetails extends Struct {
   interestRatePerSec: u128
   accumulatedRate: u128
   referenceCount: u32
+}
+
+export interface LoanPricingAmount extends Enum {
+  isInternal: boolean
+  isExternal: boolean
+  asInternal: u128
+  asExternal: {
+    quantity: u128
+    settlementPrice: u128
+  }
+}
+
+export interface LoanPricingRepaidAmount extends Struct {
+  principal: LoanPricingAmount
+  interest: u128
+  unscheduled: u128
 }
 
 export interface AccountData extends Struct {
@@ -295,7 +331,9 @@ export type LoanCreatedEvent = ITuple<[u64, u64, LoanInfoCreated]>
 // poolId, loanId, collateralInfo
 export type LoanClosedEvent = ITuple<[u64, u64, LoanAsset]>
 // poolId, loanId, amount
-export type LoanBorrowedRepaidEvent = ITuple<[u64, u64, u128]>
+export type LoanBorrowedEvent = ITuple<[u64, u64, LoanPricingAmount]>
+// poolId, loanId, amount
+export type LoanRepaidEvent = ITuple<[u64, u64, LoanPricingRepaidAmount]>
 //poolId, loanId, writeOffStatus
 export type LoanWrittenOffEvent = ITuple<[u64, u64, LoanWriteOffStatus]>
 
