@@ -2,6 +2,6 @@ name: 'centrifuge-subql'
 repository: 'https://github.com/embrio-tech/centrifuge-subql'
 network:
   endpoint: wss://fullnode.development.cntrfg.com
-  genesisHash: '0x6ec98e96cd2df0064032a94d3805a7e23cd2a3c6944f8a9da2ae4289c441f9b0'
+  genesisHash: '0x6b2cf750b64eb39a78cbdd98da81abe123274206fe56f6eef35ec785fd642642'
   chaintypes:
     file: ./dist/chaintypes.js
