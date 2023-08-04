@@ -33,13 +33,6 @@ async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedEvent>) {
 
   const internalLoanPricing = loanInfo.pricing?.isInternal ? loanInfo.pricing.asInternal : null
 
-  const discountRate =
-    internalLoanPricing?.valuationMethod.isDiscountedCashFlow &&
-    internalLoanPricing.valuationMethod.asDiscountedCashFlow.discountRate.isFixed
-      ? // TODO: how is discountRate put together from `compounding` and `ratePerYear`
-        internalLoanPricing.valuationMethod.asDiscountedCashFlow.discountRate.asFixed.ratePerYear.toBigInt()
-      : null
-
   const loanSpecs = {
     advanceRate:
       internalLoanPricing && internalLoanPricing.maxBorrowAmount.isUpToOutstandingDebt
@@ -54,7 +47,11 @@ async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedEvent>) {
       internalLoanPricing && internalLoanPricing.valuationMethod.isDiscountedCashFlow
         ? internalLoanPricing.valuationMethod.asDiscountedCashFlow.lossGivenDefault.toBigInt()
         : null,
-    discountRate,
+    discountRate:
+      internalLoanPricing?.valuationMethod.isDiscountedCashFlow &&
+      internalLoanPricing.valuationMethod.asDiscountedCashFlow.discountRate.isFixed
+        ? internalLoanPricing.valuationMethod.asDiscountedCashFlow.discountRate.asFixed.ratePerYear.toBigInt()
+        : null,
     maturityDate: loanInfo.schedule.maturity.isFixed
       ? new Date(loanInfo.schedule.maturity.asFixed.toNumber() * 1000)
       : null,
