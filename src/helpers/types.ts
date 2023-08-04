@@ -147,7 +147,7 @@ export interface CfgInterestRate extends Enum {
   isFixed: boolean
   asFixed: {
     ratePerYear: u128
-    compounding: Enum // do we need this to calculate discount rate?
+    compounding: Enum
   }
 }
 
