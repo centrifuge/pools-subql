@@ -1,5 +1,11 @@
 import { SubstrateEvent } from '@subql/types'
-import { LoanBorrowedRepaidEvent, LoanClosedEvent, LoanCreatedEvent, LoanWrittenOffEvent } from '../../helpers/types'
+import {
+  LoanBorrowedEvent,
+  LoanClosedEvent,
+  LoanCreatedEvent,
+  LoanRepaidEvent,
+  LoanWrittenOffEvent,
+} from '../../helpers/types'
 import { errorHandler } from '../../helpers/errorHandler'
 import { PoolService } from '../services/poolService'
 import { LoanService } from '../services/loanService'
@@ -26,10 +32,6 @@ async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedEvent>) {
   )
 
   const internalLoanPricing = loanInfo.pricing?.isInternal ? loanInfo.pricing.asInternal : null
-  await loan.updateItemMetadata()
-  if (internalLoanPricing) {
-    await loan.updateInterestRate(internalLoanPricing.interestRate.toBigInt())
-  }
 
   const loanSpecs = {
     advanceRate:
@@ -46,13 +48,15 @@ async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedEvent>) {
         ? internalLoanPricing.valuationMethod.asDiscountedCashFlow.lossGivenDefault.toBigInt()
         : null,
     discountRate:
-      internalLoanPricing && internalLoanPricing.valuationMethod.isDiscountedCashFlow
-        ? internalLoanPricing.valuationMethod.asDiscountedCashFlow.discountRate.toBigInt()
+      internalLoanPricing?.valuationMethod.isDiscountedCashFlow &&
+      internalLoanPricing.valuationMethod.asDiscountedCashFlow.discountRate.isFixed
+        ? internalLoanPricing.valuationMethod.asDiscountedCashFlow.discountRate.asFixed.ratePerYear.toBigInt()
         : null,
     maturityDate: loanInfo.schedule.maturity.isFixed
       ? new Date(loanInfo.schedule.maturity.asFixed.toNumber() * 1000)
       : null,
   }
+
   await loan.updateLoanSpecs(loanSpecs)
   await loan.save()
 
@@ -72,8 +76,11 @@ async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedEvent>) {
 }
 
 export const handleLoanBorrowed = errorHandler(_handleLoanBorrowed)
-async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedRepaidEvent>): Promise<void> {
-  const [poolId, loanId, amount] = event.event.data
+async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Promise<void> {
+  const [poolId, loanId, borrowAmount] = event.event.data
+  const amount = borrowAmount.isInternal
+    ? borrowAmount.asInternal.toString()
+    : borrowAmount.asExternal.quantity.mul(borrowAmount.asExternal.settlementPrice).toString()
   logger.info(`Loan borrowed event for pool: ${poolId.toString()} amount: ${amount.toString()}`)
 
   const pool = await PoolService.getById(poolId.toString())
@@ -84,7 +91,7 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedRepaidEvent
   // Update loan amount
   const loan = await LoanService.getById(poolId.toString(), loanId.toString())
   await loan.activate()
-  await loan.borrow(amount.toBigInt())
+  await loan.borrow(BigInt(amount))
   await loan.updateItemMetadata()
   await loan.save()
 
@@ -95,24 +102,29 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedRepaidEvent
     epochNumber: pool.currentEpoch,
     hash: event.extrinsic.extrinsic.hash.toString(),
     timestamp: event.block.timestamp,
-    amount: amount.toBigInt(),
+    amount: BigInt(amount),
   })
   await bt.save()
 
   // Update pool info
-  await pool.increaseBorrowings(amount.toBigInt())
+  await pool.increaseBorrowings(BigInt(amount))
   await pool.save()
 
   // Update epoch info
   const epoch = await EpochService.getById(pool.id, pool.currentEpoch)
   if (epoch === undefined) throw new Error('Epoch not found!')
-  await epoch.increaseBorrowings(amount.toBigInt())
+  await epoch.increaseBorrowings(BigInt(amount))
   await epoch.save()
 }
 
 export const handleLoanRepaid = errorHandler(_handleLoanRepaid)
-async function _handleLoanRepaid(event: SubstrateEvent<LoanBorrowedRepaidEvent>) {
-  const [poolId, loanId, amount] = event.event.data
+async function _handleLoanRepaid(event: SubstrateEvent<LoanRepaidEvent>) {
+  const [poolId, loanId, { principal, interest }] = event.event.data
+  const principle = principal.isInternal
+    ? principal.asInternal
+    : principal.asExternal.quantity.mul(principal.asExternal.settlementPrice)
+  const amount = principle.add(interest).toString()
+
   logger.info(`Loan repaid event for pool: ${poolId.toString()} amount: ${amount.toString()}`)
 
   const pool = await PoolService.getById(poolId.toString())
@@ -121,7 +133,7 @@ async function _handleLoanRepaid(event: SubstrateEvent<LoanBorrowedRepaidEvent>)
   const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toString())
 
   const loan = await LoanService.getById(poolId.toString(), loanId.toString())
-  await loan.repay(amount.toBigInt())
+  await loan.repay(BigInt(amount))
   await loan.updateItemMetadata()
   await loan.save()
 
@@ -132,18 +144,18 @@ async function _handleLoanRepaid(event: SubstrateEvent<LoanBorrowedRepaidEvent>)
     epochNumber: pool.currentEpoch,
     hash: event.extrinsic.extrinsic.hash.toString(),
     timestamp: event.block.timestamp,
-    amount: amount.toBigInt(),
+    amount: BigInt(amount),
   })
   await bt.save()
 
   // Update pool info
-  await pool.increaseRepayments(amount.toBigInt())
+  await pool.increaseRepayments(BigInt(amount))
   await pool.save()
 
   // Update epoch info
   const epoch = await EpochService.getById(pool.id, pool.currentEpoch)
   if (epoch === undefined) throw new Error('Epoch not found!')
-  await epoch.increaseRepayments(amount.toBigInt())
+  await epoch.increaseRepayments(BigInt(amount))
   await epoch.save()
 }
 

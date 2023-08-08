@@ -48,8 +48,8 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
       //  TODO: Reinclude outstanding debt calculation
       //   for (const loanId in activeLoanData) {
       //     const loan = await LoanService.getById(pool.id, loanId)
-      //     const { normalizedDebt, interestRate } = activeLoanData[loanId]
-      //     await loan.updateOutstandingDebt(normalizedDebt, interestRate)
+      //     const { normalizedAcc, interestRate } = activeLoanData[loanId]
+      //     await loan.updateOutstandingDebt(normalizedAcc, interestRate)
       //     await loan.save()
 
       //     if (loan.maturityDate < block.timestamp) await pool.increaseDebtOverdue(loan.outstandingDebt)
