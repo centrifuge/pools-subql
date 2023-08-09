@@ -68,14 +68,14 @@ export class LoanService extends Loan {
     this.status = LoanStatus.CLOSED
   }
 
-  public async updateOutstandingDebt(normalizedDebt: bigint, interestRate: bigint) {
+  public async updateOutstandingDebt(normalizedAcc: bigint, interestRate: bigint) {
     const interestRatePerSec = nToBigInt(bnToBn(interestRate).div(SECONDS_PER_YEAR).add(RAY))
     logger.info(`Calculated IRS: ${interestRatePerSec.toString()}`)
     const rateDetails = await api.query.interestAccrual.rates<Vec<InterestAccrualRateDetails>>()
     const { accumulatedRate } = rateDetails.find(
       (rateDetails) => rateDetails.interestRatePerSec.toBigInt() === interestRatePerSec
     )
-    this.outstandingDebt = nToBigInt(bnToBn(normalizedDebt).mul(bnToBn(accumulatedRate)).div(RAY))
+    this.outstandingDebt = nToBigInt(bnToBn(normalizedAcc).mul(bnToBn(accumulatedRate)).div(RAY))
     logger.info(`Updating outstanding debt for loan: ${this.id} to ${this.outstandingDebt.toString()}`)
   }
 
