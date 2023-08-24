@@ -261,7 +261,7 @@ export interface LoanValuationMethod extends Enum {
 }
 
 export interface LoanRepaymentSchedule extends Struct {
-  maturity: { isFixed: boolean; asFixed: u64 } & Enum
+  maturity: { isFixed: boolean; asFixed: { date: u64; extension: u64 } } & Enum
   interestPayments: Enum
   payDownSchedule: Enum
 }

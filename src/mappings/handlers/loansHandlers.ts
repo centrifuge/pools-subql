@@ -53,7 +53,7 @@ async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedEvent>) {
         ? internalLoanPricing.valuationMethod.asDiscountedCashFlow.discountRate.asFixed.ratePerYear.toBigInt()
         : null,
     maturityDate: loanInfo.schedule.maturity.isFixed
-      ? new Date(loanInfo.schedule.maturity.asFixed.toNumber() * 1000)
+      ? new Date(loanInfo.schedule.maturity.asFixed.date.toNumber() * 1000)
       : null,
   }
 
