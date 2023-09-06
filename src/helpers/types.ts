@@ -207,6 +207,7 @@ export interface LoanExternalActivePricing extends Struct {
     priceId: CfgOracleKey
     maxBorrowAmount: LoanExternalPricingMaxBorrowAmount
     notional: u128
+    maxPriceVariation: u128
   }
   outstandingQuantity: u128
   interest: {
@@ -214,6 +215,7 @@ export interface LoanExternalActivePricing extends Struct {
     normalizedAcc: u128
     penalty: u128
   }
+  latestSettlementPrice: u128
 }
 
 export interface CfgOracleKey extends Enum {
