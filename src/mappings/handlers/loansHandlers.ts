@@ -122,11 +122,11 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Pr
 
 export const handleLoanRepaid = errorHandler(_handleLoanRepaid)
 async function _handleLoanRepaid(event: SubstrateEvent<LoanRepaidEvent>) {
-  const [poolId, loanId, { principal, interestAmount, unscheduledAmount }] = event.event.data
+  const [poolId, loanId, { principal, interest, unscheduled }] = event.event.data
   const principalAmount = principal.isInternal
     ? principal.asInternal
     : principal.asExternal.quantity.mul(principal.asExternal.settlementPrice)
-  const amount = principalAmount.add(interestAmount).add(unscheduledAmount).toString()
+  const amount = principalAmount.add(interest).add(unscheduled).toString()
 
   logger.info(`Loan repaid event for pool: ${poolId.toString()} amount: ${amount.toString()}`)
 
@@ -149,8 +149,8 @@ async function _handleLoanRepaid(event: SubstrateEvent<LoanRepaidEvent>) {
     timestamp: event.block.timestamp,
     amount: BigInt(amount),
     principalAmount: BigInt(principalAmount.toString()),
-    interestAmount: BigInt(interestAmount.toString()),
-    unscheduledAmount: BigInt(unscheduledAmount.toString()),
+    interestAmount: BigInt(interest.toString()),
+    unscheduledAmount: BigInt(unscheduled.toString()),
     quantity: principal.isExternal ? BigInt(principal.asExternal.quantity.toString()) : null,
     settlementPrice: principal.isExternal ? BigInt(principal.asExternal.settlementPrice.toString()) : null,
   })
