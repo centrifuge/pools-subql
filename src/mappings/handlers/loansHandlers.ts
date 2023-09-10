@@ -148,11 +148,11 @@ async function _handleLoanRepaid(event: SubstrateEvent<LoanRepaidEvent>) {
     hash: event.extrinsic.extrinsic.hash.toString(),
     timestamp: event.block.timestamp,
     amount: BigInt(amount),
-    principalAmount: BigInt(principalAmount),
-    interestAmount: BigInt(interestAmount),
-    unscheduledAmount: BigInt(unscheduledAmount),
-    quantity: principal.isExternal ? principal.asExternal.quantity.toString() : null,
-    settlementPrice: principal.isExternal ? principal.asExternal.settlementPrice.toString() : null,
+    principalAmount: BigInt(principalAmount.toString()),
+    interestAmount: BigInt(interestAmount.toString()),
+    unscheduledAmount: BigInt(unscheduledAmount.toString()),
+    quantity: principal.isExternal ? BigInt(principal.asExternal.quantity.toString()) : null,
+    settlementPrice: principal.isExternal ? BigInt(principal.asExternal.settlementPrice.toString()) : null,
   })
   await bt.save()
 
