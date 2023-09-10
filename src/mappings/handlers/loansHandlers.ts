@@ -9,7 +9,7 @@ import {
 import { errorHandler } from '../../helpers/errorHandler'
 import { PoolService } from '../services/poolService'
 import { LoanService } from '../services/loanService'
-import { BorrowerTransactionData, BorrowerTransactionService } from '../services/borrowerTransactionService'
+import { BorrowerTransactionService } from '../services/borrowerTransactionService'
 import { AccountService } from '../services/accountService'
 import { EpochService } from '../services/epochService'
 
