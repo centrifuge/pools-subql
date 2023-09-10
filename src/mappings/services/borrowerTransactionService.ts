@@ -6,6 +6,11 @@ export interface BorrowerTransactionData {
   readonly address: string
   readonly hash: string
   readonly amount?: bigint
+  readonly principalAmount?: bigint
+  readonly interestAmount?: bigint
+  readonly unscheduledAmount?: bigint
+  readonly quantity?: bigint
+  readonly settlementPrice?: bigint
   readonly timestamp: Date
   readonly loanId: string
 }
@@ -23,6 +28,11 @@ export class BorrowerTransactionService extends BorrowerTransaction {
     tx.loanId = `${data.poolId}-${data.loanId}`
     tx.type = type
     tx.amount = data.amount ?? null
+    tx.principalAmount = data.principalAmount ?? null
+    tx.interestAmount = data.interestAmount ?? null
+    tx.unscheduledAmount = data.unscheduledAmount ?? null
+    tx.quantity = data.quantity ?? null
+    tx.settlementPrice = data.settlementPrice ?? null
 
     return tx
   }

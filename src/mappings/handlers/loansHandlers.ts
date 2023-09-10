@@ -9,7 +9,7 @@ import {
 import { errorHandler } from '../../helpers/errorHandler'
 import { PoolService } from '../services/poolService'
 import { LoanService } from '../services/loanService'
-import { BorrowerTransactionService } from '../services/borrowerTransactionService'
+import { BorrowerTransactionData, BorrowerTransactionService } from '../services/borrowerTransactionService'
 import { AccountService } from '../services/accountService'
 import { EpochService } from '../services/epochService'
 
@@ -103,6 +103,9 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Pr
     hash: event.extrinsic.extrinsic.hash.toString(),
     timestamp: event.block.timestamp,
     amount: BigInt(amount),
+    principalAmount: BigInt(amount),
+    quantity: borrowAmount.isExternal ? borrowAmount.asExternal.quantity.toString() : null,
+    settlementPrice: borrowAmount.isExternal ? borrowAmount.asExternal.settlementPrice.toString() : null,
   })
   await bt.save()
 
@@ -119,11 +122,11 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Pr
 
 export const handleLoanRepaid = errorHandler(_handleLoanRepaid)
 async function _handleLoanRepaid(event: SubstrateEvent<LoanRepaidEvent>) {
-  const [poolId, loanId, { principal, interest }] = event.event.data
-  const principle = principal.isInternal
+  const [poolId, loanId, { principal, interestAmount, unscheduledAmount }] = event.event.data
+  const principalAmount = principal.isInternal
     ? principal.asInternal
     : principal.asExternal.quantity.mul(principal.asExternal.settlementPrice)
-  const amount = principle.add(interest).toString()
+  const amount = principalAmount.add(interestAmount).add(unscheduledAmount).toString()
 
   logger.info(`Loan repaid event for pool: ${poolId.toString()} amount: ${amount.toString()}`)
 
@@ -145,6 +148,11 @@ async function _handleLoanRepaid(event: SubstrateEvent<LoanRepaidEvent>) {
     hash: event.extrinsic.extrinsic.hash.toString(),
     timestamp: event.block.timestamp,
     amount: BigInt(amount),
+    principalAmount: BigInt(principalAmount),
+    interestAmount: BigInt(interestAmount),
+    unscheduledAmount: BigInt(unscheduledAmount),
+    quantity: principal.isExternal ? principal.asExternal.quantity.toString() : null,
+    settlementPrice: principal.isExternal ? principal.asExternal.settlementPrice.toString() : null,
   })
   await bt.save()
 

@@ -243,8 +243,15 @@ type BorrowerTransaction @entity {
   loan: Loan!
   type: BorrowerTransactionType!
 
-  # only applies to BORROWED and REPAID transactions
+  # applies to all BORROWED and REPAID transactions
   amount: BigInt
+  principalAmount: BigInt
+  interestAmount: BigInt
+  unscheduledAmount: BigInt
+
+  # only applies to BORROWED and REPAID transactions for external loans
+  quantity: BigInt
+  settlementPrice: BigInt
 }
 
 type Account @entity {
