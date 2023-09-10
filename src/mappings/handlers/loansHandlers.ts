@@ -104,8 +104,8 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Pr
     timestamp: event.block.timestamp,
     amount: BigInt(amount),
     principalAmount: BigInt(amount),
-    quantity: borrowAmount.isExternal ? borrowAmount.asExternal.quantity.toString() : null,
-    settlementPrice: borrowAmount.isExternal ? borrowAmount.asExternal.settlementPrice.toString() : null,
+    quantity: borrowAmount.isExternal ? BigInt(borrowAmount.asExternal.quantity.toString()) : null,
+    settlementPrice: borrowAmount.isExternal ? BigInt(borrowAmount.asExternal.settlementPrice.toString()) : null,
   })
   await bt.save()
 
