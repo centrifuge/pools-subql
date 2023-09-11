@@ -10,6 +10,30 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  build:
+    name: 'Check Build'
+    runs-on: ubuntu-latest
+    env:
+      SUBQL_INDEXER_VERSION: v1.21.1
+      SUBQL_QUERY_VERSION: v1.11.0
+      CHAIN_ID: development
+    steps:
+      - name: Check out repo's default branch
+        uses: actions/checkout@v3
+      - name: Generate new project.yaml
+        run: yq ". *= load(\"chains/$CHAIN_ID.yaml\")" chains/base.yaml > project.yaml
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: npm
+      - name: Setup Yarn
+        run: yarn install --frozen-lockfile
+      - name: Codegen
+        run: yarn codegen
+      - name: Build
+        run: yarn build
+
   lint:
     name: 'Run Linter'
     runs-on: ubuntu-latest
