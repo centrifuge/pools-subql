@@ -12,6 +12,8 @@ import { LoanService } from '../services/loanService'
 import { BorrowerTransactionService } from '../services/borrowerTransactionService'
 import { AccountService } from '../services/accountService'
 import { EpochService } from '../services/epochService'
+import { WAD } from '../../config'
+import { CurrencyService } from '../services/currencyService'
 
 export const handleLoanCreated = errorHandler(_handleLoanCreated)
 async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedEvent>) {
@@ -78,13 +80,18 @@ async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedEvent>) {
 export const handleLoanBorrowed = errorHandler(_handleLoanBorrowed)
 async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Promise<void> {
   const [poolId, loanId, borrowAmount] = event.event.data
-  const amount = borrowAmount.isInternal
-    ? borrowAmount.asInternal.toString()
-    : borrowAmount.asExternal.quantity.mul(borrowAmount.asExternal.settlementPrice).toString()
-  logger.info(`Loan borrowed event for pool: ${poolId.toString()} amount: ${amount.toString()}`)
 
   const pool = await PoolService.getById(poolId.toString())
   if (pool === undefined) throw new Error('Pool not found!')
+
+  const currency = await CurrencyService.getOrInit(pool.currencyId.toString())
+  const amount = borrowAmount.isInternal
+    ? borrowAmount.asInternal.toString()
+    : borrowAmount.asExternal.quantity
+        .div(WAD)
+        .mul(borrowAmount.asExternal.settlementPrice.divn(currency.decimals))
+        .toString()
+  logger.info(`Loan borrowed event for pool: ${poolId.toString()} amount: ${amount.toString()}`)
 
   const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toString())
 
@@ -123,15 +130,17 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Pr
 export const handleLoanRepaid = errorHandler(_handleLoanRepaid)
 async function _handleLoanRepaid(event: SubstrateEvent<LoanRepaidEvent>) {
   const [poolId, loanId, { principal, interest, unscheduled }] = event.event.data
-  const principalAmount = principal.isInternal
-    ? principal.asInternal
-    : principal.asExternal.quantity.mul(principal.asExternal.settlementPrice)
-  const amount = principalAmount.add(interest).add(unscheduled).toString()
-
-  logger.info(`Loan repaid event for pool: ${poolId.toString()} amount: ${amount.toString()}`)
 
   const pool = await PoolService.getById(poolId.toString())
   if (pool === undefined) throw new Error('Pool not found!')
+
+  const currency = await CurrencyService.getOrInit(pool.currencyId.toString())
+  const principalAmount = principal.isInternal
+    ? principal.asInternal
+    : principal.asExternal.quantity.div(WAD).mul(principal.asExternal.settlementPrice.divn(currency.decimals))
+  const amount = principalAmount.add(interest).add(unscheduled).toString()
+
+  logger.info(`Loan repaid event for pool: ${poolId.toString()} amount: ${amount.toString()}`)
 
   const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toString())
 
