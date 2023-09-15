@@ -85,7 +85,7 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Pr
 
   const amount = borrowAmount.isInternal
     ? borrowAmount.asInternal.toString()
-    : borrowAmount.asExternal.quantity.div(WAD).mul(borrowAmount.asExternal.settlementPrice).toString()
+    : borrowAmount.asExternal.quantity.mul(borrowAmount.asExternal.settlementPrice).div(WAD).toString()
   logger.info(`Loan borrowed event for pool: ${poolId.toString()} amount: ${amount.toString()}`)
 
   const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toString())
@@ -131,7 +131,7 @@ async function _handleLoanRepaid(event: SubstrateEvent<LoanRepaidEvent>) {
 
   const principalAmount = principal.isInternal
     ? principal.asInternal
-    : principal.asExternal.quantity.div(WAD).mul(principal.asExternal.settlementPrice)
+    : principal.asExternal.quantity.mul(principal.asExternal.settlementPrice).div(WAD)
   const amount = principalAmount.add(interest).add(unscheduled).toString()
 
   logger.info(`Loan repaid event for pool: ${poolId.toString()} amount: ${amount.toString()}`)
