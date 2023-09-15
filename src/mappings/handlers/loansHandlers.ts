@@ -13,7 +13,6 @@ import { BorrowerTransactionService } from '../services/borrowerTransactionServi
 import { AccountService } from '../services/accountService'
 import { EpochService } from '../services/epochService'
 import { WAD } from '../../config'
-import { CurrencyService } from '../services/currencyService'
 
 export const handleLoanCreated = errorHandler(_handleLoanCreated)
 async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedEvent>) {
@@ -84,13 +83,9 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Pr
   const pool = await PoolService.getById(poolId.toString())
   if (pool === undefined) throw new Error('Pool not found!')
 
-  const currency = await CurrencyService.getOrInit(pool.currencyId.toString())
   const amount = borrowAmount.isInternal
     ? borrowAmount.asInternal.toString()
-    : borrowAmount.asExternal.quantity
-        .div(WAD)
-        .mul(borrowAmount.asExternal.settlementPrice.divn(currency.decimals))
-        .toString()
+    : borrowAmount.asExternal.quantity.div(WAD).mul(borrowAmount.asExternal.settlementPrice).toString()
   logger.info(`Loan borrowed event for pool: ${poolId.toString()} amount: ${amount.toString()}`)
 
   const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toString())
@@ -134,10 +129,9 @@ async function _handleLoanRepaid(event: SubstrateEvent<LoanRepaidEvent>) {
   const pool = await PoolService.getById(poolId.toString())
   if (pool === undefined) throw new Error('Pool not found!')
 
-  const currency = await CurrencyService.getOrInit(pool.currencyId.toString())
   const principalAmount = principal.isInternal
     ? principal.asInternal
-    : principal.asExternal.quantity.div(WAD).mul(principal.asExternal.settlementPrice.divn(currency.decimals))
+    : principal.asExternal.quantity.div(WAD).mul(principal.asExternal.settlementPrice)
   const amount = principalAmount.add(interest).add(unscheduled).toString()
 
   logger.info(`Loan repaid event for pool: ${poolId.toString()} amount: ${amount.toString()}`)
