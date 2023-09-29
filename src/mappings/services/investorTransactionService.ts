@@ -7,9 +7,6 @@ const currencyTypes = [
   InvestorTransactionType.INVEST_ORDER_CANCEL,
   InvestorTransactionType.INVEST_EXECUTION,
   InvestorTransactionType.REDEEM_COLLECT,
-]
-
-const tokenTypes = [
   InvestorTransactionType.REDEEM_ORDER_UPDATE,
   InvestorTransactionType.REDEEM_ORDER_CANCEL,
   InvestorTransactionType.REDEEM_EXECUTION,
@@ -17,6 +14,8 @@ const tokenTypes = [
   InvestorTransactionType.TRANSFER_IN,
   InvestorTransactionType.TRANSFER_OUT,
 ]
+
+const tokenTypes = []
 
 export interface InvestorTransactionData {
   readonly poolId: string
