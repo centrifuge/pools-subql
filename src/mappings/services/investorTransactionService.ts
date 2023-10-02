@@ -1,5 +1,5 @@
 import { bnToBn, nToBigInt } from '@polkadot/util'
-import { WAD, RAY } from '../../config'
+import { WAD } from '../../config'
 import { InvestorTransaction, InvestorTransactionType } from '../../types'
 
 const currencyTypes = [
@@ -118,11 +118,11 @@ export class InvestorTransactionService extends InvestorTransaction {
   }
 
   static computeTokenAmount(data: InvestorTransactionData) {
-    return data.price ? nToBigInt(bnToBn(data.amount).mul(RAY).div(bnToBn(data.price))) : null
+    return data.price ? nToBigInt(bnToBn(data.amount).mul(WAD).div(bnToBn(data.price))) : null
   }
 
   static computeCurrencyAmount(data: InvestorTransactionData) {
-    return data.price ? nToBigInt(bnToBn(data.amount).mul(bnToBn(data.price)).div(RAY)) : null
+    return data.price ? nToBigInt(bnToBn(data.amount).mul(bnToBn(data.price)).div(WAD)) : null
   }
 
   static computeFulfilledAmount(data: InvestorTransactionData) {
