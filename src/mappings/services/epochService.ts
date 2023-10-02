@@ -1,7 +1,7 @@
 import { Option } from '@polkadot/types'
 import { bnToBn, nToBigInt } from '@polkadot/util'
 import { u64 } from '@polkadot/types'
-import { RAY, WAD } from '../../config'
+import { WAD } from '../../config'
 import { OrdersFulfillment } from '../../helpers/types'
 import { Epoch, EpochState } from '../../types'
 
@@ -126,7 +126,7 @@ export class EpochService extends Epoch {
   }
 
   private computeCurrencyAmount(amount: bigint, price: bigint) {
-    return nToBigInt(bnToBn(amount).mul(bnToBn(price)).div(RAY))
+    return nToBigInt(bnToBn(amount).mul(bnToBn(price)).div(WAD))
   }
 
   public increaseBorrowings(amount: bigint) {
