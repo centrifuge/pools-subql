@@ -7,7 +7,6 @@ on:
     branches:
       - main
       - release-*
-      - deployments-test
   workflow_dispatch:
 
 permissions:
@@ -32,7 +31,7 @@ jobs:
       accessToken: ${{ secrets.SUBQL_ACCESS_TOKEN }}
 
   subql_deploy_centrifuge_staging:
-    if: ${{ github.repository == 'centrifuge/pools-subql' && github.ref_name == 'deployments-test' }}
+    if: ${{ github.repository == 'centrifuge/pools-subql' && github.ref_name == 'main' }}
     name: Deploy to SubQL (CENTRIFUGE staging)
     strategy:
       matrix:
