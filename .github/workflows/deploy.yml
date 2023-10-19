@@ -7,6 +7,7 @@ on:
     branches:
       - main
       - release-*
+      - fix-demo-deployments
   workflow_dispatch:
 
 permissions:
@@ -31,11 +32,11 @@ jobs:
       accessToken: ${{ secrets.SUBQL_ACCESS_TOKEN }}
 
   subql_deploy_centrifuge_staging:
-    if: ${{ github.repository == 'centrifuge/pools-subql' && github.ref_name == 'main' }}
+    if: ${{ github.repository == 'centrifuge/pools-subql' && github.ref_name == 'fix-demo-deployments' }}
     name: Deploy to SubQL (CENTRIFUGE staging)
     strategy:
       matrix:
-        chainId: [development, demo] # ADD ARRAY OF CHAINS TO DEPLOY
+        chainId: [demo] # ADD ARRAY OF CHAINS TO DEPLOY
     uses: ./.github/workflows/subql_deploy_workflow.yaml
     with:
       chainId: ${{ matrix.chainId }}
