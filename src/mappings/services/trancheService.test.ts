@@ -79,6 +79,6 @@ describe('Given an existing tranche,', () => {
     await tranches[1].updatePriceFromRpc().catch(errorLogger)
     expect((api.rpc as ExtendedRpc).pools.trancheTokenPrices).toBeCalled()
     expect(logger.error).toBeCalled()
-    expect(tranches[1].tokenPrice).toBe(BigInt('1000000000000000000000000000'))
+    expect(tranches[1].tokenPrice).toBe(BigInt('1000000000000000000'))
   })
 })

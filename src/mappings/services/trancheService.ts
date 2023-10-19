@@ -1,7 +1,7 @@
 import { u128 } from '@polkadot/types'
 import { bnToBn, nToBigInt } from '@polkadot/util'
 import { paginatedGetter } from '../../helpers/paginatedGetter'
-import { RAY } from '../../config'
+import { WAD } from '../../config'
 import { ExtendedRpc, TrancheDetails } from '../../helpers/types'
 import { Tranche, TrancheSnapshot } from '../../types'
 import { TrancheProps } from '../../types/models/Tranche'
@@ -16,7 +16,7 @@ export class TrancheService extends Tranche {
     tranche.sumFulfilledInvestOrdersByPeriod = BigInt(0)
     tranche.sumFulfilledRedeemOrdersByPeriod = BigInt(0)
     tranche.sumFulfilledRedeemOrdersCurrencyByPeriod = BigInt(0)
-    tranche.tokenPrice = nToBigInt(RAY)
+    tranche.tokenPrice = nToBigInt(WAD)
 
     tranche.type = 'ALL'
     tranche.poolId = poolId
@@ -119,8 +119,8 @@ export class TrancheService extends Tranche {
       }
     }
     const priceCurrent = bnToBn(this.tokenPrice)
-    const priceOld = referencePeriodStart ? bnToBn(trancheSnapshot.tokenPrice) : RAY
-    this[yieldField] = nToBigInt(priceCurrent.mul(RAY).div(priceOld).sub(RAY))
+    const priceOld = referencePeriodStart ? bnToBn(trancheSnapshot.tokenPrice) : WAD
+    this[yieldField] = nToBigInt(priceCurrent.mul(WAD).div(priceOld).sub(WAD))
     return this
   }
 
@@ -153,7 +153,7 @@ export class TrancheService extends Tranche {
     )
     const priceCurrent = bnToBn(this.tokenPrice)
     const priceOld = bnToBn(trancheSnapshot.tokenPrice)
-    this[yieldField] = nToBigInt(priceCurrent.mul(RAY).div(priceOld).sub(RAY).mul(annualizationFactor))
+    this[yieldField] = nToBigInt(priceCurrent.mul(WAD).div(priceOld).sub(WAD).mul(annualizationFactor))
     return this
   }
 
@@ -182,7 +182,7 @@ export class TrancheService extends Tranche {
   }
 
   private computeCurrencyAmount(amount: bigint) {
-    return nToBigInt(bnToBn(amount).mul(bnToBn(this.tokenPrice)).div(RAY))
+    return nToBigInt(bnToBn(amount).mul(bnToBn(this.tokenPrice)).div(WAD))
   }
 
   public deactivate() {
