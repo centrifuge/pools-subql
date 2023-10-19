@@ -1,7 +1,9 @@
 name: 'pools-demo' #CHANGE ME BASED ON SUBQL DEPLOYMENT
 network:
-  endpoint: wss://fullnode.demo.k-f.dev/public-ws
+  endpoint:
+    - 'wss://fullnode.demo.k-f.dev/public-ws',
+    - 'wss://node-7118620155331796992.gx.onfinality.io/ws?apikey=00538f2d-6297-44e3-8812-4b9d579524b2'
   genesisHash: '0xe0e40f62affe742eb92d75c07830671ef3e0cc6efc1ecaf81cf34a28148e91f0'
   chaintypes:
     file: ./dist/chaintypes.js
-  bypassBlocks: [ "1-233287"]
+  bypassBlocks: ['1-233287']
