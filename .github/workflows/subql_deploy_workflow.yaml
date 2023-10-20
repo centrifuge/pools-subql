@@ -42,7 +42,7 @@ jobs:
         run: |
           echo "SUBQL_PROJ_NAME=$(yq '.name' project.yaml)" >> $GITHUB_ENV
           echo "SUBQL_PROJ_DECRIPTION=$(yq '.description' project.yaml)" >> $GITHUB_ENV
-          echo "SUBQL_ENDPOINT=$(yq '.network.endpoint[0]' project.yaml)" >> $GITHUB_ENV
+          echo "SUBQL_ENDPOINT=$(yq '.network.endpoint | join(\",\")' project.yaml)" >> $GITHUB_ENV
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
