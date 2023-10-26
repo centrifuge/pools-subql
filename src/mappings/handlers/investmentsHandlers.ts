@@ -25,7 +25,7 @@ async function _handleInvestOrderUpdated(event: SubstrateEvent<OrderUpdatedEvent
   const tranche = await TrancheService.getById(poolId.toString(), trancheId.toHex())
 
   // Update tranche price
-  await tranche.updatePriceFromRpc()
+  await tranche.updatePriceFromRpc(event)
 
   const orderData: InvestorTransactionData = {
     poolId: poolId.toString(),
@@ -85,7 +85,7 @@ async function _handleRedeemOrderUpdated(event: SubstrateEvent<OrderUpdatedEvent
   const account = await AccountService.getOrInit(address.toString())
   const tranche = await TrancheService.getById(poolId.toString(), trancheId.toHex())
 
-  await tranche.updatePriceFromRpc()
+  await tranche.updatePriceFromRpc(event)
 
   const orderData: InvestorTransactionData = {
     poolId: poolId.toString(),
@@ -148,7 +148,7 @@ async function _handleInvestOrdersCollected(event: SubstrateEvent<InvestOrdersCo
   const tranche = await TrancheService.getById(poolId.toString(), trancheId.toHex())
 
   // Update tranche price
-  await tranche.updatePriceFromRpc()
+  await tranche.updatePriceFromRpc(event)
   await tranche.save()
 
   const { payoutInvestmentInvest } = investCollection
@@ -193,7 +193,7 @@ async function _handleRedeemOrdersCollected(event: SubstrateEvent<RedeemOrdersCo
   const tranche = await TrancheService.getById(poolId.toString(), trancheId.toHex())
 
   // Update tranche price
-  await tranche.updatePriceFromRpc()
+  await tranche.updatePriceFromRpc(event)
   await tranche.save()
 
   const { payoutInvestmentRedeem } = redeemCollection

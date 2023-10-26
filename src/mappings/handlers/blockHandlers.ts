@@ -34,7 +34,8 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
       const trancheTokenPrices = await pool.getTrancheTokenPrices()
       for (const tranche of tranches) {
         const index = tranche.index
-        if (trancheTokenPrices !== undefined) await tranche.updatePrice(trancheTokenPrices[index].toBigInt())
+        if (trancheTokenPrices !== undefined)
+          await tranche.updatePrice(trancheTokenPrices[index].toBigInt(), block.block.header.number.toNumber())
         await tranche.updateSupply()
         await tranche.updateDebt(trancheData[tranche.trancheId].data.debt.toBigInt())
         await tranche.computeYield('yieldSinceLastPeriod', lastPeriodStart)

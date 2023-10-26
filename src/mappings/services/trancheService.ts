@@ -5,6 +5,7 @@ import { WAD } from '../../config'
 import { ExtendedRpc, TrancheDetails } from '../../helpers/types'
 import { Tranche, TrancheSnapshot } from '../../types'
 import { TrancheProps } from '../../types/models/Tranche'
+import { SubstrateEvent } from '@subql/types'
 
 export class TrancheService extends Tranche {
   static init(poolId: string, trancheId: string, index: number, trancheData: TrancheDetails) {
@@ -69,19 +70,25 @@ export class TrancheService extends Tranche {
     return this
   }
 
-  public updatePrice(price: bigint) {
-    logger.info(`Updating price for tranche ${this.id} to :${price}`)
+  public updatePrice(price: bigint, block: number) {
+    logger.info(`Updating price for tranche ${this.id} to: ${price}`)
+    // https://centrifuge.subscan.io/council/75
+    // fix decimal error in old blocks, issue was fixed at #4017237
+    if (block < 4017237) {
+      this.tokenPrice = nToBigInt(bnToBn(price).div(bnToBn(1000000000)))
+      return this
+    }
     this.tokenPrice = price
     return this
   }
 
-  public async updatePriceFromRpc() {
+  public async updatePriceFromRpc(event: SubstrateEvent) {
     logger.info(`Querying RPC price for tranche ${this.id}`)
     const poolId = this.poolId
     const tokenPrices = await (api.rpc as ExtendedRpc).pools.trancheTokenPrices(poolId)
     const trancheTokenPrice = tokenPrices[this.index].toBigInt()
     if (trancheTokenPrice <= BigInt(0)) throw new Error(`Zero or negative price returned for tranche: ${this.id}`)
-    this.updatePrice(trancheTokenPrice)
+    this.updatePrice(trancheTokenPrice, event.block.block.header.number.toNumber())
     return this
   }
 

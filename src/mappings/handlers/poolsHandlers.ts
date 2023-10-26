@@ -136,7 +136,7 @@ async function _handleEpochExecuted(event: SubstrateEvent<EpochClosedExecutedEve
   for (const tranche of tranches) {
     const epochState = epoch.states.find((epochState) => epochState.trancheId === tranche.trancheId)
     await tranche.updateSupply()
-    await tranche.updatePrice(epochState.tokenPrice)
+    await tranche.updatePrice(epochState.tokenPrice, event.block.block.header.number.toNumber())
     await tranche.updateFulfilledInvestOrders(epochState.sumFulfilledInvestOrders)
     await tranche.updateFulfilledRedeemOrders(epochState.sumFulfilledRedeemOrders)
     await tranche.save()
