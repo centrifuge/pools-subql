@@ -6,4 +6,4 @@ network:
     file: ./dist/chaintypes.js
 dataSources:
   - kind: substrate/Runtime
-    startBlock: 3858509 # block Anemoy was created at
+    startBlock: 3824709 # block Anemoy was created at

@@ -41,7 +41,7 @@ async function _handleTokenTransfer(event: SubstrateEvent<TokensTransferEvent>):
     if (tranche === undefined) throw new Error('Tranche not found!')
 
     // Update tranche price
-    await tranche.updatePriceFromRpc(event)
+    await tranche.updatePriceFromRpc(event.block.block.header.number.toNumber())
     await tranche.save()
 
     const orderData = {

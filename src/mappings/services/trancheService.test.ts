@@ -70,13 +70,13 @@ describe('Given a new tranche, when initialised', () => {
 
 describe('Given an existing tranche,', () => {
   test('when the rpc price is updated, then the value is fetched and set correctly', async () => {
-    await tranches[0].updatePriceFromRpc().catch(errorLogger)
+    await tranches[0].updatePriceFromRpc(4058351).catch(errorLogger)
     expect((api.rpc as ExtendedRpc).pools.trancheTokenPrices).toBeCalled()
     expect(tranches[0].tokenPrice).toBe(BigInt('2000000000000000000'))
   })
 
   test('when a 0 rpc price is delivered, then the value is skipped and logged', async () => {
-    await tranches[1].updatePriceFromRpc().catch(errorLogger)
+    await tranches[1].updatePriceFromRpc(4058352).catch(errorLogger)
     expect((api.rpc as ExtendedRpc).pools.trancheTokenPrices).toBeCalled()
     expect(logger.error).toBeCalled()
     expect(tranches[1].tokenPrice).toBe(BigInt('1000000000000000000'))
