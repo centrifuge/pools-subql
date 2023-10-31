@@ -5,14 +5,17 @@ import { InvestorTransactionData } from './investorTransactionService'
 
 export class OutstandingOrderService extends OutstandingOrder {
   static init(data: InvestorTransactionData, investAmount: bigint, redeemAmount: bigint) {
-    const oo = new this(`${data.poolId}-${data.trancheId}-${data.address}`)
-    oo.hash = data.hash
-    oo.accountId = data.address
-    oo.poolId = data.poolId
-    oo.trancheId = `${data.poolId}-${data.trancheId}`
-    oo.epochNumber = data.epochNumber
-    oo.timestamp = data.timestamp
-
+    const oo = new this(
+      `${data.poolId}-${data.trancheId}-${data.address}`,
+      data.hash,
+      data.address,
+      data.poolId,
+      `${data.poolId}-${data.trancheId}`,
+      data.epochNumber,
+      data.timestamp,
+      investAmount,
+      redeemAmount
+    )
     oo.investAmount = investAmount
     oo.redeemAmount = redeemAmount
     return oo

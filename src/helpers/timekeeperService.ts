@@ -11,16 +11,11 @@ export class TimekeeperService {
   }
 
   static init = async function (): Promise<TimekeeperService> {
-    let lastPeriodStart: Date
-    try {
-      lastPeriodStart = (await Timekeeper.get('global')).lastPeriodStart
-    } catch (error) {
-      lastPeriodStart = new Date(0)
-    }
+    const lastPeriodStart = (await Timekeeper.get('global'))?.lastPeriodStart ?? new Date(0)
     return new TimekeeperService(lastPeriodStart)
   }
 
-  private _currentPeriodStart: Date = null
+  private _currentPeriodStart: Date
   public getCurrentPeriod = (): Date => this._currentPeriodStart
   public processBlock = (block: SubstrateBlock): boolean => {
     const blockPeriodStart = getPeriodStart(block.timestamp)
@@ -29,8 +24,7 @@ export class TimekeeperService {
     return isNewPeriod
   }
   public update = async (blockPeriodStart: Date) => {
-    const timekeeper = new Timekeeper('global')
-    timekeeper.lastPeriodStart = blockPeriodStart
+    const timekeeper = new Timekeeper('global', blockPeriodStart)
     await timekeeper.save()
   }
 }

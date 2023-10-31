@@ -3,16 +3,18 @@ import { TrancheBalance } from '../../types/models/TrancheBalance'
 export class TrancheBalanceService extends TrancheBalance {
   static init(address: string, poolId: string, trancheId: string) {
     logger.info(`Initialising new TrancheBalance: ${address}-${poolId}-${trancheId}`)
-    const trancheBalance = new this(`${address}-${poolId}-${trancheId}`)
-    trancheBalance.accountId = address
-    trancheBalance.poolId = poolId
-    trancheBalance.trancheId = `${poolId}-${trancheId}`
-    trancheBalance.sumInvestOrderedAmount = BigInt(0)
-    trancheBalance.sumInvestUncollectedAmount = BigInt(0)
-    trancheBalance.sumInvestCollectedAmount = BigInt(0)
-    trancheBalance.sumRedeemOrderedAmount = BigInt(0)
-    trancheBalance.sumRedeemUncollectedAmount = BigInt(0)
-    trancheBalance.sumRedeemCollectedAmount = BigInt(0)
+    const trancheBalance = new this(
+      `${address}-${poolId}-${trancheId}`,
+      address,
+      poolId,
+      `${poolId}-${trancheId}`,
+      BigInt(0),
+      BigInt(0),
+      BigInt(0),
+      BigInt(0),
+      BigInt(0),
+      BigInt(0)
+    )
     return trancheBalance
   }
 

@@ -2,6 +2,7 @@ import { SubstrateBlock } from '@subql/types'
 import { errorHandler } from './errorHandler'
 import { paginatedGetter } from './paginatedGetter'
 import { getPeriodStart } from './timekeeperService'
+import type { Entity } from '@subql/types-core'
 /**
  * Creates a snapshot of a generic stateModel to a snapshotModel.
  * A snapshotModel has the same fields as the originating stateModel, however a timestamp and a blockNumber are added.
@@ -20,18 +21,22 @@ async function _stateSnapshotter(
   stateModel: string,
   snapshotModel: string,
   block: SubstrateBlock,
-  fkReferenceName: string = undefined,
+  fkReferenceName: string | undefined = undefined,
   filterKey = 'type',
   filterValue: string | boolean = 'ALL'
 ): Promise<void> {
   const entitySaves: Promise<void>[] = []
   logger.info(`Performing snapshots of ${stateModel}`)
-  const stateEntities = await paginatedGetter(stateModel, filterKey, filterValue)
+  const stateEntities = (await paginatedGetter(
+    stateModel,
+    filterKey,
+    filterValue
+  )) as ResettableEntity[]
   for (const stateEntity of stateEntities) {
     const blockNumber = block.block.header.number.toNumber()
     const { id, ...copyStateEntity } = stateEntity
     logger.info(`Snapshotting ${stateModel}: ${id}`)
-    const snapshotEntity = { ...copyStateEntity, id: `${id}-${blockNumber.toString()}` }
+    const snapshotEntity: SnapshotEntity = { ...copyStateEntity, id: `${id}-${blockNumber.toString()}` }
     snapshotEntity['timestamp'] = block.timestamp
     snapshotEntity['blockNumber'] = blockNumber
     snapshotEntity['periodStart'] = getPeriodStart(block.timestamp)
@@ -39,7 +44,7 @@ async function _stateSnapshotter(
     if (fkReferenceName) snapshotEntity[fkReferenceName] = stateEntity.id
 
     const propNames = Object.getOwnPropertyNames(stateEntity)
-    const propNamesToReset = propNames.filter((propName) => propName.endsWith('ByPeriod'))
+    const propNamesToReset = propNames.filter((propName) => propName.endsWith('ByPeriod')) as ResettableKey[]
     for (const propName of propNamesToReset) {
       stateEntity[propName] = BigInt(0)
     }
@@ -47,4 +52,17 @@ async function _stateSnapshotter(
     entitySaves.push(store.set(snapshotModel, snapshotEntity.id, snapshotEntity))
   }
   await Promise.all(entitySaves)
+}
+
+interface SnapshotEntity extends Entity {
+  blockNumber?: number
+  timestamp?: Date
+  periodStart?: Date
+  [fkReferenceName: string]: unknown
+}
+
+type ResettableKey = `${string}ByPeriod`
+
+interface ResettableEntity extends Entity {
+  [propName: ResettableKey]: bigint
 }

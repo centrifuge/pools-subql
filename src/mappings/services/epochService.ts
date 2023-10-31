@@ -8,31 +8,42 @@ import { Epoch, EpochState } from '../../types'
 export class EpochService extends Epoch {
   readonly states: EpochState[]
 
-  constructor(id) {
-    super(id)
+  constructor(
+    id: string,
+    poolId: string,
+    index: number,
+    openedAt: Date,
+    sumBorrowedAmount: bigint,
+    sumRepaidAmount: bigint,
+    sumInvestedAmount: bigint,
+    sumRedeemedAmount: bigint
+  ) {
+    super(id, poolId, index, openedAt, sumBorrowedAmount, sumRepaidAmount, sumInvestedAmount, sumRedeemedAmount)
     this.states = []
   }
 
   static async init(poolId: string, epochNr: number, trancheIds: string[], timestamp: Date) {
     logger.info(`Initialising epoch ${epochNr} for pool ${poolId}`)
-    const epoch = new this(`${poolId}-${epochNr.toString()}`)
-
-    epoch.index = epochNr
-    epoch.poolId = poolId
-    epoch.openedAt = timestamp
-
-    epoch.sumBorrowedAmount = BigInt(0)
-    epoch.sumRepaidAmount = BigInt(0)
-    epoch.sumInvestedAmount = BigInt(0)
-    epoch.sumRedeemedAmount = BigInt(0)
+    const epoch = new this(
+      `${poolId}-${epochNr.toString()}`,
+      poolId,
+      epochNr,
+      timestamp,
+      BigInt(0),
+      BigInt(0),
+      BigInt(0),
+      BigInt(0)
+    )
 
     for (const trancheId of trancheIds) {
-      const epochState = new EpochState(`${poolId}-${epochNr}-${trancheId}`)
-      epochState.epochId = epoch.id
-      epochState.trancheId = trancheId
-      epochState.sumOutstandingInvestOrders = BigInt(0)
-      epochState.sumOutstandingRedeemOrders = BigInt(0)
-      epochState.sumOutstandingRedeemOrdersCurrency = BigInt(0)
+      const epochState = new EpochState(
+        `${poolId}-${epochNr}-${trancheId}`,
+        epoch.id,
+        trancheId,
+        BigInt(0),
+        BigInt(0),
+        BigInt(0)
+      )
       epoch.states.push(epochState)
     }
     return epoch

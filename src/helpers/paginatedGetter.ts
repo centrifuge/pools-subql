@@ -1,18 +1,21 @@
 import { errorHandler } from './errorHandler'
+import type { Entity } from '@subql/types-core'
 
 type StoreArgs = Parameters<typeof store.getByField>
-type StoreReturn = ReturnType<typeof store.getByField>
 
-interface Entity {
-  id: string
-}
-
-async function _paginatedGetter(entity: StoreArgs[0], field: StoreArgs[1], value: StoreArgs[2]): StoreReturn {
+async function _paginatedGetter(
+  entity: StoreArgs[0],
+  field: StoreArgs[1],
+  value: StoreArgs[2]
+): Promise<Entity[]> {
   let results: Entity[] = []
   const batch = 100
   let amount = 0
   do {
-    const entities = await store.getByField(entity, field, value, { offset: amount, limit: batch })
+    const entities: Entity[] = (await store.getByField(entity, field, value, {
+      offset: amount,
+      limit: batch,
+    })) as Entity[]
     results = results.concat(entities)
     amount += results.length
   } while (results.length === batch)

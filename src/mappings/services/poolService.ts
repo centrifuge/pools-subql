@@ -15,39 +15,36 @@ export class PoolService extends Pool {
     timestamp: Date,
     blockNumber: number
   ) {
-    const pool = new this(poolId)
-
-    pool.currencyId = currencyId
-    pool.maxReserve = maxReserve
-    pool.maxPortfolioValuationAge = maxPortfolioValuationAge
-    pool.minEpochTime = minEpochTime
-
-    pool.portfolioValuation = BigInt(0)
-    pool.totalReserve = BigInt(0)
-    pool.availableReserve = BigInt(0)
-    pool.sumDebt = BigInt(0)
-    pool.value = BigInt(0)
+    const pool = new this(
+      poolId,
+      'ALL',
+      timestamp,
+      blockNumber,
+      currencyId,
+      '',
+      minEpochTime,
+      maxPortfolioValuationAge,
+      1,
+      BigInt(0),
+      BigInt(0),
+      BigInt(0),
+      maxReserve,
+      BigInt(0),
+      BigInt(0),
+      BigInt(0),
+      BigInt(0),
+      BigInt(0)
+    )
 
     pool.sumBorrowedAmountByPeriod = BigInt(0)
     pool.sumRepaidAmountByPeriod = BigInt(0)
     pool.sumInvestedAmountByPeriod = BigInt(0)
     pool.sumRedeemedAmountByPeriod = BigInt(0)
     pool.sumNumberOfLoansByPeriod = BigInt(0)
-    pool.sumNumberOfActiveLoans = BigInt(0)
-    pool.sumDebtWrittenOffByPeriod = BigInt(0)
-    pool.sumDebtOverdue = BigInt(0)
 
     pool.sumBorrowedAmount = BigInt(0)
     pool.sumRepaidAmount = BigInt(0)
     pool.sumNumberOfLoans = BigInt(0)
-
-    //Create the pool
-    const currentEpoch = 1
-
-    pool.type = 'ALL'
-    pool.createdAt = timestamp
-    pool.createdAtBlockNumber = blockNumber
-    pool.currentEpoch = currentEpoch
 
     return pool
   }
@@ -79,7 +76,7 @@ export class PoolService extends Pool {
 
   public async updateState() {
     const poolResponse = await api.query.poolSystem.pool<Option<PoolDetails>>(this.id)
-    logger.info(`Updating state for pool: ${this.id} with data: ${JSON.stringify(poolResponse.toHuman())}`)
+    logger.info(`Updating state for pool: ${this.id}`)
     if (poolResponse.isSome) {
       const poolData = poolResponse.unwrap()
       this.totalReserve = poolData.reserve.total.toBigInt()
@@ -164,7 +161,6 @@ export class PoolService extends Pool {
   public async getActiveLoanData() {
     logger.info(`Querying active loan data for pool: ${this.id}`)
     const loanDetails = await api.query.loans.activeLoans<Vec<ITuple<[u64, LoanInfoActive]>>>(this.id)
-    logger.info(`loanDetails: ${loanDetails}`)
     const activeLoanData = loanDetails.reduce<ActiveLoanData>(
       (last, current) => ({
         ...last,

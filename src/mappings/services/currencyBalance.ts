@@ -4,10 +4,7 @@ import { CurrencyBalance } from '../../types/models/CurrencyBalance'
 export class CurrencyBalanceService extends CurrencyBalance {
   static init(address: string, currency: string) {
     logger.info(`Initialising new CurrencyBalance: ${address}-${currency}`)
-    const currencyBalance = new this(`${address}-${currency}`)
-    currencyBalance.accountId = address
-    currencyBalance.currencyId = currency
-    currencyBalance.amount = BigInt(0)
+    const currencyBalance = new this(`${address}-${currency}`, address, currency, BigInt(0))
     return currencyBalance
   }
 
