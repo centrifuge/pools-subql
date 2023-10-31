@@ -10,11 +10,16 @@
     "outDir": "dist",
     "rootDir": "src",
     "target": "es2017",
+    //"strict": true,
     "paths": {
       "centrifuge-subql/*": ["./src/*"]
     }
   },
-  "include": ["./src/**/*", "node_modules/@subql/types/dist/global.d.ts"],
+  "include": [
+    "src/**/*",
+    "node_modules/@subql/types-core/dist/global.d.ts",
+    "node_modules/@subql/types/dist/global.d.ts"
+  ],
   "exports": {
     "chaintypes": "./src/chaintypes.ts"
   }

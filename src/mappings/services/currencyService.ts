@@ -5,8 +5,7 @@ import { Currency } from '../../types/models/Currency'
 export class CurrencyService extends Currency {
   static init(ticker: string, decimals: number) {
     logger.info(`Initialising new currency ${ticker} with ${decimals} decimals`)
-    const currency = new this(ticker)
-    currency.decimals = decimals
+    const currency = new this(ticker, decimals)
     return currency
   }
 

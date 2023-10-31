@@ -17,16 +17,18 @@ export interface BorrowerTransactionData {
 
 export class BorrowerTransactionService extends BorrowerTransaction {
   static init = (data: BorrowerTransactionData, type: BorrowerTransactionType) => {
-    const tx = new BorrowerTransactionService(`${data.hash}-${data.epochNumber.toString()}-${type.toString()}`)
-    tx.poolId = data.poolId.toString()
-    tx.epochNumber = data.epochNumber
-    tx.accountId = data.address
-    tx.hash = data.hash
-    tx.timestamp = data.timestamp
+    const tx = new BorrowerTransactionService(
+      `${data.hash}-${data.epochNumber.toString()}-${type.toString()}`,
+      data.timestamp,
+      data.poolId.toString(),
+      data.hash,
+      data.address,
+      data.epochNumber,
+      `${data.poolId}-${data.epochNumber.toString()}`,
+      `${data.poolId}-${data.loanId}`,
+      type
+    )
 
-    tx.epochId = `${data.poolId}-${data.epochNumber.toString()}`
-    tx.loanId = `${data.poolId}-${data.loanId}`
-    tx.type = type
     tx.amount = data.amount ?? null
     tx.principalAmount = data.principalAmount ?? null
     tx.interestAmount = data.interestAmount ?? null

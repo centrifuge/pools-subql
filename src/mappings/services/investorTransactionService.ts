@@ -33,18 +33,19 @@ export interface InvestorTransactionData {
 
 export class InvestorTransactionService extends InvestorTransaction {
   static init(data: InvestorTransactionData, type: InvestorTransactionType) {
-    const tx = new this(`${data.hash}-${data.epochNumber.toString()}-${type.toString()}`)
-    tx.poolId = data.poolId.toString()
-    tx.trancheId = `${data.poolId}-${data.trancheId}`
-    tx.epochNumber = data.epochNumber
-    tx.accountId = data.address
-    tx.hash = data.hash
-    tx.timestamp = data.timestamp
+    const tx = new this(
+      `${data.hash}-${data.epochNumber.toString()}-${type.toString()}`,
+      data.hash,
+      data.address,
+      data.poolId.toString(),
+      `${data.poolId}-${data.trancheId}`,
+      data.epochNumber,
+      data.timestamp,
+      `${data.poolId}-${data.epochNumber.toString()}`,
+      type
+    )
     tx.tokenPrice = data.price
     tx.transactionFee = data.fee
-
-    tx.epochId = `${data.poolId}-${data.epochNumber.toString()}`
-    tx.type = type
 
     tx.currencyAmount = currencyTypes.includes(type) ? data.amount : this.computeCurrencyAmount(data)
     tx.tokenAmount = tokenTypes.includes(type) ? data.amount : this.computeTokenAmount(data)
