@@ -57,8 +57,9 @@ jobs:
       - name: Publish SubQL version
         run: |
           IPFSCID=$(npx subql publish -o -f .)
-          echo "IPFSCID=$IPFSCID" >> $GITHUB_ENV
+          echo "IPFSCID=$IPFSCID<<EOF" >> $GITHUB_ENV
           echo "CID: $IPFSCID"
+          echo "EOF" >> $GITHUB_ENV
       - name: Delete Project
         if: ${{ inputs.resetProject }}
         run: |
