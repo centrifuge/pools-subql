@@ -1,7 +1,7 @@
 name: 'pools-demo' #CHANGE ME BASED ON SUBQL DEPLOYMENT
 network:
   endpoint: wss://fullnode.demo.k-f.dev/public-ws
-  genesisHash: '0xe0e40f62affe742eb92d75c07830671ef3e0cc6efc1ecaf81cf34a28148e91f0'
+  chainId: '0xe0e40f62affe742eb92d75c07830671ef3e0cc6efc1ecaf81cf34a28148e91f0'
   chaintypes:
     file: ./dist/chaintypes.js
 dataSources:
