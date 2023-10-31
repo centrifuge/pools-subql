@@ -1,0 +1,7 @@
+specVersion: 1.0.0
+query:
+  name: '@subql/query'
+  version: '2'
+projects:
+  - project-centrifuge.yaml
+  - project-ethereum.yaml
