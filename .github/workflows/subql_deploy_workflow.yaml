@@ -56,10 +56,10 @@ jobs:
         run: yarn subql --version
       - name: Publish SubQL version
         run: |
-          IPFSCID=$(npx subql publish -o -f .)
-          echo "IPFSCID=$IPFSCID<<EOF" >> $GITHUB_ENV
+          OUTPUT=$(npx subql publish -o -f .)
+          IPFSCID="${OUTPUT##*' '}"
+          echo "IPFSCID=$IPFSCID" >> $GITHUB_ENV
           echo "CID: $IPFSCID"
-          echo "EOF" >> $GITHUB_ENV
       - name: Delete Project
         if: ${{ inputs.resetProject }}
         run: |
