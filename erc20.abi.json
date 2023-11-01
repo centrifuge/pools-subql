@@ -1,10 +1,24 @@
-[{
-  "anonymous": false,
-  "inputs": [
-    { "indexed": true, "internalType": "uint64", "name": "poolId", "type": "uint64" },
-    { "indexed": true, "internalType": "bytes16", "name": "trancheId", "type": "bytes16" },
-    { "indexed": true, "internalType": "address", "name": "trancheToken", "type": "address" }
-  ],
-  "name": "DeployTranche",
-  "type": "event"
-}]
+[
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "name": "value",
+        "type": "uint256"
+      }
+    ],
+    "name": "Transfer",
+    "type": "event"
+  }
+]
