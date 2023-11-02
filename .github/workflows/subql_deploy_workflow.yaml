@@ -21,6 +21,8 @@ on:
     secrets:
       accessToken:
         required: true
+      ethNodeApiKey:
+        required: true
 
 jobs:
   subql_deploy_workflow:
@@ -33,11 +35,14 @@ jobs:
       SUBQL_PROJ_ORG: ${{ inputs.projOrg }}
       SUBQL_PROJ_IMAGE: ${{ inputs.projImage }}
       SUBQL_DEPLOYMENT_TYPE: ${{ inputs.deploymentType }}
+      ETH_NODE_API_KEY: ${{ secrets.ethNodeApiKey }}
     steps:
       - name: Check out repo's default branch
         uses: actions/checkout@v3
-      - name: Generate new project.yaml
-        run: yq ". *=d load(\"chains/$CHAIN_ID.yaml\")" chains/base.yaml > project.yaml
+      - name: Generate new project-centrifuge.yaml
+        run: yq ". *=d load(\"chains-cfg/$CHAIN_ID.yaml\")" chains-cfg/base.yaml > project-centrifuge.yaml
+      - name: Generate new project-ethereum.yaml
+        run: yq ". *=d load(\"chains-evm/$CHAIN_ID.yaml\")" chains-evm/base.yaml | envsubst > project-ethereum.yaml
       - name: Extract Chain Parameters to ENV
         run: |
           echo "SUBQL_PROJ_NAME=$(yq '.name' project.yaml)" >> $GITHUB_ENV

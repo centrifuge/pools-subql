@@ -21,7 +21,7 @@ jobs:
       - name: Check out repo's default branch
         uses: actions/checkout@v3
       - name: Generate new project.yaml
-        run: yq ". *=d load(\"chains/$CHAIN_ID.yaml\")" chains/base.yaml > project.yaml
+        run: yq ". *=d load(\"chains-cfg/$CHAIN_ID.yaml\")" chains-cfg/base.yaml > project.yaml
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
@@ -41,7 +41,7 @@ jobs:
       - name: 'Checkout Repository'
         uses: actions/checkout@v3
       - name: Initialise project.yaml
-        run: cp chains/base.yaml project.yaml
+        run: cp chains-cfg/base.yaml project.yaml
       - name: 'Setup Node'
         uses: actions/setup-node@v3
         with:
@@ -59,7 +59,7 @@ jobs:
       - name: 'Checkout Repository'
         uses: actions/checkout@v3
       - name: Initialise project.yaml
-        run: cp chains/base.yaml project.yaml
+        run: cp chains-cfg/base.yaml project.yaml
       - name: 'Setup Node'
         uses: actions/setup-node@v3
         with:

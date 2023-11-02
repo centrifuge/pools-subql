@@ -139,5 +139,6 @@ src/types
 .data/
 
 project.yaml
-centrifuge.yaml
+project-*.yaml
+
 
