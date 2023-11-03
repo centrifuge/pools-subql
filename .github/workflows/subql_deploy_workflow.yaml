@@ -108,6 +108,5 @@ jobs:
           --type=$SUBQL_DEPLOYMENT_TYPE \
           --disableHistorical \
           --indexerBatchSize=30 \
-          --indexerWorkers=2 \
           --indexerVersion="$SUBQL_ETH_INDEXER_VERSION" \
           --queryVersion="$SUBQL_QUERY_VERSION"
