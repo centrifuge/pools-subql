@@ -93,8 +93,6 @@ jobs:
           --ipfsCID="$CFG_IPFSCID" \
           --type=$SUBQL_DEPLOYMENT_TYPE \
           --disableHistorical \
-          --indexerBatchSize=30 \
-          --indexerWorkers=2 \
           --indexerVersion="$SUBQL_INDEXER_VERSION" \
           --queryVersion="$SUBQL_QUERY_VERSION"
       - name: Deploy EVM Version
@@ -108,5 +106,7 @@ jobs:
           --ipfsCID="$EVM_IPFSCID" \
           --type=$SUBQL_DEPLOYMENT_TYPE \
           --disableHistorical \
+          --indexerBatchSize=30 \
+          --indexerWorkers=2 \
           --indexerVersion="$SUBQL_INDEXER_VERSION" \
           --queryVersion="$SUBQL_QUERY_VERSION"
