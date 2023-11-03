@@ -138,6 +138,6 @@ src/types
 
 .data/
 
-project.yaml
-centrifuge.yaml
-
+**/project.yaml
+**/project-centrifuge.yaml
+**/project-ethereum.yaml
