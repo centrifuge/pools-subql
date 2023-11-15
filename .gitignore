@@ -141,3 +141,4 @@ src/types
 **/project.yaml
 **/project-centrifuge.yaml
 **/project-ethereum.yaml
+*-cid
