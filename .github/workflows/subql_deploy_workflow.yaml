@@ -96,17 +96,17 @@ jobs:
           --disableHistorical \
           --indexerVersion="$SUBQL_INDEXER_VERSION" \
           --queryVersion="$SUBQL_QUERY_VERSION"
-      - name: Deploy EVM Version
-        run: |
-          npx subql deployment:deploy \
-          -d \
-          --org="$SUBQL_PROJ_ORG" \
-          --endpoint="$SUBQL_EVM_ENDPOINT" \
-          --dict="$SUBQL_EVM_DICT" \
-          --projectName="$SUBQL_PROJ_NAME" \
-          --ipfsCID="$EVM_IPFSCID" \
-          --type=$SUBQL_DEPLOYMENT_TYPE \
-          --disableHistorical \
-          --indexerBatchSize=30 \
-          --indexerVersion="$SUBQL_ETH_INDEXER_VERSION" \
-          --queryVersion="$SUBQL_QUERY_VERSION"
+      # - name: Deploy EVM Version
+      #   run: |
+      #     npx subql deployment:deploy \
+      #     -d \
+      #     --org="$SUBQL_PROJ_ORG" \
+      #     --endpoint="$SUBQL_EVM_ENDPOINT" \
+      #     --dict="$SUBQL_EVM_DICT" \
+      #     --projectName="$SUBQL_PROJ_NAME" \
+      #     --ipfsCID="$EVM_IPFSCID" \
+      #     --type=$SUBQL_DEPLOYMENT_TYPE \
+      #     --disableHistorical \
+      #     --indexerBatchSize=30 \
+      #     --indexerVersion="$SUBQL_ETH_INDEXER_VERSION" \
+      #     --queryVersion="$SUBQL_QUERY_VERSION"

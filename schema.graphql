@@ -267,6 +267,12 @@ type Account @entity {
   currencyBalances: [CurrencyBalance] @derivedFrom(field: "account")
 }
 
+type EvmAccount @entity {
+  id: ID! #Address
+  account: Account! @index
+  chainId: Int!
+}
+
 type TrancheBalance @entity {
   id: ID! # address - pool id - tranche id
   account: Account! @index

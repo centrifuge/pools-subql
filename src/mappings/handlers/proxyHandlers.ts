@@ -22,8 +22,8 @@ export async function handleProxyPureCreated(event: SubstrateEvent): Promise<voi
 
   const [address, createdByAddress, proxyType] = event.event.data
 
-  const account = await AccountService.getOrInit(address.toString())
-  const createdBy = await AccountService.getOrInit(createdByAddress.toString())
+  const account = await AccountService.getOrInit(address.toHex())
+  const createdBy = await AccountService.getOrInit(createdByAddress.toHex())
 
   const pureProxy = new PureProxy(`${account.toString()}`, account.id, createdBy.id)
   pureProxy.proxyType = proxyType.toString()

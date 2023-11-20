@@ -9,10 +9,13 @@ export class CurrencyService extends Currency {
     return currency
   }
 
-  static async getOrInit(ticker: string) {
-    let currency = await this.get(ticker)
+  static async getOrInit(ticker: string, assetId?: string) {
+    const id = assetId ? `${ticker}-${assetId}` : ticker
+    let currency = await this.get(id)
     if (currency === undefined) {
-      const assetMetadata = (await api.query.ormlAssetRegistry.metadata(ticker)) as Option<AssetMetadata>
+      const assetMetadata = (await api.query.ormlAssetRegistry.metadata({
+        [ticker]: assetId ?? null,
+      })) as Option<AssetMetadata>
       let decimals: number
       if (assetMetadata.isSome) {
         decimals = assetMetadata.unwrap().decimals.toNumber()
@@ -21,7 +24,7 @@ export class CurrencyService extends Currency {
       } else {
         decimals = 18
       }
-      currency = this.init(ticker, decimals)
+      currency = this.init(id, decimals)
       await currency.save()
     }
     return currency as CurrencyService

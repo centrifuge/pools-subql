@@ -13,6 +13,7 @@ import { BorrowerTransactionService } from '../services/borrowerTransactionServi
 import { AccountService } from '../services/accountService'
 import { EpochService } from '../services/epochService'
 import { WAD } from '../../config'
+import { EvmAccountService } from '../services/evmAccountService'
 
 export const handleLoanCreated = errorHandler(_handleLoanCreated)
 async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedEvent>) {
@@ -22,7 +23,7 @@ async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedEvent>) {
   const pool = await PoolService.getById(poolId.toString())
   if (pool === undefined) throw new Error('Pool not found!')
 
-  const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toString())
+  const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toHex(), EvmAccountService)
 
   const loan = await LoanService.init(
     poolId.toString(),
@@ -88,7 +89,7 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Pr
     : borrowAmount.asExternal.quantity.mul(borrowAmount.asExternal.settlementPrice).div(WAD).toString()
   logger.info(`Loan borrowed event for pool: ${poolId.toString()} amount: ${amount.toString()}`)
 
-  const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toString())
+  const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toHex(), EvmAccountService)
 
   // Update loan amount
   const loan = await LoanService.getById(poolId.toString(), loanId.toString())
@@ -136,7 +137,7 @@ async function _handleLoanRepaid(event: SubstrateEvent<LoanRepaidEvent>) {
 
   logger.info(`Loan repaid event for pool: ${poolId.toString()} amount: ${amount.toString()}`)
 
-  const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toString())
+  const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toHex(), EvmAccountService)
 
   const loan = await LoanService.getById(poolId.toString(), loanId.toString())
   await loan.repay(BigInt(amount))
@@ -195,7 +196,7 @@ async function _handleLoanClosed(event: SubstrateEvent<LoanClosedEvent>) {
   const pool = await PoolService.getById(poolId.toString())
   if (pool === undefined) throw new Error('Pool not found!')
 
-  const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toString())
+  const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toHex(), EvmAccountService)
 
   const loan = await LoanService.getById(poolId.toString(), loanId.toString())
   await loan.close()

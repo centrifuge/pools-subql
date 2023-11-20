@@ -7,6 +7,7 @@ import { CurrencyService } from '../services/currencyService'
 import { InvestorTransactionService } from '../services/investorTransactionService'
 import { PoolService } from '../services/poolService'
 import { TrancheService } from '../services/trancheService'
+import { EvmAccountService } from '../services/evmAccountService'
 
 export const handleTokenTransfer = errorHandler(_handleTokenTransfer)
 async function _handleTokenTransfer(event: SubstrateEvent<TokensTransferEvent>): Promise<void> {
@@ -21,15 +22,15 @@ async function _handleTokenTransfer(event: SubstrateEvent<TokensTransferEvent>):
     if (fromAddress.startsWith('pool') || toAddress.startsWith('pool')) return
 
     const [fromAccount, toAccount] = await Promise.all([
-      AccountService.getOrInit(from.toString()),
-      AccountService.getOrInit(to.toString()),
+      AccountService.getOrInit(from.toHex(), EvmAccountService),
+      AccountService.getOrInit(to.toHex(), EvmAccountService),
     ])
 
     const [poolId, trancheId] = currency.asTranche
 
     logger.info(
       `Tranche Token transfer tor tranche: ${poolId.toString()}-${trancheId.toString()}. ` +
-        `from: ${from.toString()} to: ${to.toString()} amount: ${amount.toString()} ` +
+        `from: ${from.toHex()} to: ${to.toHex()} amount: ${amount.toString()} ` +
         `at block ${event.block.block.header.number.toString()}`
     )
 
@@ -65,22 +66,23 @@ async function _handleTokenTransfer(event: SubstrateEvent<TokensTransferEvent>):
 
     // CURRENCY TOKEN TRANSFER
   } else {
-    const currencyId = currency.type
-    const currencyService = await CurrencyService.getOrInit(currencyId)
+    const currencyTicker = currency.type
+    const currencyId = currency.value.toString()
+    const currencyService = await CurrencyService.getOrInit(currencyTicker, currencyId)
     logger.info(
-      `Currency transfer ${currencyId} from: ${from.toString()} to: ${to.toString()} amount: ${amount.toString()} ` +
+      `Currency transfer ${currencyId} from: ${from.toHex()} to: ${to.toHex()} amount: ${amount.toString()} ` +
         `at block ${event.block.block.header.number.toString()}`
     )
 
     if (!fromAddress.startsWith('pool')) {
-      const fromAccount = await AccountService.getOrInit(from.toString())
+      const fromAccount = await AccountService.getOrInit(from.toHex(), EvmAccountService)
       const fromCurrencyBalance = await CurrencyBalanceService.getOrInit(fromAccount.id, currencyService.id)
       await fromCurrencyBalance.debit(amount.toBigInt())
       await fromCurrencyBalance.save()
     }
 
     if (!toAddress.startsWith('pool')) {
-      const toAccount = await AccountService.getOrInit(to.toString())
+      const toAccount = await AccountService.getOrInit(to.toHex(), EvmAccountService)
       const toCurrencyBalance = await CurrencyBalanceService.getOrInit(toAccount.id, currencyService.id)
       await toCurrencyBalance.credit(amount.toBigInt())
       await toCurrencyBalance.save()
@@ -93,12 +95,13 @@ async function _handleTokenEndowed(event: SubstrateEvent<TokensEndowedDepositedW
   const [currency, address, amount] = event.event.data
   if (currency.isTranche) return
   logger.info(
-    `Currency endowment in ${currency.toString()} for: ${address.toString()} amount: ${amount.toString()} ` +
+    `Currency endowment in ${currency.toString()} for: ${address.toHex()} amount: ${amount.toString()} ` +
       `at block ${event.block.block.header.number.toString()}`
   )
-  const currencyId = currency.type
-  const currencyService = await CurrencyService.getOrInit(currencyId)
-  const toAccount = await AccountService.getOrInit(address.toString())
+  const currencyTicker = currency.type
+  const currencyId = currency.value.toString()
+  const currencyService = await CurrencyService.getOrInit(currencyTicker, currencyId)
+  const toAccount = await AccountService.getOrInit(address.toHex(), EvmAccountService)
   const toCurrencyBalance = await CurrencyBalanceService.getOrInit(toAccount.id, currencyService.id)
   await toCurrencyBalance.credit(amount.toBigInt())
   await toCurrencyBalance.save()
@@ -109,12 +112,13 @@ async function _handleTokenDeposited(event: SubstrateEvent<TokensEndowedDeposite
   const [currency, address, amount] = event.event.data
   if (currency.isTranche) return
   logger.info(
-    `Currency deposit in ${currency.toString()} for: ${address.toString()} amount: ${amount.toString()} ` +
+    `Currency deposit in ${currency.toString()} for: ${address.toHex()} amount: ${amount.toString()} ` +
       `at block ${event.block.block.header.number.toString()}`
   )
-  const currencyId = currency.type
-  const currencyService = await CurrencyService.getOrInit(currencyId)
-  const toAccount = await AccountService.getOrInit(address.toString())
+  const currencyTicker = currency.type
+  const currencyId = currency.value.toString()
+  const currencyService = await CurrencyService.getOrInit(currencyTicker, currencyId)
+  const toAccount = await AccountService.getOrInit(address.toHex(), EvmAccountService)
   const toCurrencyBalance = await CurrencyBalanceService.getOrInit(toAccount.id, currencyService.id)
   await toCurrencyBalance.credit(amount.toBigInt())
   await toCurrencyBalance.save()
@@ -125,12 +129,13 @@ async function _handleTokenWithdrawn(event: SubstrateEvent<TokensEndowedDeposite
   const [currency, address, amount] = event.event.data
   if (currency.isTranche) return
   logger.info(
-    `Currency withdrawal in ${currency.toString()} for: ${address.toString()} amount: ${amount.toString()} ` +
+    `Currency withdrawal in ${currency.toString()} for: ${address.toHex()} amount: ${amount.toString()} ` +
       `at block ${event.block.block.header.number.toString()}`
   )
-  const currencyId = currency.type
-  const currencyService = await CurrencyService.getOrInit(currencyId)
-  const toAccount = await AccountService.getOrInit(address.toString())
+  const currencyTicker = currency.type
+  const currencyId = currency.value.toString()
+  const currencyService = await CurrencyService.getOrInit(currencyTicker, currencyId)
+  const toAccount = await AccountService.getOrInit(address.toHex(), EvmAccountService)
   const toCurrencyBalance = await CurrencyBalanceService.getOrInit(toAccount.id, currencyService.id)
   await toCurrencyBalance.debit(amount.toBigInt())
   await toCurrencyBalance.save()
