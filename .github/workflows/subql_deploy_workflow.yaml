@@ -33,6 +33,7 @@ jobs:
       SUBQL_PROJ_ORG: ${{ inputs.projOrg }}
       SUBQL_PROJ_IMAGE: ${{ inputs.projImage }}
       SUBQL_DEPLOYMENT_TYPE: ${{ inputs.deploymentType }}
+      SUBQL_DICTIONARY: https://api.subquery.network/sq/centrifuge/centrifuge-dictionary
     steps:
       - name: Check out repo's default branch
         uses: actions/checkout@v3
@@ -88,4 +89,5 @@ jobs:
           --type=$SUBQL_DEPLOYMENT_TYPE \
           --disableHistorical \
           --indexerVersion="$SUBQL_INDEXER_VERSION" \
-          --queryVersion="$SUBQL_QUERY_VERSION"
+          --queryVersion="$SUBQL_QUERY_VERSION" \
+          --dict="$SUBQL_DICTIONARY"
