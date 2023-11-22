@@ -17,3 +17,5 @@ export function errorHandler<TFunc extends (...args: any[]) => any>(
 export function errorLogger<E extends Error>(err: E) {
   logger.error(err)
 }
+
+export const  missingPool = new Error('Pool not found or untracked! Maybe it was created before starting block?')
