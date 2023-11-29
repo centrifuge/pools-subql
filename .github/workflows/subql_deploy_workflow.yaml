@@ -33,7 +33,6 @@ jobs:
       SUBQL_PROJ_ORG: ${{ inputs.projOrg }}
       SUBQL_PROJ_IMAGE: ${{ inputs.projImage }}
       SUBQL_DEPLOYMENT_TYPE: ${{ inputs.deploymentType }}
-      SUBQL_DICTIONARY: https://api.subquery.network/sq/centrifuge/centrifuge-dictionary
     steps:
       - name: Check out repo's default branch
         uses: actions/checkout@v3
@@ -44,6 +43,7 @@ jobs:
           echo "SUBQL_PROJ_NAME=$(yq '.name' project.yaml)" >> $GITHUB_ENV
           echo "SUBQL_PROJ_DECRIPTION=$(yq '.description' project.yaml)" >> $GITHUB_ENV
           echo "SUBQL_ENDPOINT=$(yq '.network.endpoint' project.yaml)" >> $GITHUB_ENV
+          echo "SUBQL_DICTIONARY=$(yq '.network.dictionary' project.yaml)" >> $GITHUB_ENV
       - name: Setup Node
         uses: actions/setup-node@v3
         with:

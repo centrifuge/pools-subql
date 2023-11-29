@@ -12,6 +12,8 @@ description: 'SubQuery API powered by EMBRIO.tech to query Centrifuge chain data
 repository: https://github.com/centrifuge/pools-subql
 schema:
   file: ./schema.graphql
+network:
+  dictionary: ''
 dataSources:
   - kind: substrate/Runtime
     startBlock: 1
