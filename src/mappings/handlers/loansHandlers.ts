@@ -226,7 +226,7 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
       `to loan: ${toLoanId.toString()} amount: ${amount.toString()}`
   )
 
-  const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toHex(), EvmAccountService)
+  const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toString())
 
   const fromLoan = await LoanService.getById(poolId.toString(), fromLoanId.toString())
   await fromLoan.repay(amount.toBigInt())
