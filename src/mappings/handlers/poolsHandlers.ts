@@ -1,5 +1,5 @@
 import { SubstrateEvent } from '@subql/types'
-import { errorHandler } from '../../helpers/errorHandler'
+import { errorHandler, missingPool } from '../../helpers/errorHandler'
 import { EpochService } from '../services/epochService'
 import { PoolService } from '../services/poolService'
 import { TrancheService } from '../services/trancheService'
@@ -57,7 +57,7 @@ async function _handlePoolUpdated(event: SubstrateEvent<PoolUpdatedEvent>): Prom
   logger.info(`Pool ${poolId.toString()} updated on block ${event.block.block.header.number}`)
 
   const pool = await PoolService.getById(poolId.toString())
-  if (pool === undefined) throw new Error('Pool not found!')
+  if (pool === undefined) throw missingPool
 
   await pool.initData()
   await pool.save()
@@ -87,6 +87,9 @@ async function _handleEpochClosed(event: SubstrateEvent<EpochClosedExecutedEvent
   logger.info(
     `Epoch ${epochId.toNumber()} closed for pool ${poolId.toString()} in block ${event.block.block.header.number}`
   )
+  const pool = await PoolService.getById(poolId.toString())
+  if (pool === undefined) throw missingPool
+
   // Close the current epoch and open a new one
   const tranches = await TrancheService.getActives(poolId.toString())
   const epoch = await EpochService.getById(poolId.toString(), epochId.toNumber())
@@ -102,9 +105,6 @@ async function _handleEpochClosed(event: SubstrateEvent<EpochClosedExecutedEvent
   )
   await nextEpoch.saveWithStates()
 
-  const pool = await PoolService.getById(poolId.toString())
-  if (pool === undefined) throw new Error('Pool not found!')
-
   await pool.closeEpoch(epochId.toNumber())
   await pool.save()
 }
@@ -118,7 +118,7 @@ async function _handleEpochExecuted(event: SubstrateEvent<EpochClosedExecutedEve
   )
 
   const pool = await PoolService.getById(poolId.toString())
-  if (pool === undefined) throw new Error('Pool not found!')
+  if (pool === undefined) throw missingPool
 
   const epoch = await EpochService.getById(poolId.toString(), epochId.toNumber())
 
