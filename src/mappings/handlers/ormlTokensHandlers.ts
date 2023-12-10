@@ -1,5 +1,5 @@
 import { SubstrateEvent } from '@subql/types'
-import { errorHandler, missingPool } from '../../helpers/errorHandler'
+import { errorHandler } from '../../helpers/errorHandler'
 import { TokensEndowedDepositedWithdrawnEvent, TokensTransferEvent } from '../../helpers/types'
 import { AccountService } from '../services/accountService'
 import { CurrencyBalanceService } from '../services/currencyBalance'
@@ -35,7 +35,7 @@ async function _handleTokenTransfer(event: SubstrateEvent<TokensTransferEvent>):
 
     // Get corresponding pool
     const pool = await PoolService.getById(poolId.toString())
-    if (pool === undefined) missingPool
+    if (pool === undefined) throw new Error('Pool not found!')
 
     const tranche = await TrancheService.getById(poolId.toString(), trancheId.toHex())
     if (tranche === undefined) throw new Error('Tranche not found!')

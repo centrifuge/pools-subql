@@ -1,5 +1,5 @@
 import { SubstrateEvent } from '@subql/types'
-import { errorHandler, missingPool } from '../../helpers/errorHandler'
+import { errorHandler } from '../../helpers/errorHandler'
 import { EpochService } from '../services/epochService'
 import { PoolService } from '../services/poolService'
 import { TrancheService } from '../services/trancheService'
@@ -19,7 +19,7 @@ async function _handleInvestOrderUpdated(event: SubstrateEvent<OrderUpdatedEvent
   )
 
   const pool = await PoolService.getById(poolId.toString())
-  if (pool === undefined) throw missingPool
+  if (pool === undefined) throw new Error('Pool not found!')
 
   const account = await AccountService.getOrInit(address.toString())
   const tranche = await TrancheService.getById(poolId.toString(), trancheId.toHex())
@@ -80,7 +80,7 @@ async function _handleRedeemOrderUpdated(event: SubstrateEvent<OrderUpdatedEvent
   )
   // Get corresponding pool
   const pool = await PoolService.getById(poolId.toString())
-  if (pool === undefined) throw missingPool
+  if (pool === undefined) throw new Error('Pool not found!')
 
   const account = await AccountService.getOrInit(address.toString())
   const tranche = await TrancheService.getById(poolId.toString(), trancheId.toHex())
@@ -140,7 +140,7 @@ async function _handleInvestOrdersCollected(event: SubstrateEvent<InvestOrdersCo
   )
 
   const pool = await PoolService.getById(poolId.toString())
-  if (pool === undefined) throw missingPool
+  if (pool === undefined) throw new Error('Pool not found!')
   const endEpochId = pool.lastEpochClosed
   logger.info(`Collection for ending epoch: ${endEpochId}`)
 
@@ -185,7 +185,7 @@ async function _handleRedeemOrdersCollected(event: SubstrateEvent<RedeemOrdersCo
   )
 
   const pool = await PoolService.getById(poolId.toString())
-  if (pool === undefined) throw missingPool
+  if (pool === undefined) throw new Error('Pool not found!')
   const endEpochId = pool.lastEpochClosed
   logger.info(`Collection for ending epoch: ${endEpochId}`)
 
