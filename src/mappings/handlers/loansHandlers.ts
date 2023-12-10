@@ -3,14 +3,13 @@ import {
   LoanBorrowedEvent,
   LoanClosedEvent,
   LoanCreatedEvent,
-  LoanDebtTransferred,
   LoanRepaidEvent,
   LoanWrittenOffEvent,
 } from '../../helpers/types'
-import { errorHandler, missingPool } from '../../helpers/errorHandler'
+import { errorHandler } from '../../helpers/errorHandler'
 import { PoolService } from '../services/poolService'
 import { LoanService } from '../services/loanService'
-import { BorrowerTransactionData, BorrowerTransactionService } from '../services/borrowerTransactionService'
+import { BorrowerTransactionService } from '../services/borrowerTransactionService'
 import { AccountService } from '../services/accountService'
 import { EpochService } from '../services/epochService'
 import { WAD } from '../../config'
@@ -21,7 +20,7 @@ async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedEvent>) {
   logger.info(`Loan created event for pool: ${poolId.toString()} loan: ${loanId.toString()}`)
 
   const pool = await PoolService.getById(poolId.toString())
-  if (pool === undefined) throw missingPool
+  if (pool === undefined) throw new Error('Pool not found!')
 
   const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toString())
 
@@ -82,7 +81,7 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Pr
   const [poolId, loanId, borrowAmount] = event.event.data
 
   const pool = await PoolService.getById(poolId.toString())
-  if (pool === undefined) throw missingPool
+  if (pool === undefined) throw new Error('Pool not found!')
 
   const amount = borrowAmount.isInternal
     ? borrowAmount.asInternal.toString()
@@ -128,7 +127,7 @@ async function _handleLoanRepaid(event: SubstrateEvent<LoanRepaidEvent>) {
   const [poolId, loanId, { principal, interest, unscheduled }] = event.event.data
 
   const pool = await PoolService.getById(poolId.toString())
-  if (pool === undefined) throw missingPool
+  if (pool === undefined) throw new Error('Pool not found!')
 
   const principalAmount = principal.isInternal
     ? principal.asInternal
@@ -182,7 +181,7 @@ async function _handleLoanWrittenOff(event: SubstrateEvent<LoanWrittenOffEvent>)
   await loan.save()
 
   const pool = await PoolService.getById(poolId.toString())
-  if (pool === undefined) throw missingPool
+  if (pool === undefined) throw new Error('Pool not found!')
 
   await pool.increaseWriteOff(loan.writtenOffAmountByPeriod)
   await pool.save()
@@ -194,7 +193,7 @@ async function _handleLoanClosed(event: SubstrateEvent<LoanClosedEvent>) {
   logger.info(`Loan closed event for pool: ${poolId.toString()} loanId: ${loanId.toString()}`)
 
   const pool = await PoolService.getById(poolId.toString())
-  if (pool === undefined) throw missingPool
+  if (pool === undefined) throw new Error('Pool not found!')
 
   const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toString())
 
@@ -212,45 +211,4 @@ async function _handleLoanClosed(event: SubstrateEvent<LoanClosedEvent>) {
     timestamp: event.block.timestamp,
   })
   await bt.save()
-}
-
-export const handleLoanDebtTransferred = errorHandler(_handleLoanDebtTransferred)
-async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransferred>) {
-  const [poolId, fromLoanId, toLoanId, amount] = event.event.data
-
-  const pool = await PoolService.getById(poolId.toString())
-  if (pool === undefined) throw missingPool
-
-  logger.info(
-    `Loan debt transferred event for pool: ${poolId.toString()}, from loan: ${fromLoanId.toString()} ` +
-      `to loan: ${toLoanId.toString()} amount: ${amount.toString()}`
-  )
-
-  const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toString())
-
-  const fromLoan = await LoanService.getById(poolId.toString(), fromLoanId.toString())
-  await fromLoan.repay(amount.toBigInt())
-  await fromLoan.updateItemMetadata()
-  await fromLoan.save()
-
-  const toLoan = await LoanService.getById(poolId.toString(), toLoanId.toString())
-  await toLoan.repay(amount.toBigInt())
-  await toLoan.updateItemMetadata()
-  await toLoan.save()
-
-  const txData: Omit<BorrowerTransactionData, 'loanId'> = {
-    poolId: poolId.toString(),
-    //loanId: loanId.toString(),
-    address: account.id,
-    epochNumber: pool.currentEpoch,
-    hash: event.extrinsic.extrinsic.hash.toString(),
-    timestamp: event.block.timestamp,
-    amount: amount.toBigInt(),
-  }
-
-  const repaidBt = await BorrowerTransactionService.repaid({ ...txData, loanId: fromLoanId.toString() })
-  await repaidBt.save()
-
-  const borrowedBt = await BorrowerTransactionService.borrowed({ ...txData, loanId: fromLoanId.toString() })
-  await borrowedBt.save()
 }

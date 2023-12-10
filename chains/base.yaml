@@ -99,11 +99,6 @@ dataSources:
           filter:
             module: loans
             method: Closed
-        - handler: handleLoanDebtTransferred
-          kind: substrate/EventHandler
-          filter:
-            module: loans
-            method: DebtTransferred
         - handler: handleTokenTransfer
           kind: substrate/EventHandler
           filter:
