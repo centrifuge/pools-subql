@@ -1,5 +1,6 @@
 specVersion: 1.0.0
 name: centrifuge-pools
+description: 'SubQuery API powered by EMBRIO.tech to query Centrifuge chain data for analytics insights on how Centrifuge is unlocking economic opportunity for all by connecting people to borrow and lend money transparently and cost-effectively.'
 version: 1.0.0
 runner:
   node:
@@ -8,7 +9,6 @@ runner:
   query:
     name: '@subql/query'
     version: '2'
-description: 'SubQuery API powered by EMBRIO.tech to query Centrifuge chain data for analytics insights on how Centrifuge is unlocking economic opportunity for all by connecting people to borrow and lend money transparently and cost-effectively.'
 repository: https://github.com/centrifuge/pools-subql
 schema:
   file: ./schema.graphql
@@ -99,6 +99,11 @@ dataSources:
           filter:
             module: loans
             method: Closed
+        - handler: handleLoanDebtTransferred
+          kind: substrate/EventHandler
+          filter:
+            module: loans
+            method: DebtTransferred
         - handler: handleTokenTransfer
           kind: substrate/EventHandler
           filter:

@@ -21,28 +21,36 @@ on:
     secrets:
       accessToken:
         required: true
+      ethNodeApiKey:
+        required: true
 
 jobs:
   subql_deploy_workflow:
     runs-on: ubuntu-latest
     env:
-      SUBQL_INDEXER_VERSION: v3.1.0
+      SUBQL_INDEXER_VERSION: v3.4.7
+      SUBQL_ETH_INDEXER_VERSION: v3.1.2
       SUBQL_QUERY_VERSION: v2.6.0
       CHAIN_ID: ${{ inputs.chainId }}
       SUBQL_ACCESS_TOKEN: ${{ secrets.accessToken }}
       SUBQL_PROJ_ORG: ${{ inputs.projOrg }}
       SUBQL_PROJ_IMAGE: ${{ inputs.projImage }}
       SUBQL_DEPLOYMENT_TYPE: ${{ inputs.deploymentType }}
+      ETH_NODE_API_KEY: ${{ secrets.ethNodeApiKey }}
     steps:
       - name: Check out repo's default branch
         uses: actions/checkout@v3
-      - name: Generate new project.yaml
-        run: yq ". *=d load(\"chains/$CHAIN_ID.yaml\")" chains/base.yaml > project.yaml
+      - name: Generate new project-centrifuge.yaml
+        run: yq ". *=d load(\"chains-cfg/$CHAIN_ID.yaml\")" chains-cfg/base.yaml > project-centrifuge.yaml
+      - name: Generate new project-ethereum.yaml
+        run: yq ". *=d load(\"chains-evm/$CHAIN_ID.yaml\")" chains-evm/base.yaml | envsubst > project-ethereum.yaml
       - name: Extract Chain Parameters to ENV
         run: |
-          echo "SUBQL_PROJ_NAME=$(yq '.name' project.yaml)" >> $GITHUB_ENV
-          echo "SUBQL_PROJ_DECRIPTION=$(yq '.description' project.yaml)" >> $GITHUB_ENV
-          echo "SUBQL_ENDPOINT=$(yq '.network.endpoint' project.yaml)" >> $GITHUB_ENV
+          echo "SUBQL_PROJ_NAME=$(yq '.name' project-centrifuge.yaml)" >> $GITHUB_ENV
+          echo "SUBQL_PROJ_DECRIPTION=$(yq '.description' project-centrifuge.yaml)" >> $GITHUB_ENV
+          echo "SUBQL_CFG_ENDPOINT=$(yq '.network.endpoint' project-centrifuge.yaml)" >> $GITHUB_ENV
+          echo "SUBQL_EVM_ENDPOINT=$(yq '.network.endpoint' project-ethereum.yaml)" >> $GITHUB_ENV
+          echo "SUBQL_EVM_DICT=$(yq '.network.dictionary' project-ethereum.yaml)" >> $GITHUB_ENV
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
@@ -56,10 +64,9 @@ jobs:
         run: yarn subql --version
       - name: Publish SubQL version
         run: |
-          OUTPUT=$(npx subql publish -o -f .)
-          IPFSCID="${OUTPUT##*' '}"
-          echo "IPFSCID=$IPFSCID" >> $GITHUB_ENV
-          echo "CID: $IPFSCID"
+          npx subql publish -o -f .
+          echo "CFG_IPFSCID=$(cat .project-centrifuge-cid)" >> $GITHUB_ENV
+          echo "EVM_IPFSCID=$(cat .project-ethereum-cid)" >> $GITHUB_ENV
       - name: Delete Project
         if: ${{ inputs.resetProject }}
         run: |
@@ -77,15 +84,29 @@ jobs:
           --org="$SUBQL_PROJ_ORG" \
           --projectName="$SUBQL_PROJ_NAME" \
           --logoURL="$SUBQL_PROJ_IMAGE"
-      - name: Deploy Version
+      - name: Deploy CFG Version
         run: |
           npx subql deployment:deploy \
           -d \
           --org="$SUBQL_PROJ_ORG" \
-          --endpoint="$SUBQL_ENDPOINT" \
+          --endpoint="$SUBQL_CFG_ENDPOINT" \
           --projectName="$SUBQL_PROJ_NAME" \
-          --ipfsCID="$IPFSCID" \
+          --ipfsCID="$CFG_IPFSCID" \
           --type=$SUBQL_DEPLOYMENT_TYPE \
           --disableHistorical \
           --indexerVersion="$SUBQL_INDEXER_VERSION" \
           --queryVersion="$SUBQL_QUERY_VERSION"
+      # - name: Deploy EVM Version
+      #   run: |
+      #     npx subql deployment:deploy \
+      #     -d \
+      #     --org="$SUBQL_PROJ_ORG" \
+      #     --endpoint="$SUBQL_EVM_ENDPOINT" \
+      #     --dict="$SUBQL_EVM_DICT" \
+      #     --projectName="$SUBQL_PROJ_NAME" \
+      #     --ipfsCID="$EVM_IPFSCID" \
+      #     --type=$SUBQL_DEPLOYMENT_TYPE \
+      #     --disableHistorical \
+      #     --indexerBatchSize=30 \
+      #     --indexerVersion="$SUBQL_ETH_INDEXER_VERSION" \
+      #     --queryVersion="$SUBQL_QUERY_VERSION"

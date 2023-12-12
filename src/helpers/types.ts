@@ -319,49 +319,42 @@ export interface NftItemMetadata extends Struct {
   isFrozen: boolean
 }
 
-// collectionId, itemId
-export type LoanAsset = ITuple<[u64, u128]>
+export type LoanAsset = ITuple<[collectionId: u64, itemId: u128]>
+export type LoanCreatedEvent = ITuple<[poolId: u64, loanId: u64, loanInfo: LoanInfoCreated]>
+export type LoanClosedEvent = ITuple<[poolId: u64, loanId: u64, collateralInfo: LoanAsset]>
+export type LoanBorrowedEvent = ITuple<[poolId: u64, loanId: u64, amount: LoanPricingAmount]>
+export type LoanRepaidEvent = ITuple<[poolId: u64, loanId: u64, amount: LoanPricingRepaidAmount]>
+export type LoanWrittenOffEvent = ITuple<[poolId: u64, loanId: u64, writeOffStatus: LoanWriteOffStatus]>
+export type LoanDebtTransferred = ITuple<[poolId: u64, fromLoanId: u64, toLoanId: u64, amount: u128]>
 
-// admin, depositor, poolId, essence
-export type PoolCreatedEvent = ITuple<[AccountId32, AccountId32, u64, PoolEssence]>
+export type PoolCreatedEvent = ITuple<[admin: AccountId32, depositor: AccountId32, poolId: u64, essence: PoolEssence]>
+export type PoolUpdatedEvent = ITuple<[admin: AccountId32, old: PoolEssence, new: PoolEssence]>
 
-// poolId, old, new
-export type PoolUpdatedEvent = ITuple<[AccountId32, PoolEssence, PoolEssence]>
+export type EpochClosedExecutedEvent = ITuple<[poolId: u64, epochId: u32]>
+export type EpochSolutionEvent = ITuple<[poolId: u64, epochId: u32, solution: EpochSolution]>
 
-// poolId, loanId, loanInfo
-export type LoanCreatedEvent = ITuple<[u64, u64, LoanInfoCreated]>
-// poolId, loanId, collateralInfo
-export type LoanClosedEvent = ITuple<[u64, u64, LoanAsset]>
-// poolId, loanId, amount
-export type LoanBorrowedEvent = ITuple<[u64, u64, LoanPricingAmount]>
-// poolId, loanId, amount
-export type LoanRepaidEvent = ITuple<[u64, u64, LoanPricingRepaidAmount]>
-//poolId, loanId, writeOffStatus
-export type LoanWrittenOffEvent = ITuple<[u64, u64, LoanWriteOffStatus]>
-
-// poolId, epochId
-export type EpochClosedExecutedEvent = ITuple<[u64, u32]>
-
-// poolId, epochId, solution
-export type EpochSolutionEvent = ITuple<[u64, u32, EpochSolution]>
-
-// investmentId, who, processedOrders, collection, outcome(FullyCollected OR PartiallyCollected )
-export type InvestOrdersCollectedEvent = ITuple<[TrancheCurrency, AccountId32, Vec<u64>, InvestCollection, Enum]>
-
-// investmentId, who, processedOrders, collection, outcome(FullyCollected OR PartiallyCollected )
-export type RedeemOrdersCollectedEvent = ITuple<[TrancheCurrency, AccountId32, Vec<u64>, RedeemCollection, Enum]>
-
-// investmentId, submittedAt, who, amount
-export type OrderUpdatedEvent = ITuple<[TrancheCurrency, u64, AccountId32, u128]>
-
-// investmentId, orderId, fulfillment
-export type OrdersClearedEvent = ITuple<[TrancheCurrency, u64, OrdersFulfillment]>
-
-// currencyId: 'CommonTypesTokensCurrencyId'from,to,amount
-export type TokensTransferEvent = ITuple<[TokensCurrencyId, AccountId32, AccountId32, u128]>
-
-// currencyId, who, amount
-export type TokensEndowedDepositedWithdrawnEvent = ITuple<[TokensCurrencyId, AccountId32, u128]>
+export type InvestOrdersCollectedEvent = ITuple<
+  [
+    investmentId: TrancheCurrency,
+    who: AccountId32,
+    processedOrders: Vec<u64>,
+    collection: InvestCollection,
+    outcome: Enum
+  ]
+>
+export type RedeemOrdersCollectedEvent = ITuple<
+  [investmentId: TrancheCurrency, who: AccountId32, collections: Vec<u64>, collection: RedeemCollection, outcome: Enum]
+>
+export type OrderUpdatedEvent = ITuple<
+  [investmentId: TrancheCurrency, submittedAt: u64, who: AccountId32, amount: u128]
+>
+export type OrdersClearedEvent = ITuple<[investmentId: TrancheCurrency, orderId: u64, fulfillment: OrdersFulfillment]>
+export type TokensTransferEvent = ITuple<
+  [currencyId: TokensCurrencyId, from: AccountId32, to: AccountId32, amount: u128]
+>
+export type TokensEndowedDepositedWithdrawnEvent = ITuple<
+  [currencyId: TokensCurrencyId, who: AccountId32, amount: u128]
+>
 
 export type ExtendedRpc = typeof api.rpc & {
   pools: {

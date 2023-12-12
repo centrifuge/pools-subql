@@ -14,14 +14,16 @@ jobs:
     name: 'Check Build'
     runs-on: ubuntu-latest
     env:
-      SUBQL_INDEXER_VERSION: v1.21.1
-      SUBQL_QUERY_VERSION: v1.11.0
-      CHAIN_ID: development
+      SUBQL_INDEXER_VERSION: v3.4.7
+      SUBQL_QUERY_VERSION: v2.6.0
+      CHAIN_ID: demo
     steps:
       - name: Check out repo's default branch
         uses: actions/checkout@v3
-      - name: Generate new project.yaml
-        run: yq ". *=d load(\"chains/$CHAIN_ID.yaml\")" chains/base.yaml > project.yaml
+      - name: Generate new project-centrifuge.yaml
+        run: yq ". *=d load(\"chains-cfg/$CHAIN_ID.yaml\")" chains-cfg/base.yaml > project-centrifuge.yaml
+      - name: Generate new project-ethereum.yaml
+        run: yq ". *=d load(\"chains-evm/$CHAIN_ID.yaml\")" chains-evm/base.yaml | envsubst > project-ethereum.yaml
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
@@ -41,11 +43,11 @@ jobs:
       - name: 'Checkout Repository'
         uses: actions/checkout@v3
       - name: Initialise project.yaml
-        run: cp chains/base.yaml project.yaml
+        run: cp chains-cfg/base.yaml project.yaml
       - name: 'Setup Node'
         uses: actions/setup-node@v3
         with:
-          node-version: '16'
+          node-version: '18'
       - name: 'Install Dependencies'
         run: yarn install
       - name: 'Generate Entities'
@@ -59,11 +61,11 @@ jobs:
       - name: 'Checkout Repository'
         uses: actions/checkout@v3
       - name: Initialise project.yaml
-        run: cp chains/base.yaml project.yaml
+        run: cp chains-cfg/base.yaml project.yaml
       - name: 'Setup Node'
         uses: actions/setup-node@v3
         with:
-          node-version: '16'
+          node-version: '18'
       - name: 'Install Dependencies'
         run: yarn install
       - name: 'Generate Entities'

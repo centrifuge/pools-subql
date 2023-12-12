@@ -1,0 +1,47 @@
+specVersion: 1.0.0
+name: centrifuge-pools
+version: 1.0.0
+runner:
+  node:
+    name: '@subql/node-ethereum'
+    version: '3'
+  query:
+    name: '@subql/query'
+    version: '2'
+description: 'SubQuery API powered by EMBRIO.tech to query Centrifuge chain data for analytics insights on how Centrifuge is unlocking economic opportunity for all by connecting people to borrow and lend money transparently and cost-effectively.'
+repository: https://github.com/centrifuge/pools-subql
+schema:
+  file: './schema.graphql'
+dataSources:
+  - kind: ethereum/Runtime
+    startBlock: 9787696
+    options:
+      abi: poolManager
+      address: '0x53c155d44C03CC28f892f90aA0C442850716D75F'
+    assets:
+      poolManager:
+        file: './poolManager.abi.json'
+    mapping:
+      file: './dist/index.js'
+      handlers:
+        - handler: handleEvmDeployTranche
+          kind: ethereum/LogHandler
+          filter:
+            topics:
+              - DeployTranche(uint64 indexed poolId, bytes16 indexed trancheId, address indexed token)
+templates:
+  - name: TrancheTracker
+    kind: ethereum/Runtime
+    options:
+      abi: erc20
+    assets:
+      erc20:
+        file: './erc20.abi.json'
+    mapping:
+      file: ./dist/index.js
+      handlers:
+        - handler: handleEvmTransfer
+          kind: ethereum/LogHandler
+          filter:
+            topics:
+              - Transfer(address indexed from, address indexed to, uint256 value)
