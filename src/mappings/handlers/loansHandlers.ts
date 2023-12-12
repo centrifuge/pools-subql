@@ -252,7 +252,7 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
   const repaidBt = await BorrowerTransactionService.repaid({ ...txData, loanId: fromLoanId.toString() })
   await repaidBt.save()
 
-  const borrowedBt = await BorrowerTransactionService.borrowed({ ...txData, loanId: fromLoanId.toString() })
+  const borrowedBt = await BorrowerTransactionService.borrowed({ ...txData, loanId: toLoanId.toString() })
   await borrowedBt.save()
 
 }
