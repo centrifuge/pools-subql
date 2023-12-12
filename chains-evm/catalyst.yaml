@@ -1,0 +1,4 @@
+network:
+  chainId: '5' #Goerli
+  endpoint: "https://goerli.infura.io/v3/${ETH_NODE_API_KEY}"
+  dictionary: "https://dict-tyk.subquery.network/query/eth-goerli"
