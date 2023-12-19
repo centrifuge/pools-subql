@@ -107,13 +107,13 @@ export interface TokensCurrencyId extends Enum {
   isNative: boolean
   asNative: null
   isTranche: boolean
-  asTranche: ITuple<[u64, U8aFixed]> //poolId, trancheId
-  isKSM: boolean
-  asKSM: null
+  asTranche: ITuple<[poolId: u64, trancheId: U8aFixed]> //poolId, trancheId
   isAUSD: boolean
   asAUSD: null
   isForeignAsset: boolean
   asForeignAsset: u32
+  isStaking: boolean
+  asStaking: Enum
 }
 
 export interface TrancheSolution extends Struct {

@@ -2,5 +2,5 @@ name: 'centrifuge-subql'
 repository: 'https://github.com/embrio-tech/centrifuge-subql'
 network:
   chainId: '5' #Goerli
-  endpoint: "https://goerli.infura.io/v3/${ETH_NODE_API_KEY}"
+  endpoint: "https://goerli.infura.io/v3/a4ba76cd4be643618572e7467a444e3a"
   dictionary: "https://dict-tyk.subquery.network/query/eth-goerli"

@@ -21,7 +21,7 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
     const daysAgo90 = new Date(blockPeriodStart.valueOf() - 90 * 24 * 3600 * 1000)
 
     // Update Pool States
-    const pools = await PoolService.getAll()
+    const pools = await PoolService.getActivePools()
     for (const pool of pools) {
       await pool.updateState()
       await pool.updatePortfolioValuation()
@@ -61,7 +61,7 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
     }
 
     //Perform Snapshots and reset accumulators
-    await stateSnapshotter('Pool', 'PoolSnapshot', block, 'poolId')
+    await stateSnapshotter('Pool', 'PoolSnapshot', block, 'poolId', 'isActive', true)
     await stateSnapshotter('Tranche', 'TrancheSnapshot', block, 'trancheId', 'isActive', true)
     await stateSnapshotter('Loan', 'LoanSnapshot', block, 'loanId', 'isActive', true)
 

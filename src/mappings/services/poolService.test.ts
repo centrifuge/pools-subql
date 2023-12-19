@@ -44,7 +44,8 @@ const poolId = '4355663',
   now = new Date(),
   block = 235443
 
-const pool = PoolService.init(poolId, 'AUSD', BigInt(100000000), 12, 12, now, block)
+const pool = PoolService.seed(poolId)
+pool.init('AUSD', BigInt(100000000), 12, 12, now, block)
 
 describe('Given a new pool, when initialised', () => {
   test('then type is set to "ALL"', () => {

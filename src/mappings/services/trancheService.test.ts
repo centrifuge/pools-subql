@@ -38,9 +38,10 @@ const trancheDataNonResidual = {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const trancheData = [trancheDataResidual, trancheDataNonResidual] as any
 
-const tranches = trancheIds.map((trancheId, i) =>
-  TrancheService.init(poolId, trancheId, i, trancheData[Number(i !== 0)])
-)
+const tranches = trancheIds.map((trancheId, i) => {
+  const tranche = TrancheService.seed(poolId, trancheId)
+  return tranche.init(i, trancheData[Number(i !== 0)])
+})
 
 describe('Given a new tranche, when initialised', () => {
   test('then type is set to "ALL"', () => {

@@ -21,7 +21,7 @@ const tokenTypes = [
 export interface InvestorTransactionData {
   readonly poolId: string
   readonly trancheId: string
-  readonly epochNumber: number
+  readonly epochNumber?: number
   readonly address: string
   readonly hash: string
   readonly amount: bigint
@@ -39,11 +39,13 @@ export class InvestorTransactionService extends InvestorTransaction {
       data.address,
       data.poolId.toString(),
       `${data.poolId}-${data.trancheId}`,
-      data.epochNumber,
       data.timestamp,
-      `${data.poolId}-${data.epochNumber.toString()}`,
       type
     )
+
+    tx.epochNumber = data.epochNumber
+    tx.epochId = data.epochNumber ? `${data.poolId}-${data.epochNumber.toString()}` : undefined
+
     tx.tokenPrice = data.price
     tx.transactionFee = data.fee
 
