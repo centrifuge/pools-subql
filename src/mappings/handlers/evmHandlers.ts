@@ -57,7 +57,7 @@ async function _handleEvmTransfer(event: TransferLog): Promise<void> {
   if (toEvmAddress.toString() !== evmTokenAddress) {
     const toAddress = AccountService.evmToSubstrate(toEvmAddress.toString(), blockchain.id)
     const toAccount = await AccountService.getOrInit(toAddress)
-    const txIn = InvestorTransactionService.transferOut({ ...orderData, address: toAccount.id })
+    const txIn = InvestorTransactionService.transferIn({ ...orderData, address: toAccount.id })
     await txIn.save()
   }
 }
