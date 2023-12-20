@@ -24,6 +24,8 @@ dataSources:
     mapping:
       file: './dist/index.js'
       handlers:
+        - handler: handleEvmBlock
+          kind: ethereum/BlockHandler
         - handler: handleEvmDeployTranche
           kind: ethereum/LogHandler
           filter:

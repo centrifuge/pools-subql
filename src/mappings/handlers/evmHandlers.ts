@@ -1,3 +1,4 @@
+import { EthereumBlock } from '@subql/types-ethereum'
 import { createTrancheTrackerDatasource } from '../../types'
 import { errorHandler } from '../../helpers/errorHandler'
 import { DeployTrancheLog } from '../../types/abi-interfaces/PoolManagerAbi'
@@ -9,11 +10,16 @@ import { InvestorTransactionData, InvestorTransactionService } from '../services
 import { CurrencyService } from '../services/currencyService'
 import { BlockchainService } from '../services/blockchainService'
 
+export const handleEvmBlock = errorHandler(_handleEvmBlock)
+async function _handleEvmBlock(block: EthereumBlock): Promise<void> {
+  logger.info(`EVM Block ${block.number.toString()}`)
+}
+
 export const handleEvmDeployTranche = errorHandler(_handleEvmDeployTranche)
 async function _handleEvmDeployTranche(event: DeployTrancheLog): Promise<void> {
   const [_poolId, _trancheId, tokenAddress] = event.args
 
-  const chainId = parseInt(event.transaction.chainId,16).toString(10)
+  const chainId = parseInt(event.transaction.chainId, 16).toString(10)
   await BlockchainService.getOrInit(chainId)
 
   const poolId = _poolId.toString()
