@@ -1,7 +1,7 @@
 network:
-  chainId: '5' #Goerli
-  endpoint: "https://goerli.infura.io/v3/${ETH_NODE_API_KEY}"
-  dictionary: "https://dict-tyk.subquery.network/query/eth-goerli"
+  chainId: '1' # Ethereum Mainnet
+  endpoint: "https://mainnet.infura.io/v3/${ETH_NODE_API_KEY}"
+  dictionary: "https://gx.api.subquery.network/sq/subquery/eth-dictionary"
 dataSources:
   - kind: ethereum/Runtime
     startBlock: 18671269
