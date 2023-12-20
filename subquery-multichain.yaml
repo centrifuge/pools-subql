@@ -5,3 +5,4 @@ query:
 projects:
   - project-centrifuge.yaml
   - project-ethereum.yaml
+  - project-coinbase.yaml

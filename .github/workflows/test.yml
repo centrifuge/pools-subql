@@ -23,7 +23,9 @@ jobs:
       - name: Generate new project-centrifuge.yaml
         run: yq ". *=d load(\"chains-cfg/$CHAIN_ID.yaml\")" chains-cfg/base.yaml > project-centrifuge.yaml
       - name: Generate new project-ethereum.yaml
-        run: yq ". *=d load(\"chains-evm/$CHAIN_ID.yaml\")" chains-evm/base.yaml | envsubst > project-ethereum.yaml
+        run: yq ". *=d load(\"chains-eth/$CHAIN_ID.yaml\")" chains-eth/base.yaml | envsubst > project-ethereum.yaml
+      - name: Generate new project-coinbase.yaml
+        run: yq ". *=d load(\"chains-base/$CHAIN_ID.yaml\")" chains-eth/base.yaml | envsubst > project-coinbase.yaml
       - name: Setup Node
         uses: actions/setup-node@v3
         with:

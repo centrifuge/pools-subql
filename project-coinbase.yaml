@@ -1,0 +1,51 @@
+specVersion: 1.0.0
+name: 'centrifuge-subql'
+version: 1.0.0
+runner:
+  node:
+    name: '@subql/node-ethereum'
+    version: '3'
+  query:
+    name: '@subql/query'
+    version: '2'
+description: 'SubQuery API powered by EMBRIO.tech to query Centrifuge chain data for analytics insights on how Centrifuge is unlocking economic opportunity for all by connecting people to borrow and lend money transparently and cost-effectively.'
+repository: 'https://github.com/embrio-tech/centrifuge-subql'
+schema:
+  file: './schema.graphql'
+dataSources:
+  - kind: ethereum/Runtime
+    options:
+      abi: poolManager
+      address: '0xa5Beda1F48a07740b8f4bDb223C861Cc7702b14e'
+    assets:
+      poolManager:
+        file: './poolManager.abi.json'
+    mapping:
+      file: './dist/index.js'
+      handlers:
+        - handler: handleEvmDeployTranche
+          kind: ethereum/LogHandler
+          filter:
+            topics:
+              - DeployTranche(uint64 indexed poolId, bytes16 indexed trancheId, address indexed token)
+    startBlock: 13078300
+templates:
+  - name: TrancheTracker
+    kind: ethereum/Runtime
+    options:
+      abi: erc20
+    assets:
+      erc20:
+        file: './erc20.abi.json'
+    mapping:
+      file: ./dist/index.js
+      handlers:
+        - handler: handleEvmTransfer
+          kind: ethereum/LogHandler
+          filter:
+            topics:
+              - Transfer(address indexed from, address indexed to, uint256 value)
+network:
+  chainId: '84531' #Goerli
+  endpoint: https://goerli.base.org
+  #dictionary: "https://dict-tyk.subquery.network/query/eth-goerli"

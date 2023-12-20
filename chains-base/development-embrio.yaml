@@ -1,0 +1,9 @@
+name: 'centrifuge-subql'
+repository: 'https://github.com/embrio-tech/centrifuge-subql'
+network:
+  chainId: '84531' #Goerli
+  endpoint: https://goerli.base.org
+  dictionary: "https://api.subquery.network/sq/subquery/base-goerli-dictionary"
+dataSources:
+  - kind: ethereum/Runtime
+    startBlock: 13078300 
