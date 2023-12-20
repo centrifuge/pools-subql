@@ -9,28 +9,30 @@ type Pool @entity {
   # to get all entities by a field. Hence we add the same type field to all
   # pools, so we can do Pool.getByType("POOL").
   type: String! @index
+  isActive: Boolean! @index
 
-  createdAt: Date!
-  createdAtBlockNumber: Int!
 
-  currency: Currency!
-  metadata: String!
+  createdAt: Date
+  createdAtBlockNumber: Int
 
-  minEpochTime: Int!
-  maxPortfolioValuationAge: Int!
+  currency: Currency
+  metadata: String
+
+  minEpochTime: Int
+  maxPortfolioValuationAge: Int
 
   # This cannot reference Pool directly, since this leads to a cyclic dependency.
-  currentEpoch: Int!
+  currentEpoch: Int
   lastEpochClosed: Int
   lastEpochExecuted: Int
 
   #States
-  portfolioValuation: BigInt!
-  totalReserve: BigInt!
-  availableReserve: BigInt!
-  maxReserve: BigInt!
-  sumDebt: BigInt!
-  value: BigInt!
+  portfolioValuation: BigInt
+  totalReserve: BigInt
+  availableReserve: BigInt
+  maxReserve: BigInt
+  sumDebt: BigInt
+  value: BigInt
 
   # Aggregated transaction data over the last period
   sumBorrowedAmountByPeriod: BigInt
@@ -39,9 +41,9 @@ type Pool @entity {
   sumRedeemedAmountByPeriod: BigInt
   sumNumberOfLoansByPeriod: BigInt
 
-  sumNumberOfActiveLoans: BigInt!
-  sumDebtOverdue: BigInt!
-  sumDebtWrittenOffByPeriod: BigInt!
+  sumNumberOfActiveLoans: BigInt
+  sumDebtOverdue: BigInt
+  sumDebtWrittenOffByPeriod: BigInt
 
   # Cumulated transaction data since pool creation
   sumBorrowedAmount: BigInt
@@ -61,12 +63,12 @@ type PoolSnapshot @entity {
   periodStart: Date! @index
 
   #States
-  portfolioValuation: BigInt!
-  totalReserve: BigInt!
-  availableReserve: BigInt!
-  maxReserve: BigInt!
-  sumDebt: BigInt!
-  value: BigInt!
+  portfolioValuation: BigInt
+  totalReserve: BigInt
+  availableReserve: BigInt
+  maxReserve: BigInt
+  sumDebt: BigInt
+  value: BigInt
 
   # Aggregated transaction data over the last period
   sumBorrowedAmountByPeriod: BigInt
@@ -75,7 +77,7 @@ type PoolSnapshot @entity {
   sumRedeemedAmountByPeriod: BigInt
   sumNumberOfLoansByPeriod: BigInt
 
-  sumNumberOfActiveLoans: BigInt!
+  sumNumberOfActiveLoans: BigInt
 
   # Cumulated transaction data since pool creation
   sumBorrowedAmount: BigInt
@@ -85,30 +87,30 @@ type PoolSnapshot @entity {
 
 type Tranche @entity {
   id: ID! #poolId-trancheId
-  index: Int!
   type: String! @index
   pool: Pool! @index
-
   trancheId: String!
 
-  isResidual: Boolean!
-  seniority: Int!
+  index: Int
+
+  isResidual: Boolean
+  seniority: Int
   interestRatePerSec: BigInt
   minRiskBuffer: BigInt
 
-  isActive: Boolean! @index
+  isActive: Boolean @index
 
   tokenSupply: BigInt
   tokenPrice: BigInt
   sumDebt: BigInt
 
-  sumOutstandingInvestOrdersByPeriod: BigInt!
-  sumOutstandingRedeemOrdersByPeriod: BigInt!
-  sumOutstandingRedeemOrdersCurrencyByPeriod: BigInt!
+  sumOutstandingInvestOrdersByPeriod: BigInt
+  sumOutstandingRedeemOrdersByPeriod: BigInt
+  sumOutstandingRedeemOrdersCurrencyByPeriod: BigInt
 
-  sumFulfilledInvestOrdersByPeriod: BigInt!
-  sumFulfilledRedeemOrdersByPeriod: BigInt!
-  sumFulfilledRedeemOrdersCurrencyByPeriod: BigInt!
+  sumFulfilledInvestOrdersByPeriod: BigInt
+  sumFulfilledRedeemOrdersByPeriod: BigInt
+  sumFulfilledRedeemOrdersCurrencyByPeriod: BigInt
 
   yield30DaysAnnualized: BigInt
   yield90DaysAnnualized: BigInt
@@ -213,9 +215,9 @@ type InvestorTransaction @entity {
   account: Account! @index #Account @index
   pool: Pool! @index
   tranche: Tranche! @index
-  epochNumber: Int!
+  epochNumber: Int
   timestamp: Date!
-  epoch: Epoch! @index
+  epoch: Epoch @index
 
   type: InvestorTransactionType!
   tokenAmount: BigInt
@@ -256,6 +258,8 @@ type BorrowerTransaction @entity {
 
 type Account @entity {
   id: ID!
+  chain: Blockchain!
+  evmAddress: String @index
 
   pureProxies: [PureProxy] @derivedFrom(field: "account")
 
@@ -265,12 +269,6 @@ type Account @entity {
   outstandingOrders: [OutstandingOrder] @derivedFrom(field: "account")
   trancheBalances: [TrancheBalance] @derivedFrom(field: "account")
   currencyBalances: [CurrencyBalance] @derivedFrom(field: "account")
-}
-
-type EvmAccount @entity {
-  id: ID! #Address
-  account: Account! @index
-  chainId: Int!
 }
 
 type TrancheBalance @entity {
@@ -286,14 +284,6 @@ type TrancheBalance @entity {
   sumRedeemOrderedAmount: BigInt!
   sumRedeemUncollectedAmount: BigInt!
   sumRedeemCollectedAmount: BigInt!
-}
-
-type CurrencyBalance @entity {
-  id: ID! # address - currencyId
-  account: Account! @index
-
-  currency: Currency!
-  amount: BigInt!
 }
 
 enum LoanStatus {
@@ -375,6 +365,24 @@ type Proxy @entity {
 }
 
 type Currency @entity {
-  id: ID!
+  id: ID! #TODO: chainId - currencyType - [currencySpec]
+  chain: Blockchain!
   decimals: Int!
+
+  tokenAddress: String
+
+  pool: Pool
+  tranche: Tranche
+}
+
+type CurrencyBalance @entity {
+  id: ID! # address - currencyId
+  account: Account! @index
+
+  currency: Currency!
+  amount: BigInt!
+}
+
+type Blockchain @entity {
+  id: ID! #EVM chainId
 }

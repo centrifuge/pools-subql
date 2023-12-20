@@ -6,8 +6,21 @@ import { ExtendedRpc, LoanInfoActive, NavDetails, PoolDetails, PoolMetadata, Tra
 import { Pool } from '../../types'
 
 export class PoolService extends Pool {
-  static init(
-    poolId: string,
+  static seed(poolId: string) {
+    logger.info(`Seeding pool ${poolId}`)
+    return new this(`${poolId}`, 'ALL', false)
+  }
+
+  static async getOrSeed(poolId: string) {
+    let pool = await this.getById(poolId)
+    if(!pool) {
+      pool = this.seed(poolId)
+      await pool.save()
+    }
+    return pool
+  }
+
+  public init(
     currencyId: string,
     maxReserve: bigint,
     maxPortfolioValuationAge: number,
@@ -15,41 +28,45 @@ export class PoolService extends Pool {
     timestamp: Date,
     blockNumber: number
   ) {
-    const pool = new this(
-      poolId,
-      'ALL',
-      timestamp,
-      blockNumber,
-      currencyId,
-      '',
-      minEpochTime,
-      maxPortfolioValuationAge,
-      1,
-      BigInt(0),
-      BigInt(0),
-      BigInt(0),
-      maxReserve,
-      BigInt(0),
-      BigInt(0),
-      BigInt(0),
-      BigInt(0),
-      BigInt(0)
-    )
+    logger.info(`Initialising pool ${this.id}`)
+    this.isActive = true
+    this.createdAt = timestamp
+    this.createdAtBlockNumber = blockNumber
 
-    pool.sumBorrowedAmountByPeriod = BigInt(0)
-    pool.sumRepaidAmountByPeriod = BigInt(0)
-    pool.sumInvestedAmountByPeriod = BigInt(0)
-    pool.sumRedeemedAmountByPeriod = BigInt(0)
-    pool.sumNumberOfLoansByPeriod = BigInt(0)
+    this.minEpochTime = minEpochTime
+    this.maxPortfolioValuationAge = maxPortfolioValuationAge
 
-    pool.sumBorrowedAmount = BigInt(0)
-    pool.sumRepaidAmount = BigInt(0)
-    pool.sumNumberOfLoans = BigInt(0)
+    this.currentEpoch = 1
 
-    return pool
+    this.portfolioValuation = BigInt(0)
+    this.totalReserve = BigInt(0)
+    this.availableReserve = BigInt(0)
+    this.maxReserve = maxReserve
+
+    this.sumDebt = BigInt(0)
+    this.value = BigInt(0)
+
+    this.sumNumberOfActiveLoans = BigInt(0)
+    this.sumDebtOverdue = BigInt(0)
+    this.sumDebtWrittenOffByPeriod = BigInt(0)
+
+    this.sumBorrowedAmountByPeriod = BigInt(0)
+    this.sumRepaidAmountByPeriod = BigInt(0)
+    this.sumInvestedAmountByPeriod = BigInt(0)
+    this.sumRedeemedAmountByPeriod = BigInt(0)
+    this.sumNumberOfLoansByPeriod = BigInt(0)
+
+    this.sumBorrowedAmount = BigInt(0)
+    this.sumRepaidAmount = BigInt(0)
+    this.sumNumberOfLoans = BigInt(0)
+
+    this.currencyId = currencyId
+
+    return this
   }
 
   public async initData() {
+    logger.info(`Initialising data for pool: ${this.id}`)
     const [poolReq, metadataReq] = await Promise.all([
       api.query.poolSystem.pool<Option<PoolDetails>>(this.id),
       api.query.poolRegistry.poolMetadata<Option<PoolMetadata>>(this.id),
@@ -71,6 +88,11 @@ export class PoolService extends Pool {
 
   static async getAll() {
     const pools = (await paginatedGetter('Pool', 'type', 'ALL')) as PoolService[]
+    return pools.map((pool) => this.create(pool) as PoolService)
+  }
+
+  static async getActivePools() {
+    const pools = (await paginatedGetter('Pool', 'isActive', true)) as PoolService[]
     return pools.map((pool) => this.create(pool) as PoolService)
   }
 

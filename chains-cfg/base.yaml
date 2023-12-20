@@ -64,21 +64,21 @@ dataSources:
           filter:
             module: investments
             method: RedeemOrdersCollected
-        - handler: handleProxyAdded
-          kind: substrate/EventHandler
-          filter:
-            module: proxy
-            method: ProxyAdded
-        - handler: handleProxyRemoved
-          kind: substrate/EventHandler
-          filter:
-            module: proxy
-            method: ProxyRemoved
-        - handler: handleProxyPureCreated
-          kind: substrate/EventHandler
-          filter:
-            module: proxy
-            method: PureCreated
+        # - handler: handleProxyAdded
+        #   kind: substrate/EventHandler
+        #   filter:
+        #     module: proxy
+        #     method: ProxyAdded
+        # - handler: handleProxyRemoved
+        #   kind: substrate/EventHandler
+        #   filter:
+        #     module: proxy
+        #     method: ProxyRemoved
+        # - handler: handleProxyPureCreated
+        #   kind: substrate/EventHandler
+        #   filter:
+        #     module: proxy
+        #     method: PureCreated
         - handler: handleLoanCreated
           kind: substrate/EventHandler
           filter:

@@ -8,7 +8,6 @@ import { OutstandingOrderService } from '../services/outstandingOrderService'
 import { InvestorTransactionData, InvestorTransactionService } from '../services/investorTransactionService'
 import { AccountService } from '../services/accountService'
 import { TrancheBalanceService } from '../services/trancheBalanceService'
-import { EvmAccountService } from '../services/evmAccountService'
 
 export const handleInvestOrderUpdated = errorHandler(_handleInvestOrderUpdated)
 async function _handleInvestOrderUpdated(event: SubstrateEvent<OrderUpdatedEvent>): Promise<void> {
@@ -22,7 +21,7 @@ async function _handleInvestOrderUpdated(event: SubstrateEvent<OrderUpdatedEvent
   const pool = await PoolService.getById(poolId.toString())
   if (pool === undefined) throw missingPool
 
-  const account = await AccountService.getOrInit(address.toHex(), EvmAccountService)
+  const account = await AccountService.getOrInit(address.toHex())
   const tranche = await TrancheService.getById(poolId.toString(), trancheId.toHex())
 
   // Update tranche price
@@ -83,7 +82,7 @@ async function _handleRedeemOrderUpdated(event: SubstrateEvent<OrderUpdatedEvent
   const pool = await PoolService.getById(poolId.toString())
   if (pool === undefined) throw missingPool
 
-  const account = await AccountService.getOrInit(address.toHex(), EvmAccountService)
+  const account = await AccountService.getOrInit(address.toHex())
 
   const tranche = await TrancheService.getById(poolId.toString(), trancheId.toHex())
 
@@ -146,7 +145,7 @@ async function _handleInvestOrdersCollected(event: SubstrateEvent<InvestOrdersCo
   const endEpochId = pool.lastEpochClosed
   logger.info(`Collection for ending epoch: ${endEpochId}`)
 
-  const account = await AccountService.getOrInit(address.toHex(), EvmAccountService)
+  const account = await AccountService.getOrInit(address.toHex())
 
   const tranche = await TrancheService.getById(poolId.toString(), trancheId.toHex())
 
@@ -192,7 +191,7 @@ async function _handleRedeemOrdersCollected(event: SubstrateEvent<RedeemOrdersCo
   const endEpochId = pool.lastEpochClosed
   logger.info(`Collection for ending epoch: ${endEpochId}`)
 
-  const account = await AccountService.getOrInit(address.toHex(), EvmAccountService)
+  const account = await AccountService.getOrInit(address.toHex())
 
   const tranche = await TrancheService.getById(poolId.toString(), trancheId.toHex())
 

@@ -4,48 +4,53 @@ import { paginatedGetter } from '../../helpers/paginatedGetter'
 import { WAD } from '../../config'
 import { ExtendedRpc, TrancheDetails } from '../../helpers/types'
 import { Tranche, TrancheSnapshot } from '../../types'
-import { TrancheProps } from '../../types/models/Tranche'
+import  { TrancheProps } from '../../types/models/Tranche'
 
 export class TrancheService extends Tranche {
-  static init(poolId: string, trancheId: string, index: number, trancheData: TrancheDetails) {
-    const tranche = new this(
+
+  static seed(poolId: string, trancheId: string) {
+    return new this(
       `${poolId}-${trancheId}`,
-      index,
       'ALL',
       poolId,
-      trancheId,
-      trancheData.trancheType.isResidual,
-      trancheData.seniority.toNumber(),
-      true,
-      BigInt(0),
-      BigInt(0),
-      BigInt(0),
-      BigInt(0),
-      BigInt(0),
-      BigInt(0)
+      trancheId
     )
-    tranche.tokenPrice = nToBigInt(WAD)
-    tranche.sumDebt = trancheData.debt.toBigInt()
+  }
 
-    if (!tranche.isResidual) {
-      tranche.interestRatePerSec = trancheData.trancheType.asNonResidual.interestRatePerSec.toBigInt()
-      tranche.minRiskBuffer = trancheData.trancheType.asNonResidual.minRiskBuffer.toBigInt()
+  static async getOrSeed(poolId: string, trancheId: string) {
+    let tranche = await this.getById(poolId, trancheId)
+    if(!tranche) {
+      tranche = this.seed(poolId, trancheId)
+      await tranche.save()
+    }
+    return tranche
+  }
+
+  public init(index: number, trancheData: TrancheDetails) {
+    this.index = index
+    this.isResidual = trancheData.trancheType.isResidual
+    ;(this.seniority = trancheData.seniority.toNumber()), (this.isActive = true)
+
+    this.sumOutstandingInvestOrdersByPeriod = BigInt(0)
+    this.sumOutstandingRedeemOrdersByPeriod = BigInt(0)
+    this.sumOutstandingRedeemOrdersCurrencyByPeriod = BigInt(0)
+    this.sumFulfilledInvestOrdersByPeriod = BigInt(0)
+    this.sumFulfilledRedeemOrdersByPeriod = BigInt(0)
+    this.sumFulfilledRedeemOrdersCurrencyByPeriod = BigInt(0)
+
+    this.tokenPrice = nToBigInt(WAD)
+    this.sumDebt = trancheData.debt.toBigInt()
+
+    if (!this.isResidual) {
+      this.interestRatePerSec = trancheData.trancheType.asNonResidual.interestRatePerSec.toBigInt()
+      this.minRiskBuffer = trancheData.trancheType.asNonResidual.minRiskBuffer.toBigInt()
     }
 
-    return tranche
+    return this
   }
 
   static async getById(poolId: string, trancheId: string) {
     const tranche = (await this.get(`${poolId}-${trancheId}`)) as TrancheService
-    return tranche
-  }
-
-  static async getOrInit(poolId: string, trancheId: string, index: number, trancheData: TrancheDetails) {
-    let tranche = await this.getById(poolId, trancheId)
-    if (tranche === undefined) {
-      tranche = this.init(poolId, trancheId, index, trancheData)
-      await tranche.save()
-    }
     return tranche
   }
 

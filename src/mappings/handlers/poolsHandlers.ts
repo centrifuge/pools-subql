@@ -6,8 +6,9 @@ import { TrancheService } from '../services/trancheService'
 import { EpochClosedExecutedEvent, PoolCreatedEvent, PoolUpdatedEvent } from '../../helpers/types'
 import { OutstandingOrderService } from '../services/outstandingOrderService'
 import { InvestorTransactionService } from '../services/investorTransactionService'
-import { CurrencyService } from '../services/currencyService'
+import { CurrencyService, currencyFormatters } from '../services/currencyService'
 import { TrancheBalanceService } from '../services/trancheBalanceService'
+import { BlockchainService } from '../services/blockchainService'
 
 export const handlePoolCreated = errorHandler(_handlePoolCreated)
 async function _handlePoolCreated(event: SubstrateEvent<PoolCreatedEvent>): Promise<void> {
@@ -17,13 +18,16 @@ async function _handlePoolCreated(event: SubstrateEvent<PoolCreatedEvent>): Prom
       `created in block ${event.block.block.header.number}`
   )
 
-  const currencyTicker = essence.currency.type
-  const currencyId = essence.currency.value.toString()
-  const currency = await CurrencyService.getOrInit(currencyTicker, currencyId)
+  const blockchain = await BlockchainService.getOrInit()
+  const currency = await CurrencyService.getOrInit(
+    blockchain.id,
+    essence.currency.type,
+    ...currencyFormatters[essence.currency.type](essence.currency.value)
+  )
 
   // Initialise Pool
-  const pool = await PoolService.init(
-    poolId.toString(),
+  const pool = await PoolService.getOrSeed(poolId.toString())
+  await pool.init(
     currency.id,
     essence.maxReserve.toBigInt(),
     essence.maxNavAge.toNumber(),
@@ -36,13 +40,16 @@ async function _handlePoolCreated(event: SubstrateEvent<PoolCreatedEvent>): Prom
 
   // Initialise the tranches
   const trancheData = await pool.getTranches()
-  const tranches = essence.tranches.map((trancheEssence, index) => {
-    const trancheId = trancheEssence.currency.trancheId.toHex()
-    logger.info(`Creating tranche with id: ${pool.id}-${trancheId}`)
-    return TrancheService.init(pool.id, trancheId, index, trancheData[trancheId].data)
-  })
+  const tranches = await Promise.all(
+    essence.tranches.map((trancheEssence) => {
+      const trancheId = trancheEssence.currency.trancheId.toHex()
+      logger.info(`Creating tranche with id: ${pool.id}-${trancheId}`)
+      return TrancheService.getOrSeed(pool.id, trancheId)
+    })
+  )
 
-  for (const tranche of tranches) {
+  for (const [index, tranche] of tranches.entries()) {
+    await tranche.init(index, trancheData[tranche.trancheId].data)
     await tranche.updateSupply()
     await tranche.save()
   }
@@ -75,7 +82,8 @@ async function _handlePoolUpdated(event: SubstrateEvent<PoolUpdatedEvent>): Prom
   const tranches = await pool.getTranches()
   for (const [id, tranche] of Object.entries(tranches)) {
     logger.info(`Syncing tranche with id: ${id}`)
-    const trancheService = await TrancheService.getOrInit(poolId.toString(), id, tranche.index, tranche.data)
+    const trancheService = await TrancheService.getOrSeed(poolId.toString(), id)
+    trancheService.init(tranche.index, tranche.data)
     await trancheService.activate()
     await trancheService.updateSupply()
     await trancheService.updateDebt(tranche.data.debt.toBigInt())
