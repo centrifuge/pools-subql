@@ -2,3 +2,20 @@ network:
   chainId: '5' #Goerli
   endpoint: "https://goerli.infura.io/v3/${ETH_NODE_API_KEY}"
   dictionary: "https://dict-tyk.subquery.network/query/eth-goerli"
+dataSources:
+  - kind: ethereum/Runtime
+    startBlock: 10055835
+    options:
+      abi: poolManager
+      address: '0x53c155d44C03CC28f892f90aA0C442850716D75F'
+    assets:
+      poolManager:
+        file: './poolManager.abi.json'
+    mapping:
+      file: './dist/index.js'
+      handlers:
+        - handler: handleEvmDeployTranche
+          kind: ethereum/LogHandler
+          filter:
+            topics:
+              - DeployTranche(uint64 indexed poolId, bytes16 indexed trancheId, address indexed token)
