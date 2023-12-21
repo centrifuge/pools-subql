@@ -16,7 +16,6 @@ dataSources:
   - kind: ethereum/Runtime
     options:
       abi: poolManager
-      address: '0xa5Beda1F48a07740b8f4bDb223C861Cc7702b14e'
     assets:
       poolManager:
         file: './poolManager.abi.json'

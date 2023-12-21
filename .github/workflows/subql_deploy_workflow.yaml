@@ -40,6 +40,21 @@ jobs:
     steps:
       - name: Check out repo's default branch
         uses: actions/checkout@v3
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: npm
+      - name: Setup Yarn
+        run: yarn install --frozen-lockfile
+      - name: Codegen
+        run: |
+          cp chains-cfg/base.yaml project-centrifuge.yaml
+          cp chains-eth/base.yaml project-ethereum.yaml
+          cp chains-base/base.yaml project-coinbase.yaml
+          yarn codegen
+      - name: SubQL CLI Version
+        run: yarn subql --version
       - name: Generate new project-centrifuge.yaml
         run: '[ -e chains-cfg/$CHAIN_ID.yaml ] && yq ". *=d load(\"chains-cfg/$CHAIN_ID.yaml\")" chains-cfg/base.yaml > project-centrifuge.yaml || return 0'
       - name: Generate new project-ethereum.yaml
@@ -66,17 +81,6 @@ jobs:
           projects:
           EOF
           find ./ -regex '\./project-.*\.yaml$' -exec echo "  - {}" >> subquery-multichain.yaml \;
-      - name: Setup Node
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
-          cache: npm
-      - name: Setup Yarn
-        run: yarn install --frozen-lockfile
-      - name: Codegen
-        run: yarn codegen
-      - name: SubQL CLI Version
-        run: yarn subql --version
       - name: Publish SubQL version
         run: |
           npx subql publish -o -f .

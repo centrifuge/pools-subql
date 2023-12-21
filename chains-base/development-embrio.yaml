@@ -6,4 +6,6 @@ network:
   dictionary: "https://api.subquery.network/sq/subquery/base-goerli-dictionary"
 dataSources:
   - kind: ethereum/Runtime
-    startBlock: 13078300 
+    startBlock: 13078300
+    options: 
+      address: '0x53c155d44C03CC28f892f90aA0C442850716D75F'
