@@ -51,7 +51,7 @@ jobs:
         run: |
           cp chains-cfg/_root.yaml project-centrifuge.yaml
           cp chains-eth/_root.yaml project-ethereum.yaml
-          cp chains-base/_root.yaml project-_root.yaml
+          cp chains-base/_root.yaml project-base.yaml
           yarn codegen
       - name: SubQL CLI Version
         run: yarn subql --version
@@ -59,8 +59,8 @@ jobs:
         run: '[ -e chains-cfg/$CHAIN_ID.yaml ] && yq ". *=d load(\"chains-cfg/$CHAIN_ID.yaml\")" chains-cfg/_root.yaml > project-centrifuge.yaml || return 0'
       - name: Generate new project-ethereum.yaml
         run: '[ -e chains-eth/$CHAIN_ID.yaml ] && yq ". *=d load(\"chains-eth/$CHAIN_ID.yaml\")" chains-eth/_root.yaml > project-ethereum.yaml || return 0'
-      - name: Generate new project-_root.yaml
-        run: '[ -e chains-cfg/$CHAIN_ID.yaml ] && yq ". *=d load(\"chains-base/$CHAIN_ID.yaml\")" chains-eth/_root.yaml > project-_root.yaml || return 0'
+      - name: Generate new project-base.yaml
+        run: '[ -e chains-cfg/$CHAIN_ID.yaml ] && yq ". *=d load(\"chains-base/$CHAIN_ID.yaml\")" chains-eth/_root.yaml > project-base.yaml || return 0'
       - name: Extract Chain Parameters to ENV
         run: |
           echo "SUBQL_PROJ_NAME=$(yq '.name' project-centrifuge.yaml)" >> $GITHUB_ENV
@@ -69,8 +69,8 @@ jobs:
           echo "SUBQL_CFG_DICT=$(yq '.network.dictionary' project-centrifuge.yaml)" >> $GITHUB_ENV
           echo "SUBQL_ETH_ENDPOINT=$(yq '.network.endpoint' project-ethereum.yaml)" >> $GITHUB_ENV
           echo "SUBQL_ETH_DICT=$(yq '.network.dictionary' project-ethereum.yaml)" >> $GITHUB_ENV
-          echo "SUBQL_BASE_ENDPOINT=$(yq '.network.endpoint' project-_root.yaml)" >> $GITHUB_ENV
-          echo "SUBQL_BASE_DICT=$(yq '.network.dictionary' project-_root.yaml)" >> $GITHUB_ENV
+          echo "SUBQL_BASE_ENDPOINT=$(yq '.network.endpoint' project-base.yaml)" >> $GITHUB_ENV
+          echo "SUBQL_BASE_DICT=$(yq '.network.dictionary' project-base.yaml)" >> $GITHUB_ENV
       - name: Generate new subquery-multichain.yaml
         run: |
           cat > subquery-multichain.yaml <<'EOF'
