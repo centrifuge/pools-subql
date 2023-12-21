@@ -49,18 +49,18 @@ jobs:
         run: yarn install --frozen-lockfile
       - name: Codegen
         run: |
-          cp chains-cfg/_root.yaml project-centrifuge.yaml
-          cp chains-eth/_root.yaml project-ethereum.yaml
-          cp chains-base/_root.yaml project-base.yaml
+          cp chains-evm/_root.yaml project-centrifuge.yaml
+          cp chains-evm/_root.yaml project-ethereum.yaml
+          cp chains-evm/_root.yaml project-base.yaml
           yarn codegen
       - name: SubQL CLI Version
         run: yarn subql --version
       - name: Generate new project-centrifuge.yaml
-        run: '[ -e chains-cfg/$CHAIN_ID.yaml ] && yq ". *=d load(\"chains-cfg/$CHAIN_ID.yaml\")" chains-cfg/_root.yaml > project-centrifuge.yaml || return 0'
+        run: 'yq ". *=d load(\"chains-cfg/$CHAIN_ID.yaml\")" chains-cfg/_root.yaml > project-centrifuge.yaml || return 0'
       - name: Generate new project-ethereum.yaml
-        run: '[ -e chains-eth/$CHAIN_ID.yaml ] && yq ". *=d load(\"chains-eth/$CHAIN_ID.yaml\")" chains-eth/_root.yaml > project-ethereum.yaml || return 0'
+        run: '[ -e chains-evm/eth/$CHAIN_ID.yaml ] && yq ". *=d load(\"chains-evm/eth/$CHAIN_ID.yaml\")" chains-evm/_root.yaml > project-ethereum.yaml || return 0'
       - name: Generate new project-base.yaml
-        run: '[ -e chains-cfg/$CHAIN_ID.yaml ] && yq ". *=d load(\"chains-base/$CHAIN_ID.yaml\")" chains-eth/_root.yaml > project-base.yaml || return 0'
+        run: '[ -e chains-evm/base/$CHAIN_ID.yaml ] && yq ". *=d load(\"chains-evm/base/$CHAIN_ID.yaml\")" chains-evm/_root.yaml > project-base.yaml || return 0'
       - name: Extract Chain Parameters to ENV
         run: |
           echo "SUBQL_PROJ_NAME=$(yq '.name' project-centrifuge.yaml)" >> $GITHUB_ENV

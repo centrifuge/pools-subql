@@ -20,12 +20,6 @@ jobs:
     steps:
       - name: Check out repo's default branch
         uses: actions/checkout@v3
-      - name: Generate new project-centrifuge.yaml
-        run: yq ". *=d load(\"chains-cfg/$CHAIN_ID.yaml\")" chains-cfg/_root.yaml > project-centrifuge.yaml
-      - name: Generate new project-ethereum.yaml
-        run: yq ". *=d load(\"chains-eth/$CHAIN_ID.yaml\")" chains-eth/_root.yaml | envsubst > project-ethereum.yaml
-      - name: Generate new project-base.yaml
-        run: yq ". *=d load(\"chains-base/$CHAIN_ID.yaml\")" chains-eth/_root.yaml | envsubst > project-base.yaml
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
@@ -34,10 +28,13 @@ jobs:
       - name: Setup Yarn
         run: yarn install --frozen-lockfile
       - name: Codegen
-        run: yarn codegen
+        run: |
+          cp chains-evm/_root.yaml project-centrifuge.yaml
+          cp chains-evm/_root.yaml project-ethereum.yaml
+          cp chains-evm/_root.yaml project-base.yaml
+          yarn codegen
       - name: Build
         run: yarn build
-
   lint:
     name: 'Run Linter'
     runs-on: ubuntu-latest
