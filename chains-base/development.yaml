@@ -1,4 +1,0 @@
-network:
-  chainId: '84531' #Goerli
-  endpoint: wss://base-goerli.publicnode.com
-  #dictionary: "https://dict-tyk.subquery.network/query/eth-goerli"
