@@ -56,11 +56,11 @@ jobs:
       - name: SubQL CLI Version
         run: yarn subql --version
       - name: Generate new project-centrifuge.yaml
-        run: 'yq ". *=d load(\"chains-cfg/$CHAIN_ID.yaml\")" chains-cfg/_root.yaml > project-centrifuge.yaml || return 0'
+        run: 'yq ". *=d load(\"chains-cfg/$CHAIN_ID.yaml\")" chains-cfg/_root.yaml > project-centrifuge.yaml || true'
       - name: Generate new project-ethereum.yaml
-        run: '[ -e chains-evm/eth/$CHAIN_ID.yaml ] && yq ". *=d load(\"chains-evm/eth/$CHAIN_ID.yaml\")" chains-evm/_root.yaml > project-ethereum.yaml || return 0'
+        run: '[ -e chains-evm/eth/$CHAIN_ID.yaml ] && yq ". *=d load(\"chains-evm/eth/$CHAIN_ID.yaml\")" chains-evm/_root.yaml > project-ethereum.yaml || true'
       - name: Generate new project-base.yaml
-        run: '[ -e chains-evm/base/$CHAIN_ID.yaml ] && yq ". *=d load(\"chains-evm/base/$CHAIN_ID.yaml\")" chains-evm/_root.yaml > project-base.yaml || return 0'
+        run: '[ -e chains-evm/base/$CHAIN_ID.yaml ] && yq ". *=d load(\"chains-evm/base/$CHAIN_ID.yaml\")" chains-evm/_root.yaml > project-base.yaml || true'
       - name: Extract Chain Parameters to ENV
         run: |
           echo "SUBQL_PROJ_NAME=$(yq '.name' project-centrifuge.yaml)" >> $GITHUB_ENV
@@ -84,9 +84,9 @@ jobs:
       - name: Publish SubQL version
         run: |
           npx subql publish -o -f .
-          echo "CFG_IPFSCID=$(cat .project-centrifuge-cid)" >> $GITHUB_ENV || return 0
-          echo "ETH_IPFSCID=$(cat .project-ethereum-cid)" >> $GITHUB_ENV || return 0
-          echo "BASE_IPFSCID=$(cat .project-base-cid)" >> $GITHUB_ENV || return 0
+          echo "CFG_IPFSCID=$(cat .project-centrifuge-cid)" >> $GITHUB_ENV || true
+          echo "ETH_IPFSCID=$(cat .project-ethereum-cid)" >> $GITHUB_ENV || true
+          echo "BASE_IPFSCID=$(cat .project-base-cid)" >> $GITHUB_ENV || true
       - name: Delete Project
         if: ${{ inputs.resetProject }}
         run: |
