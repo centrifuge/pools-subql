@@ -1,0 +1,9 @@
+network:
+  chainId: '5' #Ethereum Goerli
+  endpoint: "https://goerli.infura.io/v3/a4ba76cd4be643618572e7467a444e3a"
+  dictionary: "https://dict-tyk.subquery.network/query/eth-goerli"
+dataSources:
+  - kind: ethereum/Runtime
+    startBlock: 10055835
+    options:
+      address: '0x53c155d44C03CC28f892f90aA0C442850716D75F'
