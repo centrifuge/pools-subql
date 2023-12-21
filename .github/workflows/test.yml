@@ -21,11 +21,11 @@ jobs:
       - name: Check out repo's default branch
         uses: actions/checkout@v3
       - name: Generate new project-centrifuge.yaml
-        run: yq ". *=d load(\"chains-cfg/$CHAIN_ID.yaml\")" chains-cfg/base.yaml > project-centrifuge.yaml
+        run: yq ". *=d load(\"chains-cfg/$CHAIN_ID.yaml\")" chains-cfg/_root.yaml > project-centrifuge.yaml
       - name: Generate new project-ethereum.yaml
-        run: yq ". *=d load(\"chains-eth/$CHAIN_ID.yaml\")" chains-eth/base.yaml | envsubst > project-ethereum.yaml
-      - name: Generate new project-coinbase.yaml
-        run: yq ". *=d load(\"chains-base/$CHAIN_ID.yaml\")" chains-eth/base.yaml | envsubst > project-coinbase.yaml
+        run: yq ". *=d load(\"chains-eth/$CHAIN_ID.yaml\")" chains-eth/_root.yaml | envsubst > project-ethereum.yaml
+      - name: Generate new project-_root.yaml
+        run: yq ". *=d load(\"chains-base/$CHAIN_ID.yaml\")" chains-eth/_root.yaml | envsubst > project-_root.yaml
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
@@ -45,7 +45,7 @@ jobs:
       - name: 'Checkout Repository'
         uses: actions/checkout@v3
       - name: Initialise project.yaml
-        run: cp chains-cfg/base.yaml project.yaml
+        run: cp chains-cfg/_root.yaml project.yaml
       - name: 'Setup Node'
         uses: actions/setup-node@v3
         with:
@@ -63,7 +63,7 @@ jobs:
       - name: 'Checkout Repository'
         uses: actions/checkout@v3
       - name: Initialise project.yaml
-        run: cp chains-cfg/base.yaml project.yaml
+        run: cp chains-cfg/_root.yaml project.yaml
       - name: 'Setup Node'
         uses: actions/setup-node@v3
         with:

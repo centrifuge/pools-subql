@@ -4,5 +4,5 @@ query:
   version: '2'
 projects:
   - project-centrifuge.yaml
-  - project-coinbase.yaml
+  - project-_root.yaml
   - project-ethereum.yaml
