@@ -12,23 +12,6 @@ description: 'SubQuery API powered by EMBRIO.tech to query Centrifuge chain data
 repository: https://github.com/centrifuge/pools-subql
 schema:
   file: './schema.graphql'
-dataSources:
-  - kind: ethereum/Runtime
-    startBlock: 9787696
-    options:
-      abi: poolManager
-      address: '0x53c155d44C03CC28f892f90aA0C442850716D75F'
-    assets:
-      poolManager:
-        file: './poolManager.abi.json'
-    mapping:
-      file: './dist/index.js'
-      handlers:
-        - handler: handleEvmDeployTranche
-          kind: ethereum/LogHandler
-          filter:
-            topics:
-              - DeployTranche(uint64 indexed poolId, bytes16 indexed trancheId, address indexed token)
 templates:
   - name: TrancheTracker
     kind: ethereum/Runtime
