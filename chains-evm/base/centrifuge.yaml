@@ -1,5 +1,5 @@
 network:
-  chainId: '8453' #Goerli
+  chainId: '8453' #Base Mainnet
   endpoint: https://mainnet.base.org
   dictionary: "https://api.subquery.network/sq/subquery/base-dictionary"
 dataSources:

@@ -8,4 +8,4 @@ dataSources:
   - kind: ethereum/Runtime
     startBlock: 13078300
     options: 
-      address: '0x78E9e622A57f70F1E0Ec652A4931E4e278e58142'
+      address: '0xa5Beda1F48a07740b8f4bDb223C861Cc7702b14e'
