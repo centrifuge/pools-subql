@@ -41,11 +41,11 @@ jobs:
       - name: Check out repo's default branch
         uses: actions/checkout@v3
       - name: Generate new project-centrifuge.yaml
-        run: yq ". *=d load(\"chains-cfg/$CHAIN_ID.yaml\")" chains-cfg/base.yaml > project-centrifuge.yaml
+        run: '[ -e "chains-cfg/$CHAIN_ID.yaml\"] && yq ". *=d load(\"chains-cfg/$CHAIN_ID.yaml\")" chains-cfg/base.yaml > project-centrifuge.yaml || return 0'
       - name: Generate new project-ethereum.yaml
-        run: yq ". *=d load(\"chains-eth/$CHAIN_ID.yaml\")" chains-eth/base.yaml | envsubst > project-ethereum.yaml
+        run: '[ -e "chains-eth/$CHAIN_ID.yaml\"] && yq ". *=d load(\"chains-eth/$CHAIN_ID.yaml\")" chains-eth/base.yaml | envsubst > project-ethereum.yaml || return 0'
       - name: Generate new project-coinbase.yaml
-        run: yq ". *=d load(\"chains-base/$CHAIN_ID.yaml\")" chains-eth/base.yaml | envsubst > project-coinbase.yaml
+        run: '[ -e "chains-cfg/$CHAIN_ID.yaml\"] && yq ". *=d load(\"chains-base/$CHAIN_ID.yaml\")" chains-eth/base.yaml | envsubst > project-coinbase.yaml || return 0'
       - name: Extract Chain Parameters to ENV
         run: |
           echo "SUBQL_PROJ_NAME=$(yq '.name' project-centrifuge.yaml)" >> $GITHUB_ENV
@@ -70,9 +70,9 @@ jobs:
       - name: Publish SubQL version
         run: |
           npx subql publish -o -f .
-          echo "CFG_IPFSCID=$(cat .project-centrifuge-cid)" >> $GITHUB_ENV
-          echo "ETH_IPFSCID=$(cat .project-ethereum-cid)" >> $GITHUB_ENV
-          echo "BASE_IPFSCID=$(cat .project-coinbase-cid)" >> $GITHUB_ENV
+          echo "CFG_IPFSCID=$(cat .project-centrifuge-cid)" >> $GITHUB_ENV || return 0
+          echo "ETH_IPFSCID=$(cat .project-ethereum-cid)" >> $GITHUB_ENV || return 0
+          echo "BASE_IPFSCID=$(cat .project-coinbase-cid)" >> $GITHUB_ENV || return 0
       - name: Delete Project
         if: ${{ inputs.resetProject }}
         run: |
