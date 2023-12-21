@@ -57,7 +57,7 @@ jobs:
           echo "SUBQL_BASE_ENDPOINT=$(yq '.network.endpoint' project-coinbase.yaml)" >> $GITHUB_ENV
           echo "SUBQL_BASE_DICT=$(yq '.network.dictionary' project-coinbase.yaml)" >> $GITHUB_ENV
       - name: Generate new subquery-multichain.yaml
-        run: >
+        run: |
           cat > subquery-multichain.yaml <<'EOF'
           specVersion: 1.0.0
           query:
