@@ -33,30 +33,30 @@ export class TrancheBalanceService extends TrancheBalance {
   }
 
   public investOrder(currencyAmount: bigint) {
-    this.sumInvestOrderedAmount = currencyAmount
+    this.pendingInvestCurrency = currencyAmount
   }
 
   public redeemOrder(tokenAmount: bigint) {
-    this.sumRedeemOrderedAmount = tokenAmount
+    this.pendingRedeemTrancheTokens = tokenAmount
   }
 
   public investExecute(currencyAmount: bigint, tokenAmount: bigint) {
-    this.sumInvestOrderedAmount -= currencyAmount
-    this.sumInvestUncollectedAmount += tokenAmount
+    this.pendingInvestCurrency -= currencyAmount
+    this.claimableTrancheTokens += tokenAmount
   }
 
   public redeemExecute(tokenAmount: bigint, currencyAmount: bigint) {
-    this.sumRedeemOrderedAmount -= tokenAmount
-    this.sumRedeemUncollectedAmount += currencyAmount
+    this.pendingRedeemTrancheTokens -= tokenAmount
+    this.claimableCurrency += currencyAmount
   }
 
   public investCollect(tokenAmount: bigint) {
-    this.sumInvestUncollectedAmount -= tokenAmount
-    this.sumInvestCollectedAmount += tokenAmount
+    this.claimableTrancheTokens -= tokenAmount
+    this.sumClaimedTrancheTokens += tokenAmount
   }
 
   public redeemCollect(currencyAmount: bigint) {
-    this.sumRedeemUncollectedAmount -= currencyAmount
-    this.sumRedeemCollectedAmount += currencyAmount
+    this.claimableCurrency -= currencyAmount
+    this.sumClaimedCurrency += currencyAmount
   }
 }
