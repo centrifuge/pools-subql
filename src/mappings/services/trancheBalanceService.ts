@@ -33,11 +33,11 @@ export class TrancheBalanceService extends TrancheBalance {
   }
 
   public investOrder(currencyAmount: bigint) {
-    this.sumInvestOrderedAmount += currencyAmount
+    this.sumInvestOrderedAmount = currencyAmount
   }
 
   public redeemOrder(tokenAmount: bigint) {
-    this.sumRedeemOrderedAmount += tokenAmount
+    this.sumRedeemOrderedAmount = tokenAmount
   }
 
   public investExecute(currencyAmount: bigint, tokenAmount: bigint) {
