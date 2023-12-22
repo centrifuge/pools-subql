@@ -277,13 +277,14 @@ type TrancheBalance @entity {
   pool: Pool! @index
   tranche: Tranche! @index
 
-  sumInvestOrderedAmount: BigInt!
-  sumInvestUncollectedAmount: BigInt!
-  sumInvestCollectedAmount: BigInt!
+  pendingInvestCurrency: BigInt!
+  claimableTrancheTokens: BigInt!
 
-  sumRedeemOrderedAmount: BigInt!
-  sumRedeemUncollectedAmount: BigInt!
-  sumRedeemCollectedAmount: BigInt!
+  pendingRedeemTrancheTokens: BigInt!
+  claimableCurrency: BigInt!
+
+  sumClaimedTrancheTokens: BigInt!
+  sumClaimedCurrency: BigInt!
 }
 
 enum LoanStatus {
