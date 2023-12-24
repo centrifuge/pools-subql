@@ -53,7 +53,7 @@ jobs:
     name: Deploy to SubQL (CENTRIFUGE mainnet)
     strategy:
       matrix:
-        chainId: [altair, catalyst, centrifuge] # ADD ARRAY OF CHAINS TO DEPLOY
+        chainId: [centrifuge] # ADD ARRAY OF CHAINS TO DEPLOY
     uses: ./.github/workflows/subql_deploy_workflow.yaml
     with:
       chainId: ${{ matrix.chainId }}
