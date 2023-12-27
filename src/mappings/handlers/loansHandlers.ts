@@ -87,6 +87,9 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Pr
   const amount = borrowAmount.isInternal
     ? borrowAmount.asInternal.toString()
     : borrowAmount.asExternal.quantity.mul(borrowAmount.asExternal.settlementPrice).div(WAD).toString()
+
+  if (amount == '0') return
+
   logger.info(`Loan borrowed event for pool: ${poolId.toString()} amount: ${amount.toString()}`)
 
   const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toHex())
@@ -134,6 +137,8 @@ async function _handleLoanRepaid(event: SubstrateEvent<LoanRepaidEvent>) {
     ? principal.asInternal
     : principal.asExternal.quantity.mul(principal.asExternal.settlementPrice).div(WAD)
   const amount = principalAmount.add(interest).add(unscheduled).toString()
+
+  if (amount == '0') return
 
   logger.info(`Loan repaid event for pool: ${poolId.toString()} amount: ${amount.toString()}`)
 
@@ -221,6 +226,8 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
   const pool = await PoolService.getById(poolId.toString())
   if (pool === undefined) throw missingPool
 
+  if (amount.toString() == '0') return
+
   logger.info(
     `Loan debt transferred event for pool: ${poolId.toString()}, from loan: ${fromLoanId.toString()} ` +
       `to loan: ${toLoanId.toString()} amount: ${amount.toString()}`
@@ -253,5 +260,4 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
 
   const borrowedBt = await BorrowerTransactionService.borrowed({ ...txData, loanId: toLoanId.toString() })
   await borrowedBt.save()
-
 }
