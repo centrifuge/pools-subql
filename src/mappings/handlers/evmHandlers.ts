@@ -15,9 +15,6 @@ import { Provider } from '@ethersproject/providers'
 
 export const handleEvmBlock = errorHandler(_handleEvmBlock)
 async function _handleEvmBlock(block: EthereumBlock): Promise<void> {
-  logger.info(`EVM block ${block.number} with timestamp ${block.timestamp}`)
-  // TODO: make this a service call
-  // TODO: These are not the right startblocks. Need to use the block that they were added to the poolRegistry
   const pools = [
     {
       id: '0x09e43329552c9d81cf205fd5f44796fbc40c822e',
@@ -273,7 +270,7 @@ async function _handleEvmTransfer(event: TransferLog): Promise<void> {
   if (toEvmAddress.toString() !== evmTokenAddress) {
     const toAddress = AccountService.evmToSubstrate(toEvmAddress.toString(), blockchain.id)
     const toAccount = await AccountService.getOrInit(toAddress)
-    const txIn = InvestorTransactionService.transferOut({ ...orderData, address: toAccount.id })
+    const txIn = InvestorTransactionService.transferIn({ ...orderData, address: toAccount.id })
     await txIn.save()
   }
 }

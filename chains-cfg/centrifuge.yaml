@@ -1,9 +1,10 @@
-name: pools #CHANGE BASED ON SUBQL PROJECT NAME
+name: pools
 network:
+  dictionary: https://api.subquery.network/sq/centrifuge/centrifuge-dictionary
   endpoint: wss://fullnode.parachain.centrifuge.io
   chainId: '0xb3db41421702df9a7fcac62b53ffeac85f7853cc4e689e0b93aeb3db18c09d82'
   chaintypes:
     file: ./dist/chaintypes.js
 dataSources:
   - kind: substrate/Runtime
-    startBlock: 3824709 # block Anemoy was created at
+    startBlock: 3824709 # block first pool was created at

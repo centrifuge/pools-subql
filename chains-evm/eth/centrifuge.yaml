@@ -1,0 +1,9 @@
+network:
+  chainId: '1' # Ethereum Mainnet
+  endpoint: "https://mainnet.infura.io/v3/a4ba76cd4be643618572e7467a444e3a"
+  dictionary: "https://gx.api.subquery.network/sq/subquery/eth-dictionary"
+dataSources:
+  - kind: ethereum/Runtime
+    startBlock: 18671269
+    options:
+      address: '0x78E9e622A57f70F1E0Ec652A4931E4e278e58142'
