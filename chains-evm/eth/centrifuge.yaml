@@ -4,6 +4,6 @@ network:
   dictionary: "https://gx.api.subquery.network/sq/subquery/eth-dictionary"
 dataSources:
   - kind: ethereum/Runtime
-    startBlock: 18671269
+    startBlock: 18721000
     options:
       address: '0x78E9e622A57f70F1E0Ec652A4931E4e278e58142'

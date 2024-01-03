@@ -25,6 +25,17 @@ export class CurrencyService extends Currency {
     }
     return currency as CurrencyService
   }
+
+  static async getOrInitEvm(chainId: string, currencyType: string, ...currencyValue: string[]) {
+    const currencyId = currencyValue.length > 0 ? `${currencyType}-${currencyValue.join('-')}` : currencyType
+    const id = `${chainId}-${currencyId}`
+    let currency: CurrencyService = await this.get(id)
+    if (!currency) {
+      currency = this.init(chainId, currencyId, WAD_DIGITS)
+      await currency.save()
+    }
+    return currency as CurrencyService
+  }
 }
 
 export const currencyFormatters: CurrencyFormatters = {
