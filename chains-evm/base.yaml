@@ -14,18 +14,29 @@ schema:
   file: './schema.graphql'
 dataSources:
   - kind: ethereum/Runtime
-    startBlock: 9787696
+    startBlock: 11063000
     options:
       abi: poolManager
       address: '0x53c155d44C03CC28f892f90aA0C442850716D75F'
     assets:
       poolManager:
         file: './poolManager.abi.json'
+      navFeed:
+        file: './abis/navfeed.json'
+      reserve:
+        file: './abis/reserve.json'
     mapping:
       file: './dist/index.js'
+      abis:
+        - file: './abis/navfeed.json'
+          name: NavFeed
+        - file: './abis/reserve.json'
+          name: Reserve
       handlers:
         - handler: handleEvmBlock
           kind: ethereum/BlockHandler
+          filter:
+            modulo: 7200
         - handler: handleEvmDeployTranche
           kind: ethereum/LogHandler
           filter:

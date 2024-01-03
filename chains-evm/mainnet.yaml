@@ -1,3 +1,3 @@
 network:
   chainId: '1' #Mainnet
-  endpoint: "https://mainnet.infura.io/v3/a4ba76cd4be643618572e7467a444e3a"
+  endpoint: 'https://bold-dark-butterfly.quiknode.pro/a20279d543f45cd11a394ce5b769f9753e1768c7/'

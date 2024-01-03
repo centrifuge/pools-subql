@@ -339,7 +339,7 @@ export type InvestOrdersCollectedEvent = ITuple<
     who: AccountId32,
     processedOrders: Vec<u64>,
     collection: InvestCollection,
-    outcome: Enum
+    outcome: Enum,
   ]
 >
 export type RedeemOrdersCollectedEvent = ITuple<
