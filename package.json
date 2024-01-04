@@ -35,6 +35,7 @@
     "@subql/cli": "latest",
     "@subql/testing": "latest",
     "@subql/types": "latest",
+    "@subql/node-ethereum": "latest",
     "@types/jest": "^29.1.2",
     "@typescript-eslint/eslint-plugin": "^6.15.0",
     "@typescript-eslint/parser": "^6.15.0",
