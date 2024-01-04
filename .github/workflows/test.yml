@@ -14,8 +14,8 @@ jobs:
     name: 'Check Build'
     runs-on: ubuntu-latest
     env:
-      SUBQL_INDEXER_VERSION: v3.4.7
-      SUBQL_QUERY_VERSION: v2.6.0
+      SUBQL_INDEXER_VERSION: v3.4.10
+      SUBQL_QUERY_VERSION: v2.8.0
       CHAIN_ID: demo
     steps:
       - name: Check out repo's default branch
