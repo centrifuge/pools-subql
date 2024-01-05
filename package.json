@@ -25,14 +25,16 @@
   ],
   "author": "Centrifuge",
   "license": "MIT",
-  "dependencies": {},
+  "dependencies": {
+    "abab": "^2.0.6"
+  },
   "devDependencies": {
     "@commitlint/cli": "^17.0.2",
     "@commitlint/config-conventional": "^17.0.2",
     "@jest/globals": "^29.2.0",
     "@polkadot/api": "^10",
     "@polkadot/typegen": "^10",
-    "@subql/cli": "latest",
+    "@subql/cli": "^4.2.5",
     "@subql/testing": "latest",
     "@subql/types": "latest",
     "@types/jest": "^29.1.2",
