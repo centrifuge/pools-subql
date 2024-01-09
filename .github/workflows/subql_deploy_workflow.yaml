@@ -116,6 +116,7 @@ jobs:
           --disableHistorical \
           --indexerVersion="$SUBQL_INDEXER_VERSION" \
           --queryVersion="$SUBQL_QUERY_VERSION"
+          --queryAggregate
       # - name: Deploy ETH Version
       #   run: |
       #     npx subql deployment:deploy \
