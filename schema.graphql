@@ -371,6 +371,7 @@ type Currency @entity {
   decimals: Int!
 
   tokenAddress: String
+  escrowAddress: String
 
   pool: Pool
   tranche: Tranche

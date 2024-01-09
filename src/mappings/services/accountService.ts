@@ -31,8 +31,8 @@ export class AccountService extends Account {
     return `0x${evmAddress.substring(2).toLowerCase()}000000000000${chainHex}${EVM_SUFFIX}`
   }
 
-  static readEvmChainId(evmAddress: string) {
-    return parseInt(evmAddress.slice(-12, -8), 16).toString(10)
+  static readEvmChainId(address: string) {
+    return parseInt(address.slice(-12, -8), 16).toString(10)
   }
 
   static isEvm(address: string) {

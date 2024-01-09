@@ -1,4 +1,7 @@
 import '@polkadot/api-augment'
+import { atob } from 'abab'
+
+global.atob = atob
 
 export * from './mappings/handlers/blockHandlers'
 export * from './mappings/handlers/poolsHandlers'

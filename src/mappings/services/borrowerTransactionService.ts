@@ -20,7 +20,7 @@ export class BorrowerTransactionService extends BorrowerTransaction {
     const tx = new BorrowerTransactionService(
       `${data.hash}-${data.epochNumber.toString()}-${type.toString()}`,
       data.timestamp,
-      data.poolId.toString(),
+      data.poolId,
       data.hash,
       data.address,
       data.epochNumber,

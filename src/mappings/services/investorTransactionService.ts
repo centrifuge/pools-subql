@@ -37,7 +37,7 @@ export class InvestorTransactionService extends InvestorTransaction {
       `${data.hash}-${data.epochNumber.toString()}-${type.toString()}`,
       data.hash,
       data.address,
-      data.poolId.toString(),
+      data.poolId,
       `${data.poolId}-${data.trancheId}`,
       data.timestamp,
       type
@@ -108,10 +108,18 @@ export class InvestorTransactionService extends InvestorTransaction {
   }
 
   static transferIn(data: InvestorTransactionData) {
+    logger.info(
+      `Transfer In for address ${data.address} in pool ${data.poolId} tranche ${data.trancheId} ` +
+        `with amount: ${data.amount}`
+    )
     return this.init(data, InvestorTransactionType.TRANSFER_IN)
   }
 
   static transferOut(data: InvestorTransactionData) {
+    logger.info(
+      `Transfer Out for address ${data.address} in pool ${data.poolId} tranche ${data.trancheId} ` +
+        `with amount: ${data.amount}`
+    )
     return this.init(data, InvestorTransactionType.TRANSFER_OUT)
   }
 
