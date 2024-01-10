@@ -15,7 +15,7 @@ export class CurrencyService extends Currency {
   static async getOrInit(chainId: string, currencyType: string, ...currencyValue: string[]) {
     const currencyId = currencyValue.length > 0 ? `${currencyType}-${currencyValue.join('-')}` : currencyType
     const id = `${chainId}-${currencyId}`
-    let currency: CurrencyService = await this.get(id)
+    let currency: CurrencyService = (await this.get(id)) as CurrencyService
     if (!currency) {
       const enumPayload = formatEnumPayload(currencyType, ...currencyValue)
       const assetMetadata = (await api.query.ormlAssetRegistry.metadata(enumPayload)) as Option<AssetMetadata>
@@ -24,6 +24,24 @@ export class CurrencyService extends Currency {
       await currency.save()
     }
     return currency as CurrencyService
+  }
+
+  static async getOrInitEvm(chainId: string, currencyType: string, ...currencyValue: string[]) {
+    const currencyId = currencyValue.length > 0 ? `${currencyType}-${currencyValue.join('-')}` : currencyType
+    const id = `${chainId}-${currencyId}`
+    let currency: CurrencyService = (await this.get(id)) as CurrencyService
+    if (!currency) {
+      currency = this.init(chainId, currencyId, WAD_DIGITS)
+      await currency.save()
+    }
+    return currency as CurrencyService
+  }
+
+  public initEvmDetails(tokenAddress: string, escrowAddress: string, poolId: string, trancheId: string) {
+    this.tokenAddress = tokenAddress
+    this.escrowAddress = escrowAddress
+    this.poolId = poolId
+    this.trancheId = `${poolId}-${trancheId}`
   }
 }
 
