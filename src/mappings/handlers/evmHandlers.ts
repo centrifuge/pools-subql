@@ -205,7 +205,7 @@ async function _handleEvmBlock(block: EthereumBlock): Promise<void> {
     if (block.number >= tinlakePool.startBlock && pool.totalReserve !== null) {
       pool.totalReserve = BigInt(0)
       pool.portfolioValuation = BigInt(0)
-      pool.isActive = true
+      pool.isActive = false
       await pool.save()
       tinlakePool.initialized = true
       logger.info(`Initializing pool ${tinlakePool.id}`)
