@@ -35,7 +35,17 @@ dataSources:
         - handler: handleEvmBlock
           kind: ethereum/BlockHandler
           filter:
-            timestamp: '0 1 * * *'
+            modulo: 7200
+  - kind: ethereum/Runtime
+    startBlock: 18063000
+    options:
+      abi: poolManager
+    assets:
+      poolManager:
+        file: './poolManager.abi.json'
+    mapping:
+      file: './dist/index.js'
+      handlers:
         - handler: handleEvmDeployTranche
           kind: ethereum/LogHandler
           filter:
