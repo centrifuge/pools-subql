@@ -52,6 +52,10 @@ async function _handlePoolCreated(event: SubstrateEvent<PoolCreatedEvent>): Prom
     await tranche.init(index, trancheData[tranche.trancheId].data)
     await tranche.updateSupply()
     await tranche.save()
+
+    const currency = await CurrencyService.getOrInit(blockchain.id, 'Tranche', pool.id, tranche.trancheId)
+    await currency.initTrancheDetails(pool.id, tranche.trancheId)
+    await currency.save()
   }
 
   // Initialise Epoch
@@ -65,8 +69,11 @@ async function _handlePoolUpdated(event: SubstrateEvent<PoolUpdatedEvent>): Prom
   const [poolId] = event.event.data
   logger.info(`Pool ${poolId.toString()} updated on block ${event.block.block.header.number}`)
 
+  const chainId = await getNodeChainId()
+  const blockchain = await BlockchainService.getOrInit(chainId)
+
   const pool = await PoolService.getById(poolId.toString())
-  if (pool === undefined) throw missingPool
+  if (!pool) throw missingPool
 
   await pool.initData()
   await pool.save()
@@ -88,6 +95,10 @@ async function _handlePoolUpdated(event: SubstrateEvent<PoolUpdatedEvent>): Prom
     await trancheService.updateSupply()
     await trancheService.updateDebt(tranche.data.debt.toBigInt())
     await trancheService.save()
+
+    const currency = await CurrencyService.getOrInit(blockchain.id, 'Tranche', pool.id, trancheService.trancheId)
+    await currency.initTrancheDetails(pool.id, trancheService.trancheId)
+    await currency.save()
   }
 }
 

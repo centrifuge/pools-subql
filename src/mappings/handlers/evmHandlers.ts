@@ -41,7 +41,7 @@ async function _handleEvmDeployTranche(event: DeployTrancheLog): Promise<void> {
   const investmentManager = InvestmentManagerAbi__factory.connect(investmentManagerAddress, ethApi)
   const userEscrowAddress = await investmentManager.userEscrow()
 
-  await currency.initEvmDetails(tokenAddress, escrowAddress, userEscrowAddress, tranche.poolId, tranche.trancheId)
+  await currency.initTrancheDetails(tranche.poolId, tranche.trancheId, tokenAddress, escrowAddress, userEscrowAddress)
   await currency.save()
 
   await createTrancheTrackerDatasource({ address: tokenAddress })
