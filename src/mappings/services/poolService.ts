@@ -61,6 +61,7 @@ export class PoolService extends Pool {
     this.sumNumberOfLoans = BigInt(0)
 
     this.currencyId = currencyId
+    logger.info(this.currencyId)
 
     return this
   }

@@ -18,7 +18,9 @@ dataSources:
       abi: poolManager
     assets:
       poolManager:
-        file: './poolManager.abi.json'
+        file: './abi/poolManager.abi.json'
+      investmentManager:
+        file: './abi/investmentManager.abi.json'
     mapping:
       file: './dist/index.js'
       handlers:
@@ -34,7 +36,7 @@ templates:
       abi: erc20
     assets:
       erc20:
-        file: './erc20.abi.json'
+        file: './abi/erc20.abi.json'
     mapping:
       file: ./dist/index.js
       handlers:

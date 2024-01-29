@@ -17,7 +17,7 @@ export class CurrencyBalanceService extends CurrencyBalance {
 
   static async getOrInit(address: string, currency: string) {
     let currencyBalance = await this.getById(address, currency)
-    if (currencyBalance === undefined) {
+    if (!currencyBalance) {
       currencyBalance = this.init(address, currency)
       await currencyBalance.getBalance()
       await currencyBalance.save()
@@ -27,7 +27,7 @@ export class CurrencyBalanceService extends CurrencyBalance {
 
   static async getOrInitEvm(address: string, currency: string) {
     let currencyBalance = await this.getById(address, currency)
-    if (currencyBalance === undefined) {
+    if (!currencyBalance) {
       currencyBalance = this.init(address, currency)
       await currencyBalance.save()
     }

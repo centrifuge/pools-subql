@@ -98,7 +98,7 @@ type Tranche @entity {
   interestRatePerSec: BigInt
   minRiskBuffer: BigInt
 
-  isActive: Boolean @index
+  isActive: Boolean! @index
 
   tokenSupply: BigInt
   tokenPrice: BigInt
@@ -194,6 +194,8 @@ enum InvestorTransactionType {
   TRANSFER_OUT
   INVEST_COLLECT
   REDEEM_COLLECT
+  INVEST_LP_COLLECT
+  REDEEM_LP_COLLECT
 }
 
 type OutstandingOrder @entity {
@@ -210,7 +212,7 @@ type OutstandingOrder @entity {
 }
 
 type InvestorTransaction @entity {
-  id: ID! # extrinsic hash - epoch number - transaction type
+  id: ID! # extrinsic hash - epoch number ( or 0 for EVM ) - transaction type
   hash: String!
   account: Account! @index #Account @index
   pool: Pool! @index
@@ -366,12 +368,13 @@ type Proxy @entity {
 }
 
 type Currency @entity {
-  id: ID! #TODO: chainId - currencyType - [currencySpec]
+  id: ID! # chainId - currencySpec - [currencySpec]
   chain: Blockchain!
   decimals: Int!
 
   tokenAddress: String
   escrowAddress: String
+  userEscrowAddress: String
 
   pool: Pool
   tranche: Tranche

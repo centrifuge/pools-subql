@@ -9,13 +9,18 @@ import { InvestorTransactionData, InvestorTransactionService } from '../services
 import { CurrencyService } from '../services/currencyService'
 import { BlockchainService } from '../services/blockchainService'
 import { CurrencyBalanceService } from '../services/currencyBalanceService'
-import { PoolManagerAbi__factory } from '../../types/contracts'
+import { InvestmentManagerAbi__factory, PoolManagerAbi__factory } from '../../types/contracts'
+import type { Provider } from '@ethersproject/abstract-provider'
+import { TrancheBalanceService } from '../services/trancheBalanceService'
+
+const ethApi = api as unknown as Provider
+//const networkPromise = typeof ethApi.getNetwork === 'function' ? ethApi.getNetwork() : null
 
 export const handleEvmDeployTranche = errorHandler(_handleEvmDeployTranche)
 async function _handleEvmDeployTranche(event: DeployTrancheLog): Promise<void> {
   const [_poolId, _trancheId, tokenAddress] = event.args
 
-  const chainId = parseInt(event.transaction.chainId, 16).toString(10)
+  const chainId = await getNodeChainId() //(await networkPromise).chainId.toString(10)
   const blockchain = await BlockchainService.getOrInit(chainId)
 
   const poolId = _poolId.toString()
@@ -29,10 +34,14 @@ async function _handleEvmDeployTranche(event: DeployTrancheLog): Promise<void> {
   const tranche = await TrancheService.getOrSeed(pool.id, trancheId)
 
   const currency = await CurrencyService.getOrInitEvm(blockchain.id, tokenAddress)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const poolManager = PoolManagerAbi__factory.connect(event.address, api as any)
+  const poolManager = PoolManagerAbi__factory.connect(event.address, ethApi)
   const escrowAddress = await poolManager.escrow()
-  await currency.initEvmDetails(tokenAddress, escrowAddress, tranche.poolId, tranche.trancheId)
+
+  const investmentManagerAddress = await poolManager.investmentManager()
+  const investmentManager = InvestmentManagerAbi__factory.connect(investmentManagerAddress, ethApi)
+  const userEscrowAddress = await investmentManager.userEscrow()
+
+  await currency.initEvmDetails(tokenAddress, escrowAddress, userEscrowAddress, tranche.poolId, tranche.trancheId)
   await currency.save()
 
   await createTrancheTrackerDatasource({ address: tokenAddress })
@@ -46,14 +55,20 @@ async function _handleEvmTransfer(event: TransferLog): Promise<void> {
   logger.info(`Transfer ${fromEvmAddress}-${toEvmAddress} of ${amount.toString()} at block: ${event.blockNumber}`)
 
   const evmTokenAddress = event.address
-  const chainId = parseInt(event.transaction.chainId, 16).toString(10)
+  const chainId = await getNodeChainId() //(await networkPromise).chainId.toString(10)
   const blockchain = await BlockchainService.getOrInit(chainId)
   const evmToken = await CurrencyService.getOrInitEvm(blockchain.id, evmTokenAddress)
-  const escrowAddress = evmToken.escrowAddress
+  const { escrowAddress, userEscrowAddress } = evmToken
+  const serviceAddresses = [evmTokenAddress, escrowAddress, userEscrowAddress, nullAddress]
+
+  const isFromUserAddress = !serviceAddresses.includes(fromEvmAddress)
+  const isToUserAddress = !serviceAddresses.includes(toEvmAddress)
+  const isFromEscrow = fromEvmAddress === escrowAddress
+  const _isFromUserEscrow = fromEvmAddress === userEscrowAddress
 
   const orderData: Omit<InvestorTransactionData, 'address'> = {
     poolId: evmToken.poolId,
-    trancheId: evmToken.trancheId,
+    trancheId: evmToken.trancheId.split('-')[1],
     //epochNumber: pool.currentEpoch,
     hash: event.transactionHash,
     timestamp: new Date(Number(event.block.timestamp) * 1000),
@@ -61,26 +76,53 @@ async function _handleEvmTransfer(event: TransferLog): Promise<void> {
     amount: amount.toBigInt(),
   }
 
-  if (fromEvmAddress !== evmTokenAddress && fromEvmAddress !== escrowAddress && fromEvmAddress !== nullAddress) {
-    const fromAddress = AccountService.evmToSubstrate(fromEvmAddress, blockchain.id)
-    const fromAccount = await AccountService.getOrInit(fromAddress)
+  let fromAddress: string = null,
+    fromAccount: AccountService = null
+  if (isFromUserAddress) {
+    fromAddress = AccountService.evmToSubstrate(fromEvmAddress, blockchain.id)
+    fromAccount = await AccountService.getOrInit(fromAddress)
+  }
 
-    const txOut = InvestorTransactionService.transferOut({ ...orderData, address: fromAccount.id })
-    await txOut.save()
+  let toAddress: string = null,
+    toAccount: AccountService = null
+  if (isToUserAddress) {
+    toAddress = AccountService.evmToSubstrate(toEvmAddress, blockchain.id)
+    toAccount = await AccountService.getOrInit(toAddress)
+  }
 
+  // Handle Currency Balance Updates
+  if (isToUserAddress) {
+    const toBalance = await CurrencyBalanceService.getOrInitEvm(toAddress, evmToken.id)
+    await toBalance.credit(amount.toBigInt())
+    await toBalance.save()
+  }
+
+  if (isFromUserAddress) {
     const fromBalance = await CurrencyBalanceService.getOrInitEvm(fromAddress, evmToken.id)
     await fromBalance.debit(amount.toBigInt())
     await fromBalance.save()
   }
 
-  if (toEvmAddress !== evmTokenAddress && toEvmAddress !== escrowAddress && toEvmAddress !== nullAddress) {
-    const toAddress = AccountService.evmToSubstrate(toEvmAddress, blockchain.id)
-    const toAccount = await AccountService.getOrInit(toAddress)
+  // Handle INVEST_LP_COLLECT
+  if (isFromEscrow && isToUserAddress) {
+    const investLpCollect = InvestorTransactionService.collectLpInvestOrder({ ...orderData, address: toAccount.id })
+    await investLpCollect.save()
+
+    const trancheBalance = await TrancheBalanceService.getOrInit(toAccount.id, orderData.poolId, orderData.trancheId)
+    await trancheBalance.investCollect(orderData.amount)
+    await trancheBalance.save()
+  }
+  // TODO: Handle REDEEM_LP_COLLECT
+  // if (isFromUserEscrow && isToUserAddress) {
+  //   const redeemLpCollect = InvestorTransactionService.collectLpRedeemOrder()
+  // }
+
+  // Handle Transfer In and Out
+  if (isFromUserAddress && isToUserAddress) {
     const txIn = InvestorTransactionService.transferIn({ ...orderData, address: toAccount.id })
     await txIn.save()
 
-    const toBalance = await CurrencyBalanceService.getOrInitEvm(toAddress, blockchain.id)
-    await toBalance.credit(amount.toBigInt())
-    await toBalance.save()
+    const txOut = InvestorTransactionService.transferOut({ ...orderData, address: fromAccount.id })
+    await txOut.save()
   }
 }
