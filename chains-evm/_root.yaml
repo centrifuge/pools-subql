@@ -16,14 +16,14 @@ dataSources:
   - kind: ethereum/Runtime
     startBlock: 11063000
     options:
-      abi: poolManager
+      abi: navFeed
     assets:
-      poolManager:
-        file: './poolManager.abi.json'
       navFeed:
         file: './abis/navfeed.json'
       reserve:
         file: './abis/reserve.json'
+      shelf:
+        file: './abis/shelf.json'
     mapping:
       file: './dist/index.js'
       abis:
@@ -31,6 +31,8 @@ dataSources:
           name: NavFeed
         - file: './abis/reserve.json'
           name: Reserve
+        - file: './abis/shelf.json'
+          name: Shelf
       handlers:
         - handler: handleEvmBlock
           kind: ethereum/BlockHandler
