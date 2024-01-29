@@ -1,4 +1,3 @@
-import { SubstrateBlock } from '@subql/types'
 import { errorHandler } from './errorHandler'
 import { paginatedGetter } from './paginatedGetter'
 import { getPeriodStart } from './timekeeperService'
@@ -20,20 +19,16 @@ export const stateSnapshotter = errorHandler(_stateSnapshotter)
 async function _stateSnapshotter(
   stateModel: string,
   snapshotModel: string,
-  block: SubstrateBlock,
+  block: { number: number; timestamp: Date },
   fkReferenceName: string | undefined = undefined,
   filterKey = 'type',
   filterValue: string | boolean = 'ALL'
 ): Promise<void> {
   const entitySaves: Promise<void>[] = []
   logger.info(`Performing snapshots of ${stateModel}`)
-  const stateEntities = (await paginatedGetter(
-    stateModel,
-    filterKey,
-    filterValue
-  )) as ResettableEntity[]
+  const stateEntities = (await paginatedGetter(stateModel, filterKey, filterValue)) as ResettableEntity[]
   for (const stateEntity of stateEntities) {
-    const blockNumber = block.block.header.number.toNumber()
+    const blockNumber = block.number
     const { id, ...copyStateEntity } = stateEntity
     logger.info(`Snapshotting ${stateModel}: ${id}`)
     const snapshotEntity: SnapshotEntity = { ...copyStateEntity, id: `${id}-${blockNumber.toString()}` }

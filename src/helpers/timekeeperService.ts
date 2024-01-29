@@ -1,4 +1,3 @@
-import { SubstrateBlock } from '@subql/types'
 import { Timekeeper } from '../types'
 import { SNAPSHOT_INTERVAL_SECONDS } from '../config'
 
@@ -17,8 +16,8 @@ export class TimekeeperService {
 
   private _currentPeriodStart: Date
   public getCurrentPeriod = (): Date => this._currentPeriodStart
-  public processBlock = (block: SubstrateBlock): boolean => {
-    const blockPeriodStart = getPeriodStart(block.timestamp)
+  public processBlock = (timestamp: Date): boolean => {
+    const blockPeriodStart = getPeriodStart(timestamp)
     const isNewPeriod = blockPeriodStart.valueOf() > this._currentPeriodStart.valueOf()
     if (isNewPeriod) this._currentPeriodStart = blockPeriodStart
     return isNewPeriod

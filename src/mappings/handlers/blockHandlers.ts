@@ -12,7 +12,7 @@ export const handleBlock = errorHandler(_handleBlock)
 async function _handleBlock(block: SubstrateBlock): Promise<void> {
   const blockPeriodStart = getPeriodStart(block.timestamp)
   const blockNumber = block.block.header.number.toNumber()
-  const newPeriod = (await timekeeper).processBlock(block)
+  const newPeriod = (await timekeeper).processBlock(block.timestamp)
 
   if (newPeriod) {
     logger.info(`It's a new period on block ${blockNumber}: ${block.timestamp.toISOString()}`)
@@ -61,9 +61,30 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
     }
 
     //Perform Snapshots and reset accumulators
-    await stateSnapshotter('Pool', 'PoolSnapshot', block, 'poolId', 'isActive', true)
-    await stateSnapshotter('Tranche', 'TrancheSnapshot', block, 'trancheId', 'isActive', true)
-    await stateSnapshotter('Loan', 'LoanSnapshot', block, 'loanId', 'isActive', true)
+    await stateSnapshotter(
+      'Pool',
+      'PoolSnapshot',
+      { number: block.block.header.number.toNumber(), timestamp: block.timestamp },
+      'poolId',
+      'isActive',
+      true
+    )
+    await stateSnapshotter(
+      'Tranche',
+      'TrancheSnapshot',
+      { number: block.block.header.number.toNumber(), timestamp: block.timestamp },
+      'trancheId',
+      'isActive',
+      true
+    )
+    await stateSnapshotter(
+      'Loan',
+      'LoanSnapshot',
+      { number: block.block.header.number.toNumber(), timestamp: block.timestamp },
+      'loanId',
+      'isActive',
+      true
+    )
 
     //Update tracking of period and continue
     await (await timekeeper).update(blockPeriodStart)
