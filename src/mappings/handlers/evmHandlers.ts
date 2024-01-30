@@ -46,7 +46,6 @@ async function _handleEvmDeployTranche(event: DeployTrancheLog): Promise<void> {
 
   await createTrancheTrackerDatasource({ address: tokenAddress })
 }
-
 const nullAddress = '0x0000000000000000000000000000000000000000'
 
 export const handleEvmTransfer = errorHandler(_handleEvmTransfer)
@@ -92,13 +91,13 @@ async function _handleEvmTransfer(event: TransferLog): Promise<void> {
 
   // Handle Currency Balance Updates
   if (isToUserAddress) {
-    const toBalance = await CurrencyBalanceService.getOrInitEvm(toAddress, evmToken.id)
+    const toBalance = await CurrencyBalanceService.getOrInit(toAddress, evmToken.id)
     await toBalance.credit(amount.toBigInt())
     await toBalance.save()
   }
 
   if (isFromUserAddress) {
-    const fromBalance = await CurrencyBalanceService.getOrInitEvm(fromAddress, evmToken.id)
+    const fromBalance = await CurrencyBalanceService.getOrInit(fromAddress, evmToken.id)
     await fromBalance.debit(amount.toBigInt())
     await fromBalance.save()
   }
