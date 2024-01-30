@@ -9,8 +9,10 @@ const SECONDS_PER_YEAR = bnToBn('3600').muln(24).muln(365)
 export class LoanService extends Loan {
   static init(poolId: string, loanId: string, nftClassId: bigint, nftItemId: bigint, timestamp: Date) {
     logger.info(`Initialising loan ${loanId} for pool ${poolId}`)
-    const loan = new this(`${poolId}-${loanId}`, timestamp, nftClassId, nftItemId, poolId, false, LoanStatus.CREATED)
+    const loan = new this(`${poolId}-${loanId}`, timestamp, poolId, false, LoanStatus.CREATED)
 
+    loan.collateralNftClassId = nftClassId
+    loan.collateralNftItemId = nftItemId
     loan.outstandingDebt = BigInt(0)
     loan.borrowedAmountByPeriod = BigInt(0)
     loan.repaidAmountByPeriod = BigInt(0)
