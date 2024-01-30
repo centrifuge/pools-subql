@@ -11,11 +11,11 @@ export class PoolService extends Pool {
     return new this(`${poolId}`, 'ALL', false)
   }
 
-  static async getOrSeed(poolId: string) {
+  static async getOrSeed(poolId: string, saveSeed = true) {
     let pool = await this.getById(poolId)
     if(!pool) {
       pool = this.seed(poolId)
-      await pool.save()
+      if(saveSeed) await pool.save()
     }
     return pool
   }
@@ -61,7 +61,6 @@ export class PoolService extends Pool {
     this.sumNumberOfLoans = BigInt(0)
 
     this.currencyId = currencyId
-    logger.info(this.currencyId)
 
     return this
   }

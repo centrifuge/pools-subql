@@ -26,7 +26,7 @@ async function _handlePoolCreated(event: SubstrateEvent<PoolCreatedEvent>): Prom
   )
 
   // Initialise Pool
-  const pool = await PoolService.getOrSeed(poolId.toString())
+  const pool = await PoolService.getOrSeed(poolId.toString(), false)
   await pool.init(
     currency.id,
     essence.maxReserve.toBigInt(),
