@@ -24,6 +24,8 @@ dataSources:
         file: './abis/reserve.json'
       shelf:
         file: './abis/shelf.json'
+      pile:
+        file: './abis/pile.json'
     mapping:
       file: './dist/index.js'
       abis:
@@ -33,11 +35,13 @@ dataSources:
           name: Reserve
         - file: './abis/shelf.json'
           name: Shelf
+        - file: './abis/pile.json'
+          name: Pile
       handlers:
         - handler: handleEvmBlock
           kind: ethereum/BlockHandler
           filter:
-            modulo: 7200
+            modulo: 6000
   - kind: ethereum/Runtime
     startBlock: 18063000
     options:
