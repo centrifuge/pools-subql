@@ -15,8 +15,4 @@ export class BlockchainService extends Blockchain {
     }
     return blockchain as BlockchainService
   }
-
-  // static async getThisChainId() {
-  //   return ((await api.query.evmChainId.chainId()) as u64).toString(10)
-  // }
 }
