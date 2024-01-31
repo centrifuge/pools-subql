@@ -4,7 +4,7 @@ import { BlockchainService } from './blockchainService'
 const EVM_SUFFIX = '45564d00'
 
 export class AccountService extends Account {
-  static async init(address: string, blockchainService = BlockchainService) {
+  static async init(address: string) {
     logger.info(`Initialising new account: ${address}`)
     if (this.isEvm(address)) {
       const chainId = this.readEvmChainId(address)
@@ -12,13 +12,13 @@ export class AccountService extends Account {
       account.evmAddress = address.substring(0, 42)
       return account
     } else {
-      return new this(address, await blockchainService.getThisChainId())
+      return new this(address, await getNodeChainId())
     }
   }
 
   static async getOrInit(address: string, blockchainService = BlockchainService): Promise<AccountService> {
     let account = (await this.get(address)) as AccountService
-    if (account === undefined) {
+    if (!account) {
       account = await this.init(address)
       await blockchainService.getOrInit(account.chainId)
       await account.save()
@@ -37,6 +37,11 @@ export class AccountService extends Account {
 
   static isEvm(address: string) {
     return address.length === 66 && address.endsWith(EVM_SUFFIX)
+  }
+
+  public async isForeignEvm() {
+    const nodeChainId = await getNodeChainId()
+    return this.chainId !== nodeChainId
   }
 
   public isEvm() {

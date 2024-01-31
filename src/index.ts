@@ -1,7 +1,17 @@
 import '@polkadot/api-augment'
 import { atob } from 'abab'
+import type { u64 } from '@polkadot/types'
+import type { Provider } from '@ethersproject/providers'
+
+const cfgChainIdProm = 'query' in api ? (api.query.evmChainId.chainId() as Promise<u64>) : null
+const ethNetworkProm =
+  typeof (api as unknown as Provider).getNetwork === 'function' ? (api as unknown as Provider).getNetwork() : null
 
 global.atob = atob
+global.getNodeChainId = async function () {
+  if(cfgChainIdProm) return (await cfgChainIdProm).toString(10)
+  if(ethNetworkProm) return (await ethNetworkProm).chainId.toString(10)
+}
 
 export * from './mappings/handlers/blockHandlers'
 export * from './mappings/handlers/poolsHandlers'

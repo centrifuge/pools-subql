@@ -16,6 +16,7 @@ async function _handleTokenTransfer(event: SubstrateEvent<TokensTransferEvent>):
   // Skip token transfers from and to excluded addresses
   const fromAddress = String.fromCharCode(...from.toU8a())
   const toAddress = String.fromCharCode(...to.toU8a())
+  logger.info(`fromAddress: ${fromAddress} toAddress: ${toAddress}`)
   const isFromExcludedAddress =
     fromAddress.startsWith('pool') || fromAddress.startsWith('invs') || fromAddress.startsWith('domn')
   const isToExcludedAddress =
@@ -26,12 +27,6 @@ async function _handleTokenTransfer(event: SubstrateEvent<TokensTransferEvent>):
     AccountService.getOrInit(to.toHex()),
   ])
 
-  const pool = _currency.isTranche ? await PoolService.getById(_currency.asTranche[0].toString()) : null
-  if (pool === undefined) throw missingPool
-
-  const tranche = _currency.isTranche ? await TrancheService.getById(pool.id, _currency.asTranche[1].toString()) : null
-  if (tranche === undefined) throw new Error('Tranche not found!')
-
   const blockchain = await BlockchainService.getOrInit()
   const currency = await CurrencyService.getOrInit(
     blockchain.id,
@@ -41,6 +36,12 @@ async function _handleTokenTransfer(event: SubstrateEvent<TokensTransferEvent>):
 
   // TRANCHE TOKEN TRANSFERS BETWEEN INVESTORS
   if (_currency.isTranche && !isFromExcludedAddress && !isToExcludedAddress) {
+    const pool = await PoolService.getById(_currency.asTranche[0].toString())
+    if(!pool) throw missingPool
+
+    const tranche = await TrancheService.getById(pool.id, _currency.asTranche[1].toString())
+    if(!tranche) throw missingPool
+
     logger.info(
       `Tranche Token transfer between investors tor tranche: ${pool.id}-${tranche.trancheId}. ` +
         `from: ${from.toHex()} to: ${to.toHex()} amount: ${amount.toString()} ` +
@@ -73,19 +74,17 @@ async function _handleTokenTransfer(event: SubstrateEvent<TokensTransferEvent>):
 
   // TRACK CURRENCY TOKEN TRANSFER
   logger.info(
-    `Currency transfer ${currency.id} from: ${from.toHex()} to: ${to.toHex()} amount: ${amount.toString()} ` +
+    `Currency transfer ${currency.id} from: ${fromAccount.id} to: ${toAccount.id} amount: ${amount.toString()} ` +
       `at block ${event.block.block.header.number.toString()}`
   )
 
   if (!isFromExcludedAddress) {
-    const fromAccount = await AccountService.getOrInit(from.toHex())
     const fromCurrencyBalance = await CurrencyBalanceService.getOrInit(fromAccount.id, currency.id)
     await fromCurrencyBalance.debit(amount.toBigInt())
     await fromCurrencyBalance.save()
   }
 
   if (!isToExcludedAddress) {
-    const toAccount = await AccountService.getOrInit(to.toHex())
     const toCurrencyBalance = await CurrencyBalanceService.getOrInit(toAccount.id, currency.id)
     await toCurrencyBalance.credit(amount.toBigInt())
     await toCurrencyBalance.save()

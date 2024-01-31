@@ -4,7 +4,7 @@ import { formatEnumPayload } from './currencyService'
 
 export class CurrencyBalanceService extends CurrencyBalance {
   static init(address: string, currency: string) {
-    logger.info(`Initialising new CurrencyBalance: ${address}-${currency}`)
+    logger.info(`Initialising new CurrencyBalance: ${address}-${currency} to 0`)
     const currencyBalance = new this(`${address}-${currency}`, address, currency, BigInt(0))
     return currencyBalance
   }
@@ -17,17 +17,7 @@ export class CurrencyBalanceService extends CurrencyBalance {
 
   static async getOrInit(address: string, currency: string) {
     let currencyBalance = await this.getById(address, currency)
-    if (currencyBalance === undefined) {
-      currencyBalance = this.init(address, currency)
-      await currencyBalance.getBalance()
-      await currencyBalance.save()
-    }
-    return currencyBalance
-  }
-
-  static async getOrInitEvm(address: string, currency: string) {
-    let currencyBalance = await this.getById(address, currency)
-    if (currencyBalance === undefined) {
+    if (!currencyBalance) {
       currencyBalance = this.init(address, currency)
       await currencyBalance.save()
     }
@@ -39,13 +29,22 @@ export class CurrencyBalanceService extends CurrencyBalance {
     const enumPayload = formatEnumPayload(currencyType, ...currencySpec)
     const balanceResponse = await api.query.ormlTokens.accounts<AccountData>(this.accountId, enumPayload)
     this.amount = balanceResponse.free.toBigInt()
+    logger.info(`Fetched initial balance of for CurrencyBalance ${this.id} of ${this.amount.toString(10)}`)
   }
 
   public credit(amount: bigint) {
+    logger.info(
+      `Crediting CurrencyBalance ${this.id} with balance: ${this.amount.toString(10)} for amount: ${amount.toString(
+        10
+      )}`
+    )
     this.amount += amount
   }
 
   public debit(amount: bigint) {
+    logger.info(
+      `Debiting CurrencyBalance ${this.id} with balance: ${this.amount.toString(10)} for amount: ${amount.toString(10)}`
+    )
     this.amount -= amount
   }
 }

@@ -89,9 +89,6 @@ export class EpochService extends Epoch {
         ),
       ])
 
-      logger.info(JSON.stringify(investOrderFulfillment))
-      logger.info(JSON.stringify(redeemOrderFulfillment))
-
       if (investOrderFulfillment.isNone || redeemOrderFulfillment.isNone)
         throw new Error('Failed to fetch epoch solutions')
 

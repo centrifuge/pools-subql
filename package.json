@@ -32,7 +32,7 @@
     "@jest/globals": "^29.2.0",
     "@polkadot/api": "^10",
     "@polkadot/typegen": "^10",
-    "@subql/cli": "latest",
+    "@subql/cli": "^4.2.5",
     "@subql/testing": "latest",
     "@subql/types": "latest",
     "@types/jest": "^29.1.2",
