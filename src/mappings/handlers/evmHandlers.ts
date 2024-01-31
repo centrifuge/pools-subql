@@ -273,8 +273,16 @@ async function _handleEvmBlock(block: EthereumBlock): Promise<void> {
       }
     }
 
-    // Take pool snapshot
+    // Take snapshots
     await stateSnapshotter('Pool', 'PoolSnapshot', { number: block.number, timestamp: date }, 'poolId')
+    await stateSnapshotter(
+      'Loan',
+      'LoanSnapshot',
+      { number: block.number, timestamp: date },
+      'loanId',
+      'isActive',
+      true
+    )
   }
 }
 
@@ -391,10 +399,16 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
       loan.save()
     }
     const pileContract = Pile__factory.connect(pile, api as unknown as Provider)
+    const prevDebt = loan.outstandingDebt
     const debt = await pileContract.debt(loanIndex)
     loan.outstandingDebt = debt.toBigInt()
     const rateGroup = await pileContract.loanRates(loanIndex)
     const rates = await pileContract.rates(rateGroup)
     loan.interestRatePerSec = rates.ratePerSecond.toBigInt()
+
+    if (prevDebt > loan.outstandingDebt) {
+      loan.repaidAmountByPeriod = prevDebt - loan.outstandingDebt
+    }
+    loan.save()
   }
 }
