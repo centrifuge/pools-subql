@@ -11,7 +11,6 @@ type Pool @entity {
   type: String! @index
   isActive: Boolean! @index
 
-
   createdAt: Date
   createdAtBlockNumber: Int
 
@@ -309,7 +308,6 @@ type Loan @entity {
   probabilityOfDefault: BigInt
   lossGivenDefault: BigInt
   discountRate: BigInt
-  maturityDate: Date
 
   interestRatePerSec: BigInt
 
@@ -320,7 +318,19 @@ type Loan @entity {
   isActive: Boolean! @index
   status: LoanStatus!
 
+  outstandingPrincipal: BigInt
+  outstandingInterest: BigInt
   outstandingDebt: BigInt
+  presentValue: BigInt
+  actualMaturityDate: Date
+  timeToMaturity: Int
+  actualOriginationDate: Date
+  writeOffPercentage: BigInt
+  totalBorrowed: BigInt
+  totalRepaid: BigInt
+  totalRepaidPrincipal: BigInt
+  totalRepaidInterest: BigInt
+  totalRepaidUnscheduled: BigInt
 
   borrowedAmountByPeriod: BigInt
   repaidAmountByPeriod: BigInt
@@ -339,7 +349,19 @@ type LoanSnapshot @entity {
   blockNumber: Int!
   periodStart: Date! @index
 
+  outstandingPrincipal: BigInt
+  outstandingInterest: BigInt
   outstandingDebt: BigInt
+  presentValue: BigInt
+  actualMaturityDate: Date
+  timeToMaturity: Int
+  actualOriginationDate: Date
+  writeOffPercentage: BigInt
+  totalBorrowed: BigInt
+  totalRepaid: BigInt
+  totalRepaidPrincipal: BigInt
+  totalRepaidInterest: BigInt
+  totalRepaidUnscheduled: BigInt
 
   borrowedAmountByPeriod: BigInt
   repaidAmountByPeriod: BigInt

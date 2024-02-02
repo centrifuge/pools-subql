@@ -1,8 +1,7 @@
-import { Option, u64, u128, Vec } from '@polkadot/types'
-import { ITuple } from '@polkadot/types/types'
+import { Option, u128, Vec } from '@polkadot/types'
 import { bnToBn, nToBigInt } from '@polkadot/util'
 import { paginatedGetter } from '../../helpers/paginatedGetter'
-import { ExtendedRpc, LoanInfoActive, NavDetails, PoolDetails, PoolMetadata, TrancheDetails } from '../../helpers/types'
+import { ExtendedCall, ExtendedRpc, NavDetails, PoolDetails, PoolMetadata, TrancheDetails } from '../../helpers/types'
 import { Pool } from '../../types'
 
 export class PoolService extends Pool {
@@ -13,9 +12,9 @@ export class PoolService extends Pool {
 
   static async getOrSeed(poolId: string, saveSeed = true) {
     let pool = await this.getById(poolId)
-    if(!pool) {
+    if (!pool) {
       pool = this.seed(poolId)
-      if(saveSeed) await pool.save()
+      if (saveSeed) await pool.save()
     }
     return pool
   }
@@ -180,25 +179,30 @@ export class PoolService extends Pool {
     return tranches.reduce<PoolTranches>((obj, data, index) => ({ ...obj, [ids[index].toHex()]: { index, data } }), {})
   }
 
-  public async getActiveLoanData() {
-    logger.info(`Querying active loan data for pool: ${this.id}`)
-    const loanDetails = await api.query.loans.activeLoans<Vec<ITuple<[u64, LoanInfoActive]>>>(this.id)
-    const activeLoanData = loanDetails.reduce<ActiveLoanData>(
-      (last, current) => ({
-        ...last,
-        [current[0].toString()]: {
-          normalizedAcc: current[1].pricing?.isInternal
-            ? current[1].pricing?.asInternal.interest.normalizedAcc.toBigInt()
-            : null,
-          interestRate:
-            current[1].pricing?.isInternal && current[1].pricing?.asInternal.interest.interestRate.isFixed
-              ? current[1].pricing?.asInternal.interest.interestRate.asFixed.ratePerYear.toBigInt()
-              : null,
-        },
-      }),
-      {}
-    )
-    return activeLoanData
+  public async getPortfolio(): Promise<ActiveLoanData> {
+    const apiCall = api.call as ExtendedCall
+    const portfolioData = await apiCall.loansApi.portfolio(this.id)
+    return portfolioData.reduce<ActiveLoanData>((obj, current) => {
+      const totalRepaid = current[1].activeLoan.totalRepaid
+      const maturityDate = new Date(current[1].activeLoan.schedule.maturity.asFixed.date.toNumber() * 1000)
+      obj[current[0].toString(10)] = {
+        outstandingPrincipal: current[1].outstandingPrincipal.toBigInt(),
+        outstandingInterest: current[1].outstandingInterest.toBigInt(),
+        outstandingDebt: current[1].outstandingPrincipal.toBigInt() + current[1].outstandingInterest.toBigInt(),
+        presentValue: current[1].presentValue.toBigInt(),
+        actualMaturityDate: new Date(current[1].activeLoan.schedule.maturity.asFixed.date.toNumber() * 1000),
+        timeToMaturity: Math.round((maturityDate.valueOf() - Date.now().valueOf()) / 1000),
+        actualOriginationDate: new Date(current[1].activeLoan.originationDate.toNumber() * 1000),
+        writeOffPercentage: current[1].activeLoan.writeOffPercentage.toBigInt(),
+        totalBorrowed: current[1].activeLoan.totalBorrowed.toBigInt(),
+        totalRepaid:
+          totalRepaid.principal.toBigInt() + totalRepaid.interest.toBigInt() + totalRepaid.unscheduled.toBigInt(),
+        totalRepaidPrincipal: totalRepaid.principal.toBigInt(),
+        totalRepaidInterest: totalRepaid.interest.toBigInt(),
+        totalRepaidUnscheduled: totalRepaid.unscheduled.toBigInt(),
+      }
+      return obj
+    }, {})
   }
 
   public async getTrancheTokenPrices() {
@@ -215,8 +219,22 @@ export class PoolService extends Pool {
   }
 }
 
-interface ActiveLoanData {
-  [loanId: string]: { normalizedAcc: bigint; interestRate: bigint }
+export interface ActiveLoanData {
+  [loanId: string]: {
+    outstandingPrincipal: bigint,
+    outstandingInterest: bigint,
+    outstandingDebt: bigint,
+    presentValue: bigint,
+    actualMaturityDate: Date,
+    timeToMaturity: number
+    actualOriginationDate: Date,
+    writeOffPercentage: bigint,
+    totalBorrowed: bigint,
+    totalRepaid: bigint
+    totalRepaidPrincipal: bigint,
+    totalRepaidInterest: bigint,
+    totalRepaidUnscheduled: bigint,
+  }
 }
 
 interface PoolTranches {
