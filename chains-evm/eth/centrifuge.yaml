@@ -1,6 +1,6 @@
 network:
   chainId: '1' # Ethereum Mainnet
-  endpoint: 'https://mainnet.infura.io/v3/a4ba76cd4be643618572e7467a444e3a'
+  endpoint: 'wss://eth.api.onfinality.io/ws?apikey=453c025d-7cc9-4648-bdfa-4447639cb8d6'
   dictionary: 'https://gx.api.subquery.network/sq/subquery/eth-dictionary'
 dataSources:
   - kind: ethereum/Runtime
