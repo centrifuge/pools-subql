@@ -1,6 +1,3 @@
-import { bnToBn, nToBigInt } from '@polkadot/util'
-import { RAY, WAD } from '../../config'
-
 import { LoanService } from './loanService'
 
 const poolId = '1111111111'
@@ -8,17 +5,7 @@ const loanId = 'ABCD'
 const nftClassId = BigInt(1)
 const nftItemId = BigInt(2)
 const timestamp = new Date()
-const accumulatedRate = nToBigInt(RAY.muln(2))
-const normalizedAcc = nToBigInt(WAD.muln(100))
-const interestRate = nToBigInt(WAD)
 const metadata = 'AAAAAA'
-
-const outstandingDebt = nToBigInt(bnToBn(normalizedAcc).mul(bnToBn(accumulatedRate)).div(RAY))
-
-api.query['interestAccrual'] = {
-  rates: jest.fn(() => [{ interestRatePerSec: { toBigInt: () => interestRate }, accumulatedRate }]),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-} as any
 
 api.query['uniques'] = {
   instanceMetadataOf: jest.fn(() => ({
@@ -52,12 +39,5 @@ describe('Given a new loan, when initialised', () => {
   test('then it can be saved to the database with the correct id format', async () => {
     await loan.save()
     expect(store.set).toHaveBeenCalledWith('Loan', `${poolId}-${loanId}`, expect.anything())
-  })
-})
-
-describe('Given an existing loan, ', () => {
-  test.skip('when a snapshot is taken, then the outstanding debt is computed corrrectly', async () => {
-    await loan.updateOutstandingDebt(normalizedAcc, interestRate)
-    expect(loan.outstandingDebt).toBe(outstandingDebt)
   })
 })

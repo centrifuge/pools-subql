@@ -21,7 +21,8 @@ dataSources:
         - handler: handleBlock
           kind: substrate/BlockHandler
           filter:
-            timestamp: '1 0,12 * * *'
+            modulo: 300
+            #timestamp: '1 0,12 * * *'
         # - handler: logEvents
         #   kind: substrate/EventHandler
         - handler: handlePoolCreated
@@ -109,11 +110,6 @@ dataSources:
           filter:
             module: ormlTokens
             method: Transfer
-        - handler: handleTokenEndowed
-          kind: substrate/EventHandler
-          filter:
-            module: ormlTokens
-            method: Endowed
         - handler: handleTokenDeposited
           kind: substrate/EventHandler
           filter:

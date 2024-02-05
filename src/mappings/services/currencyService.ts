@@ -5,10 +5,12 @@ import { WAD_DIGITS } from '../../config'
 import type { TokensCurrencyId } from '../../helpers/types'
 
 export class CurrencyService extends Currency {
-  static init(chainId: string, currencyId: string, decimals: number) {
+  static init(chainId: string, currencyId: string, decimals: number, symbol?: string, name?: string) {
     const id = `${chainId}-${currencyId}`
     logger.info(`Initialising new currency ${id} with ${decimals} decimals`)
     const currency = new this(id, chainId, decimals)
+    currency.symbol = symbol
+    currency.name = name
     return currency
   }
 
@@ -20,7 +22,9 @@ export class CurrencyService extends Currency {
       const enumPayload = formatEnumPayload(currencyType, ...currencyValue)
       const assetMetadata = (await api.query.ormlAssetRegistry.metadata(enumPayload)) as Option<AssetMetadata>
       const decimals = assetMetadata.isSome ? assetMetadata.unwrap().decimals.toNumber() : WAD_DIGITS
-      currency = this.init(chainId, currencyId, decimals)
+      const symbol = assetMetadata.isSome ? assetMetadata.unwrap().symbol.toUtf8() : undefined
+      const name = assetMetadata.isSome ? assetMetadata.unwrap().name.toUtf8() : undefined
+      currency = this.init(chainId, currencyId, decimals, symbol, name)
       await currency.save()
     }
     return currency as CurrencyService

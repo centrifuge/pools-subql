@@ -87,13 +87,13 @@ describe('Given a new pool, when initialised', () => {
 describe('Given an existing pool,', () => {
   test('when the nav is updated, then the value is fetched and set correctly', async () => {
     await pool.updatePortfolioValuation()
-    expect(api.query.loans.portfolioValuation).toBeCalled()
+    expect(api.query.loans.portfolioValuation).toHaveBeenCalled()
     expect(pool.portfolioValuation).toBe(BigInt(100000000000000))
   })
 
   test('when the pool state is updated, then the values are fetched and set correctly', async () => {
     await pool.updateState()
-    expect(api.query.poolSystem.pool).toBeCalledWith(poolId)
+    expect(api.query.poolSystem.pool).toHaveBeenCalledWith(poolId)
     expect(pool).toMatchObject({
       totalReserve: BigInt(91000000000000),
       availableReserve: BigInt(92000000000000),
@@ -110,10 +110,16 @@ describe('Given an existing pool,', () => {
   })
 
   test('when total repaid are registered, then values are incremented correctly', async () => {
-    await pool.increaseRepayments(BigInt('17500000000000000'))
+    await pool.increaseRepayments(BigInt('17500000000000000'), BigInt('17500000000000000'), BigInt('17500000000000000'))
     expect(pool).toMatchObject({
-      sumRepaidAmountByPeriod: BigInt('17500000000000000'),
-      sumRepaidAmount: BigInt('17500000000000000'),
+      sumRepaidAmountByPeriod: BigInt('17500000000000000') + BigInt('17500000000000000') + BigInt('17500000000000000'),
+      sumRepaidAmount: BigInt('17500000000000000') + BigInt('17500000000000000') + BigInt('17500000000000000'),
+      sumPrincipalRepaidAmountByPeriod: BigInt('17500000000000000'),
+      sumPrincipalRepaidAmount: BigInt('17500000000000000'),
+      sumInterestRepaidAmountByPeriod: BigInt('17500000000000000'),
+      sumInterestRepaidAmount: BigInt('17500000000000000'),
+      sumUnscheduledRepaidAmountByPeriod: BigInt('17500000000000000'),
+      sumUnscheduledRepaidAmount: BigInt('17500000000000000'),
     })
   })
 

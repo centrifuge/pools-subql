@@ -3,6 +3,52 @@ import type { OverrideBundleDefinition } from '@polkadot/types/types'
 /* eslint-disable sort-keys */
 
 const definitions: OverrideBundleDefinition = {
+  types: [
+    {
+      minmax: [undefined, undefined],
+      types: {
+        ActiveLoanInfo: {
+          activeLoan: 'PalletLoansEntitiesLoansActiveLoan',
+          presentValue: 'Balance',
+          outstandingPrincipal: 'Balance',
+          outstandingInterest: 'Balance',
+        },
+      },
+    },
+  ],
+  runtime: {
+    LoansApi: [
+      {
+        methods: {
+          portfolio: {
+            description: 'Get active pool loan',
+            params: [
+              {
+                name: 'pool_id',
+                type: 'u64',
+              },
+            ],
+            type: 'Vec<(u64, ActiveLoanInfo)>',
+          },
+          portfolio_loan: {
+            description: 'Get active pool loan',
+            params: [
+              {
+                name: 'pool_id',
+                type: 'u64',
+              },
+              {
+                name: 'loan_id',
+                type: 'u64',
+              },
+            ],
+            type: 'Option<PalletLoansEntitiesLoansActiveLoan>',
+          },
+        },
+        version: 1,
+      },
+    ],
+  },
   rpc: {
     pools: {
       trancheTokenPrices: {
