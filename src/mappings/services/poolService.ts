@@ -51,12 +51,18 @@ export class PoolService extends Pool {
 
     this.sumBorrowedAmountByPeriod = BigInt(0)
     this.sumRepaidAmountByPeriod = BigInt(0)
+    this.sumPrincipalRepaidAmountByPeriod = BigInt(0)
+    this.sumInterestRepaidAmountByPeriod = BigInt(0)
+    this.sumUnscheduledRepaidAmountByPeriod = BigInt(0)
     this.sumInvestedAmountByPeriod = BigInt(0)
     this.sumRedeemedAmountByPeriod = BigInt(0)
     this.sumNumberOfLoansByPeriod = BigInt(0)
 
     this.sumBorrowedAmount = BigInt(0)
     this.sumRepaidAmount = BigInt(0)
+    this.sumPrincipalRepaidAmount = BigInt(0)
+    this.sumInterestRepaidAmount = BigInt(0)
+    this.sumUnscheduledRepaidAmount = BigInt(0)
     this.sumNumberOfLoans = BigInt(0)
 
     this.currencyId = currencyId
@@ -127,9 +133,19 @@ export class PoolService extends Pool {
     this.sumBorrowedAmount += borrowedAmount
   }
 
-  public increaseRepayments(repaidAmount: bigint) {
-    this.sumRepaidAmountByPeriod += repaidAmount
-    this.sumRepaidAmount += repaidAmount
+  public increaseRepayments(
+    principalRepaidAmount: bigint,
+    interestRepaidAmount: bigint,
+    unscheduledRepaidAmount: bigint
+  ) {
+    this.sumRepaidAmountByPeriod += principalRepaidAmount + interestRepaidAmount + unscheduledRepaidAmount
+    this.sumRepaidAmount += principalRepaidAmount + interestRepaidAmount + unscheduledRepaidAmount
+    this.sumPrincipalRepaidAmountByPeriod += principalRepaidAmount
+    this.sumPrincipalRepaidAmount += principalRepaidAmount
+    this.sumInterestRepaidAmountByPeriod += interestRepaidAmount
+    this.sumInterestRepaidAmount += interestRepaidAmount
+    this.sumUnscheduledRepaidAmountByPeriod += unscheduledRepaidAmount
+    this.sumUnscheduledRepaidAmount += unscheduledRepaidAmount
   }
 
   public increaseInvestments(currencyAmount: bigint) {
@@ -221,19 +237,19 @@ export class PoolService extends Pool {
 
 export interface ActiveLoanData {
   [loanId: string]: {
-    outstandingPrincipal: bigint,
-    outstandingInterest: bigint,
-    outstandingDebt: bigint,
-    presentValue: bigint,
-    actualMaturityDate: Date,
+    outstandingPrincipal: bigint
+    outstandingInterest: bigint
+    outstandingDebt: bigint
+    presentValue: bigint
+    actualMaturityDate: Date
     timeToMaturity: number
-    actualOriginationDate: Date,
-    writeOffPercentage: bigint,
-    totalBorrowed: bigint,
+    actualOriginationDate: Date
+    writeOffPercentage: bigint
+    totalBorrowed: bigint
     totalRepaid: bigint
-    totalRepaidPrincipal: bigint,
-    totalRepaidInterest: bigint,
-    totalRepaidUnscheduled: bigint,
+    totalRepaidPrincipal: bigint
+    totalRepaidInterest: bigint
+    totalRepaidUnscheduled: bigint
   }
 }
 

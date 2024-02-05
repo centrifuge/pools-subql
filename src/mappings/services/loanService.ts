@@ -21,6 +21,9 @@ export class LoanService extends Loan {
     loan.totalRepaidInterest = BigInt(0)
     loan.totalRepaidUnscheduled = BigInt(0)
 
+    loan.borrowedAmountByPeriod = BigInt(0)
+    loan.repaidAmountByPeriod = BigInt(0)
+
     return loan
   }
 

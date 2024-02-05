@@ -1,4 +1,5 @@
 import { SubstrateEvent } from '@subql/types'
+import { nToBigInt } from '@polkadot/util'
 import {
   LoanBorrowedEvent,
   LoanClosedEvent,
@@ -21,7 +22,7 @@ async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedEvent>) {
   logger.info(`Loan created event for pool: ${poolId.toString()} loan: ${loanId.toString()}`)
 
   const pool = await PoolService.getById(poolId.toString())
-  if (pool === undefined) throw missingPool
+  if (!pool) throw missingPool
 
   const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toHex())
 
@@ -82,13 +83,13 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Pr
   const [poolId, loanId, borrowAmount] = event.event.data
 
   const pool = await PoolService.getById(poolId.toString())
-  if (pool === undefined) throw missingPool
+  if (!pool) throw missingPool
 
   const amount = borrowAmount.isInternal
-    ? borrowAmount.asInternal.toString()
-    : borrowAmount.asExternal.quantity.mul(borrowAmount.asExternal.settlementPrice).div(WAD).toString()
+    ? borrowAmount.asInternal.toBigInt()
+    : nToBigInt(borrowAmount.asExternal.quantity.toBn().mul(borrowAmount.asExternal.settlementPrice.toBn()).div(WAD))
 
-  if (amount == '0') return
+  if (amount === BigInt(0)) return
 
   logger.info(`Loan borrowed event for pool: ${poolId.toString()} amount: ${amount.toString()}`)
 
@@ -97,7 +98,7 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Pr
   // Update loan amount
   const loan = await LoanService.getById(poolId.toString(), loanId.toString())
   await loan.activate()
-  await loan.borrow(BigInt(amount))
+  await loan.borrow(amount)
   await loan.updateItemMetadata()
   await loan.save()
 
@@ -108,15 +109,15 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Pr
     epochNumber: pool.currentEpoch,
     hash: event.extrinsic.extrinsic.hash.toString(),
     timestamp: event.block.timestamp,
-    amount: BigInt(amount),
-    principalAmount: BigInt(amount),
-    quantity: borrowAmount.isExternal ? BigInt(borrowAmount.asExternal.quantity.toString()) : null,
-    settlementPrice: borrowAmount.isExternal ? BigInt(borrowAmount.asExternal.settlementPrice.toString()) : null,
+    amount: amount,
+    principalAmount: amount,
+    quantity: borrowAmount.isExternal ? borrowAmount.asExternal.quantity.toBigInt() : null,
+    settlementPrice: borrowAmount.isExternal ? borrowAmount.asExternal.settlementPrice.toBigInt() : null,
   })
   await bt.save()
 
   // Update pool info
-  await pool.increaseBorrowings(BigInt(amount))
+  await pool.increaseBorrowings(amount)
   await pool.save()
 
   // Update epoch info
@@ -131,21 +132,21 @@ async function _handleLoanRepaid(event: SubstrateEvent<LoanRepaidEvent>) {
   const [poolId, loanId, { principal, interest, unscheduled }] = event.event.data
 
   const pool = await PoolService.getById(poolId.toString())
-  if (pool === undefined) throw missingPool
+  if (!pool) throw missingPool
 
   const principalAmount = principal.isInternal
-    ? principal.asInternal
-    : principal.asExternal.quantity.mul(principal.asExternal.settlementPrice).div(WAD)
-  const amount = principalAmount.add(interest).add(unscheduled).toString()
+    ? principal.asInternal.toBigInt()
+    : nToBigInt(principal.asExternal.quantity.toBn().mul(principal.asExternal.settlementPrice.toBn()).div(WAD))
+  const amount = principalAmount + interest.toBigInt() + unscheduled.toBigInt()
 
-  if (amount == '0') return
+  if (amount === BigInt(0)) return
 
   logger.info(`Loan repaid event for pool: ${poolId.toString()} amount: ${amount.toString()}`)
 
   const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toHex())
 
   const loan = await LoanService.getById(poolId.toString(), loanId.toString())
-  await loan.repay(BigInt(amount))
+  await loan.repay(amount)
   await loan.updateItemMetadata()
   await loan.save()
 
@@ -156,23 +157,23 @@ async function _handleLoanRepaid(event: SubstrateEvent<LoanRepaidEvent>) {
     epochNumber: pool.currentEpoch,
     hash: event.extrinsic.extrinsic.hash.toString(),
     timestamp: event.block.timestamp,
-    amount: BigInt(amount),
-    principalAmount: BigInt(principalAmount.toString()),
-    interestAmount: BigInt(interest.toString()),
-    unscheduledAmount: BigInt(unscheduled.toString()),
-    quantity: principal.isExternal ? BigInt(principal.asExternal.quantity.toString()) : null,
-    settlementPrice: principal.isExternal ? BigInt(principal.asExternal.settlementPrice.toString()) : null,
+    amount: amount,
+    principalAmount: principalAmount,
+    interestAmount: interest.toBigInt(),
+    unscheduledAmount: unscheduled.toBigInt(),
+    quantity: principal.isExternal ? principal.asExternal.quantity.toBigInt() : null,
+    settlementPrice: principal.isExternal ? principal.asExternal.settlementPrice.toBigInt() : null,
   })
   await bt.save()
 
   // Update pool info
-  await pool.increaseRepayments(BigInt(amount))
+  await pool.increaseRepayments(principalAmount, interest.toBigInt(), unscheduled.toBigInt())
   await pool.save()
 
   // Update epoch info
   const epoch = await EpochService.getById(pool.id, pool.currentEpoch)
-  if (epoch === undefined) throw new Error('Epoch not found!')
-  await epoch.increaseRepayments(BigInt(amount))
+  if (!epoch) throw new Error('Epoch not found!')
+  await epoch.increaseRepayments(amount)
   await epoch.save()
 }
 
@@ -224,9 +225,9 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
   const [poolId, fromLoanId, toLoanId, amount] = event.event.data
 
   const pool = await PoolService.getById(poolId.toString())
-  if (pool === undefined) throw missingPool
+  if (!pool) throw missingPool
 
-  if (amount.toString() == '0') return
+  if (amount.toBigInt() === BigInt(0)) return
 
   logger.info(
     `Loan debt transferred event for pool: ${poolId.toString()}, from loan: ${fromLoanId.toString()} ` +
@@ -247,7 +248,6 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
 
   const txData: Omit<BorrowerTransactionData, 'loanId'> = {
     poolId: poolId.toString(),
-    //loanId: loanId.toString(),
     address: account.id,
     epochNumber: pool.currentEpoch,
     hash: event.extrinsic.extrinsic.hash.toString(),
