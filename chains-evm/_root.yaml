@@ -19,23 +19,23 @@ dataSources:
       abi: navFeed
     assets:
       navFeed:
-        file: './abis/navfeed.json'
+        file: './abi/navfeed.abi.json'
       reserve:
-        file: './abis/reserve.json'
+        file: './abi/reserve.abi.json'
       shelf:
-        file: './abis/shelf.json'
+        file: './abi/shelf.abi.json'
       pile:
-        file: './abis/pile.json'
+        file: './abi/pile.abi.json'
     mapping:
       file: './dist/index.js'
       abis:
-        - file: './abis/navfeed.json'
+        - file: './abi/navfeed.abi.json'
           name: NavFeed
-        - file: './abis/reserve.json'
+        - file: './abi/reserve.abi.json'
           name: Reserve
-        - file: './abis/shelf.json'
+        - file: './abi/shelf.abi.json'
           name: Shelf
-        - file: './abis/pile.json'
+        - file: './abi/pile.abi.json'
           name: Pile
       handlers:
         - handler: handleEvmBlock
