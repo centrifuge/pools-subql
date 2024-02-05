@@ -4,22 +4,16 @@ import { paginatedGetter } from '../../helpers/paginatedGetter'
 import { WAD } from '../../config'
 import { ExtendedRpc, TrancheDetails } from '../../helpers/types'
 import { Tranche, TrancheSnapshot } from '../../types'
-import  { TrancheProps } from '../../types/models/Tranche'
+import { TrancheProps } from '../../types/models/Tranche'
 
 export class TrancheService extends Tranche {
-
   static seed(poolId: string, trancheId: string) {
-    return new this(
-      `${poolId}-${trancheId}`,
-      'ALL',
-      poolId,
-      trancheId
-    )
+    return new this(`${poolId}-${trancheId}`, 'ALL', poolId, trancheId, false)
   }
 
   static async getOrSeed(poolId: string, trancheId: string) {
     let tranche = await this.getById(poolId, trancheId)
-    if(!tranche) {
+    if (!tranche) {
       tranche = this.seed(poolId, trancheId)
       await tranche.save()
     }
@@ -29,8 +23,8 @@ export class TrancheService extends Tranche {
   public init(index: number, trancheData: TrancheDetails) {
     this.index = index
     this.isResidual = trancheData.trancheType.isResidual
-    ;(this.seniority = trancheData.seniority.toNumber()), (this.isActive = true)
-
+    this.seniority = trancheData.seniority.toNumber()
+    this.isActive = true
     this.sumOutstandingInvestOrdersByPeriod = BigInt(0)
     this.sumOutstandingRedeemOrdersByPeriod = BigInt(0)
     this.sumOutstandingRedeemOrdersCurrencyByPeriod = BigInt(0)

@@ -14,6 +14,7 @@ const tokenTypes = [
   InvestorTransactionType.REDEEM_ORDER_CANCEL,
   InvestorTransactionType.REDEEM_EXECUTION,
   InvestorTransactionType.INVEST_COLLECT,
+  InvestorTransactionType.INVEST_LP_COLLECT,
   InvestorTransactionType.TRANSFER_IN,
   InvestorTransactionType.TRANSFER_OUT,
 ]
@@ -33,8 +34,9 @@ export interface InvestorTransactionData {
 
 export class InvestorTransactionService extends InvestorTransaction {
   static init(data: InvestorTransactionData, type: InvestorTransactionType) {
+    const epochRef = data.epochNumber ? data.epochNumber.toString() : '0'
     const tx = new this(
-      `${data.hash}-${data.epochNumber.toString()}-${type.toString()}`,
+      `${data.hash}-${epochRef}-${type.toString()}`,
       data.hash,
       data.address,
       data.poolId,
@@ -84,27 +86,61 @@ export class InvestorTransactionService extends InvestorTransaction {
   }
 
   static updateInvestOrder(data: InvestorTransactionData) {
+    logger.info(
+      `Executing invest order update for address ${data.address} in pool ${data.poolId} tranche ${data.trancheId} ` +
+        `with amount: ${data.amount}`
+    )
     return this.init(data, InvestorTransactionType.INVEST_ORDER_UPDATE)
   }
 
   static updateRedeemOrder(data: InvestorTransactionData) {
+    logger.info(
+      `Executing redeem order update for address ${data.address} in pool ${data.poolId} tranche ${data.trancheId} ` +
+        `with amount: ${data.amount}`
+    )
     return this.init(data, InvestorTransactionType.REDEEM_ORDER_UPDATE)
   }
 
   static cancelInvestOrder(data: InvestorTransactionData) {
+    logger.info(
+      `Executing invest order cancel for address ${data.address} in pool ${data.poolId} tranche ${data.trancheId} `
+    )
     return this.init(data, InvestorTransactionType.INVEST_ORDER_CANCEL)
   }
 
   static cancelRedeemOrder(data: InvestorTransactionData) {
+    logger.info(
+      `Executing redeem order cancel for address ${data.address} in pool ${data.poolId} tranche ${data.trancheId} `
+    )
     return this.init(data, InvestorTransactionType.REDEEM_ORDER_CANCEL)
   }
 
   static collectInvestOrder(data: InvestorTransactionData) {
+    logger.info(
+      `Executing invest order collect for address ${data.address} in pool ${data.poolId} tranche ${data.trancheId} `
+    )
     return this.init(data, InvestorTransactionType.INVEST_COLLECT)
   }
 
   static collectRedeemOrder(data: InvestorTransactionData) {
+    logger.info(
+      `Executing redeem order collect for address ${data.address} in pool ${data.poolId} tranche ${data.trancheId} `
+    )
     return this.init(data, InvestorTransactionType.REDEEM_COLLECT)
+  }
+
+  static collectLpInvestOrder(data: InvestorTransactionData) {
+    logger.info(
+      `Executing LP invest order collect for address ${data.address} in pool ${data.poolId} tranche ${data.trancheId} `
+    )
+    return this.init(data, InvestorTransactionType.INVEST_LP_COLLECT)
+  }
+
+  static collectLpRedeemOrder(data: InvestorTransactionData) {
+    logger.info(
+      `Executing LP redeem order collect for address ${data.address} in pool ${data.poolId} tranche ${data.trancheId} `
+    )
+    return this.init(data, InvestorTransactionType.REDEEM_LP_COLLECT)
   }
 
   static transferIn(data: InvestorTransactionData) {

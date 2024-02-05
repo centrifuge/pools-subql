@@ -139,13 +139,16 @@ async function _handleInvestOrdersCollected(event: SubstrateEvent<InvestOrdersCo
       `Address: ${address.toHex()} at ` +
       `block ${event.block.block.header.number.toString()} hash:${event.extrinsic.extrinsic.hash.toString()}`
   )
+  const account = await AccountService.getOrInit(address.toHex())
+  if (await account.isForeignEvm()) {
+    logger.info('Skipping Address as collection is from another EVM Chain')
+    return
+  }
 
   const pool = await PoolService.getById(poolId.toString())
-  if (pool === undefined) throw missingPool
+  if (!pool) throw missingPool
   const endEpochId = pool.lastEpochClosed
   logger.info(`Collection for ending epoch: ${endEpochId}`)
-
-  const account = await AccountService.getOrInit(address.toHex())
 
   const tranche = await TrancheService.getById(poolId.toString(), trancheId.toHex())
 
@@ -186,12 +189,16 @@ async function _handleRedeemOrdersCollected(event: SubstrateEvent<RedeemOrdersCo
       `block ${event.block.block.header.number.toString()} hash:${event.extrinsic.extrinsic.hash.toString()}`
   )
 
+  const account = await AccountService.getOrInit(address.toHex())
+  if (await account.isForeignEvm()) {
+    logger.info('Skipping as Address is EVM')
+    return
+  }
+
   const pool = await PoolService.getById(poolId.toString())
   if (pool === undefined) throw missingPool
   const endEpochId = pool.lastEpochClosed
   logger.info(`Collection for ending epoch: ${endEpochId}`)
-
-  const account = await AccountService.getOrInit(address.toHex())
 
   const tranche = await TrancheService.getById(poolId.toString(), trancheId.toHex())
 

@@ -37,11 +37,18 @@ export class CurrencyService extends Currency {
     return currency as CurrencyService
   }
 
-  public initEvmDetails(tokenAddress: string, escrowAddress: string, poolId: string, trancheId: string) {
-    this.tokenAddress = tokenAddress
-    this.escrowAddress = escrowAddress
+  public initTrancheDetails(
+    poolId: string,
+    trancheId: string,
+    evmTokenAddress?: string,
+    evmEscrowAddress?: string,
+    evmUserEscrowAddress?: string
+  ) {
     this.poolId = poolId
     this.trancheId = `${poolId}-${trancheId}`
+    this.tokenAddress = evmTokenAddress
+    this.escrowAddress = evmEscrowAddress
+    this.userEscrowAddress = evmUserEscrowAddress
   }
 }
 
