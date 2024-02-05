@@ -11,7 +11,6 @@ type Pool @entity {
   type: String! @index
   isActive: Boolean! @index
 
-
   createdAt: Date
   createdAtBlockNumber: Int
 
@@ -37,6 +36,10 @@ type Pool @entity {
   # Aggregated transaction data over the last period
   sumBorrowedAmountByPeriod: BigInt
   sumRepaidAmountByPeriod: BigInt
+  sumPrincipalRepaidAmountByPeriod: BigInt
+  sumInterestRepaidAmountByPeriod: BigInt
+  sumUnscheduledRepaidAmountByPeriod: BigInt
+  
   sumInvestedAmountByPeriod: BigInt
   sumRedeemedAmountByPeriod: BigInt
   sumNumberOfLoansByPeriod: BigInt
@@ -48,6 +51,9 @@ type Pool @entity {
   # Cumulated transaction data since pool creation
   sumBorrowedAmount: BigInt
   sumRepaidAmount: BigInt
+  sumPrincipalRepaidAmount: BigInt
+  sumInterestRepaidAmount: BigInt
+  sumUnscheduledRepaidAmount: BigInt
   sumNumberOfLoans: BigInt
 
   tranches: [Tranche] @derivedFrom(field: "pool")
@@ -73,15 +79,24 @@ type PoolSnapshot @entity {
   # Aggregated transaction data over the last period
   sumBorrowedAmountByPeriod: BigInt
   sumRepaidAmountByPeriod: BigInt
+  sumPrincipalRepaidAmountByPeriod: BigInt
+  sumInterestRepaidAmountByPeriod: BigInt
+  sumUnscheduledRepaidAmountByPeriod: BigInt
+  
   sumInvestedAmountByPeriod: BigInt
   sumRedeemedAmountByPeriod: BigInt
   sumNumberOfLoansByPeriod: BigInt
 
   sumNumberOfActiveLoans: BigInt
+  sumDebtOverdue: BigInt
+  sumDebtWrittenOffByPeriod: BigInt
 
   # Cumulated transaction data since pool creation
   sumBorrowedAmount: BigInt
   sumRepaidAmount: BigInt
+  sumPrincipalRepaidAmount: BigInt
+  sumInterestRepaidAmount: BigInt
+  sumUnscheduledRepaidAmount: BigInt
   sumNumberOfLoans: BigInt
 }
 
@@ -309,7 +324,6 @@ type Loan @entity {
   probabilityOfDefault: BigInt
   lossGivenDefault: BigInt
   discountRate: BigInt
-  maturityDate: Date
 
   interestRatePerSec: BigInt
 
@@ -320,7 +334,19 @@ type Loan @entity {
   isActive: Boolean! @index
   status: LoanStatus!
 
+  outstandingPrincipal: BigInt
+  outstandingInterest: BigInt
   outstandingDebt: BigInt
+  presentValue: BigInt
+  actualMaturityDate: Date
+  timeToMaturity: Int
+  actualOriginationDate: Date
+  writeOffPercentage: BigInt
+  totalBorrowed: BigInt
+  totalRepaid: BigInt
+  totalRepaidPrincipal: BigInt
+  totalRepaidInterest: BigInt
+  totalRepaidUnscheduled: BigInt
 
   borrowedAmountByPeriod: BigInt
   repaidAmountByPeriod: BigInt
@@ -339,7 +365,19 @@ type LoanSnapshot @entity {
   blockNumber: Int!
   periodStart: Date! @index
 
+  outstandingPrincipal: BigInt
+  outstandingInterest: BigInt
   outstandingDebt: BigInt
+  presentValue: BigInt
+  actualMaturityDate: Date
+  timeToMaturity: Int
+  actualOriginationDate: Date
+  writeOffPercentage: BigInt
+  totalBorrowed: BigInt
+  totalRepaid: BigInt
+  totalRepaidPrincipal: BigInt
+  totalRepaidInterest: BigInt
+  totalRepaidUnscheduled: BigInt
 
   borrowedAmountByPeriod: BigInt
   repaidAmountByPeriod: BigInt
@@ -371,6 +409,8 @@ type Currency @entity {
   id: ID! # chainId - currencySpec - [currencySpec]
   chain: Blockchain!
   decimals: Int!
+  name: String
+  symbol: String
 
   tokenAddress: String
   escrowAddress: String

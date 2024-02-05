@@ -91,26 +91,6 @@ async function _handleTokenTransfer(event: SubstrateEvent<TokensTransferEvent>):
   }
 }
 
-export const handleTokenEndowed = errorHandler(_handleTokenEndowed)
-async function _handleTokenEndowed(event: SubstrateEvent<TokensEndowedDepositedWithdrawnEvent>): Promise<void> {
-  const [_currency, address, amount] = event.event.data
-  if (_currency.isTranche) return
-  logger.info(
-    `Currency endowment in ${_currency.toString()} for: ${address.toHex()} amount: ${amount.toString()} ` +
-      `at block ${event.block.block.header.number.toString()}`
-  )
-  const blockchain = await BlockchainService.getOrInit()
-  const currency = await CurrencyService.getOrInit(
-    blockchain.id,
-    _currency.type,
-    ...currencyFormatters[_currency.type](_currency.value)
-  )
-  const toAccount = await AccountService.getOrInit(address.toHex())
-  const toCurrencyBalance = await CurrencyBalanceService.getOrInit(toAccount.id, currency.id)
-  await toCurrencyBalance.credit(amount.toBigInt())
-  await toCurrencyBalance.save()
-}
-
 export const handleTokenDeposited = errorHandler(_handleTokenDeposited)
 async function _handleTokenDeposited(event: SubstrateEvent<TokensEndowedDepositedWithdrawnEvent>): Promise<void> {
   const [_currency, address, amount] = event.event.data
