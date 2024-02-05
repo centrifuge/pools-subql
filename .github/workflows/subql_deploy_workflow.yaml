@@ -46,7 +46,7 @@ jobs:
           node-version: 18
           cache: npm
       - name: Setup Yarn
-        run: yarn install --frozen-lockfile
+        run: yarn install
       - name: Codegen
         run: |
           cp chains-evm/_root.yaml project-centrifuge.yaml
