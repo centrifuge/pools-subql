@@ -452,7 +452,7 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
     const navFeedContract = Navfeed__factory.connect(navFeed, ethApi)
     const nftId = await navFeedContract['nftID(uint256)'](loanIndex)
     const maturityDate = await navFeedContract.maturityDate(nftId)
-    loan.maturityDate = new Date(Number(maturityDate) * 1000)
+    loan.actualMaturityDate = new Date(Number(maturityDate) * 1000)
     loan.save()
   }
 
