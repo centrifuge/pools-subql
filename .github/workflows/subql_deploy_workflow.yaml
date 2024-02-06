@@ -51,7 +51,6 @@ jobs:
         run: |
           cp chains-evm/_root.yaml project-centrifuge.yaml
           cp chains-evm/_root.yaml project-ethereum.yaml
-          cp chains-evm/_root.yaml project-base.yaml
           cp chains-evm/_root.yaml project-celo.yaml
           yarn codegen
       - name: SubQL CLI Version
@@ -60,8 +59,6 @@ jobs:
         run: 'yq ". *=d load(\"chains-cfg/$CHAIN_ID.yaml\")" chains-cfg/_root.yaml > project-centrifuge.yaml || true'
       - name: Generate new project-ethereum.yaml
         run: '[ -e chains-evm/eth/$CHAIN_ID.yaml ] && yq ". *=d load(\"chains-evm/eth/$CHAIN_ID.yaml\")" chains-evm/_root.yaml > project-ethereum.yaml || true'
-      # - name: Generate new project-base.yaml
-      #   run: '[ -e chains-evm/base/$CHAIN_ID.yaml ] && yq ". *=d load(\"chains-evm/base/$CHAIN_ID.yaml\")" chains-evm/_root.yaml > project-base.yaml || true'
       - name: Generate new project-celo.yaml
         run: '[ -e chains-evm/celo/$CHAIN_ID.yaml ] && yq ". *=d load(\"chains-evm/celo/$CHAIN_ID.yaml\")" chains-evm/_root.yaml > project-celo.yaml || true'
       - name: Extract Chain Parameters to ENV
