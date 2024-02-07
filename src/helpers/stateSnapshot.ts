@@ -52,28 +52,28 @@ async function _stateSnapshotter(
   await Promise.all(entitySaves)
 }
 
-export function _evmStateSnapshotter(
+async function _evmStateSnapshotter(
   stateModel: string,
   snapshotModel: string,
   block: EthereumBlock,
   fkReferenceName: string | undefined = undefined,
   filterKey = 'type',
   filterValue: string | boolean = 'ALL'
-) {
+): Promise<void> {
   const formattedBlock = { number: block.number, timestamp: new Date(Number(block.timestamp) * 1000) }
-  _stateSnapshotter(stateModel, snapshotModel, formattedBlock, fkReferenceName, filterKey, filterValue)
+  await _stateSnapshotter(stateModel, snapshotModel, formattedBlock, fkReferenceName, filterKey, filterValue)
 }
 
-export function _substrateStateSnapshotter(
+async function _substrateStateSnapshotter(
   stateModel: string,
   snapshotModel: string,
   block: SubstrateBlock,
   fkReferenceName: string | undefined = undefined,
   filterKey = 'type',
   filterValue: string | boolean = 'ALL'
-) {
+): Promise<void> {
   const formattedBlock = { number: block.block.header.number.toNumber(), timestamp: block.timestamp }
-  _stateSnapshotter(stateModel, snapshotModel, formattedBlock, fkReferenceName, filterKey, filterValue)
+  await _stateSnapshotter(stateModel, snapshotModel, formattedBlock, fkReferenceName, filterKey, filterValue)
 }
 
 interface SnapshotEntity extends Entity {
