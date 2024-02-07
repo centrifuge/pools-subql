@@ -10,7 +10,7 @@ export class TimekeeperService {
   }
 
   static init = async function (): Promise<TimekeeperService> {
-    const lastPeriodStart = (await Timekeeper.get('global'))?.lastPeriodStart ?? new Date(0)
+    const lastPeriodStart = (await Timekeeper.get(chainId))?.lastPeriodStart ?? new Date(0)
     return new TimekeeperService(lastPeriodStart)
   }
 
@@ -23,7 +23,7 @@ export class TimekeeperService {
     return isNewPeriod
   }
   public update = async (blockPeriodStart: Date) => {
-    const timekeeper = new Timekeeper('global', blockPeriodStart)
+    const timekeeper = new Timekeeper(chainId, blockPeriodStart)
     await timekeeper.save()
   }
 }

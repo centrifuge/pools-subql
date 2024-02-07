@@ -14,14 +14,14 @@ import { CurrencyBalanceService } from '../services/currencyBalanceService'
 import {
   InvestmentManagerAbi__factory,
   PoolManagerAbi__factory,
-  Shelf__factory,
-  Navfeed__factory,
-  Reserve__factory,
-  Pile__factory,
+  ShelfAbi__factory,
+  NavfeedAbi__factory,
+  ReserveAbi__factory,
+  PileAbi__factory,
 } from '../../types/contracts'
 import { Provider } from '@ethersproject/providers'
 import { TrancheBalanceService } from '../services/trancheBalanceService'
-import { TimekeeperService } from '../../helpers/timekeeperService'
+import { TimekeeperService, getPeriodStart } from '../../helpers/timekeeperService'
 import { LoanService } from '../services/loanService'
 import { stateSnapshotter } from '../../helpers/stateSnapshot'
 
@@ -35,6 +35,7 @@ async function _handleEvmBlock(block: EthereumBlock): Promise<void> {
   const date = new Date(Number(block.timestamp) * 1000)
   const blockNumber = block.number
   const newPeriod = (await timekeeper).processBlock(date)
+  const blockPeriodStart = getPeriodStart(date)
 
   const blockchain = await BlockchainService.getOrInit('1')
   const currency = await CurrencyService.getOrInitEvm(blockchain.id, DAIMainnetAddress)
@@ -58,14 +59,14 @@ async function _handleEvmBlock(block: EthereumBlock): Promise<void> {
         }
         const latestNavFeed = getLatestContract(tinlakePool.navFeed, blockNumber)
         if (latestNavFeed) {
-          const navFeedContract = Navfeed__factory.connect(latestNavFeed.address, api as unknown as Provider)
+          const navFeedContract = NavfeedAbi__factory.connect(latestNavFeed.address, api as unknown as Provider)
           pool.portfolioValuation = (await navFeedContract.currentNAV()).toBigInt()
           await pool.save()
           logger.info(`Updating pool ${tinlakePool.id} with portfolioValuation: ${pool.portfolioValuation}`)
         }
         const latestReserve = getLatestContract(tinlakePool.reserve, blockNumber)
         if (latestReserve) {
-          const reserveContract = Reserve__factory.connect(latestReserve.address, api as unknown as Provider)
+          const reserveContract = ReserveAbi__factory.connect(latestReserve.address, api as unknown as Provider)
           pool.totalReserve = (await reserveContract.totalBalance()).toBigInt()
           await pool.save()
           logger.info(`Updating pool ${tinlakePool.id} with totalReserve: ${pool.totalReserve}`)
@@ -93,6 +94,9 @@ async function _handleEvmBlock(block: EthereumBlock): Promise<void> {
       'isActive',
       true
     )
+
+    //Update tracking of period and continue
+    await (await timekeeper).update(blockPeriodStart)
   }
 }
 
@@ -212,7 +216,7 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
   const contractLoans = []
   // eslint-disable-next-line
   while (true) {
-    const shelfContract = Shelf__factory.connect(shelf, ethApi)
+    const shelfContract = ShelfAbi__factory.connect(shelf, ethApi)
     const response = await shelfContract.token(loanIndex)
     if (Number(response.nft) === 0) {
       // no more loans
@@ -226,7 +230,7 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
   for (const loanIndex of newLoans) {
     const loan = new Loan(`${poolId}-${loanIndex}`, blockDate, poolId, true, LoanStatus.CREATED)
 
-    const navFeedContract = Navfeed__factory.connect(navFeed, ethApi)
+    const navFeedContract = NavfeedAbi__factory.connect(navFeed, ethApi)
     const nftId = await navFeedContract['nftID(uint256)'](loanIndex)
     const maturityDate = await navFeedContract.maturityDate(nftId)
     loan.actualMaturityDate = new Date(Number(maturityDate) * 1000)
@@ -236,7 +240,7 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
   // update all loans
   existingLoans = await LoanService.getByPoolId(poolId)
   for (const loan of existingLoans) {
-    const shelfContract = Shelf__factory.connect(shelf, ethApi)
+    const shelfContract = ShelfAbi__factory.connect(shelf, ethApi)
     const loanIndex = loan.id.split('-')[1]
     const nftLocked = await shelfContract.nftLocked(loanIndex)
     if (!nftLocked) {
@@ -244,7 +248,7 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
       loan.status = LoanStatus.CLOSED
       loan.save()
     }
-    const pileContract = Pile__factory.connect(pile, ethApi)
+    const pileContract = PileAbi__factory.connect(pile, ethApi)
     const prevDebt = loan.outstandingDebt
     const debt = await pileContract.debt(loanIndex)
     loan.outstandingDebt = debt.toBigInt()
