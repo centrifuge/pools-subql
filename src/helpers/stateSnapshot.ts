@@ -2,6 +2,8 @@ import { errorHandler } from './errorHandler'
 import { paginatedGetter } from './paginatedGetter'
 import { getPeriodStart } from './timekeeperService'
 import type { Entity } from '@subql/types-core'
+import { EthereumBlock } from '@subql/types-ethereum'
+import { SubstrateBlock } from '@subql/types'
 /**
  * Creates a snapshot of a generic stateModel to a snapshotModel.
  * A snapshotModel has the same fields as the originating stateModel, however a timestamp and a blockNumber are added.
@@ -15,7 +17,8 @@ import type { Entity } from '@subql/types-core'
  * @param fkReferenceName - (optional) name of the foreignKey to save a reference to the originating entity.
  * @returns A promise resolving when all state manipulations in the DB is completed
  */
-export const stateSnapshotter = errorHandler(_stateSnapshotter)
+export const evmStateSnapshotter = errorHandler(_evmStateSnapshotter)
+export const substrateStateSnapshotter = errorHandler(_substrateStateSnapshotter)
 async function _stateSnapshotter(
   stateModel: string,
   snapshotModel: string,
@@ -47,6 +50,30 @@ async function _stateSnapshotter(
     entitySaves.push(store.set(snapshotModel, snapshotEntity.id, snapshotEntity))
   }
   await Promise.all(entitySaves)
+}
+
+export function _evmStateSnapshotter(
+  stateModel: string,
+  snapshotModel: string,
+  block: EthereumBlock,
+  fkReferenceName: string | undefined = undefined,
+  filterKey = 'type',
+  filterValue: string | boolean = 'ALL'
+) {
+  const formattedBlock = { number: block.number, timestamp: new Date(Number(block.timestamp) * 1000) }
+  _stateSnapshotter(stateModel, snapshotModel, formattedBlock, fkReferenceName, filterKey, filterValue)
+}
+
+export function _substrateStateSnapshotter(
+  stateModel: string,
+  snapshotModel: string,
+  block: SubstrateBlock,
+  fkReferenceName: string | undefined = undefined,
+  filterKey = 'type',
+  filterValue: string | boolean = 'ALL'
+) {
+  const formattedBlock = { number: block.block.header.number.toNumber(), timestamp: block.timestamp }
+  _stateSnapshotter(stateModel, snapshotModel, formattedBlock, fkReferenceName, filterKey, filterValue)
 }
 
 interface SnapshotEntity extends Entity {

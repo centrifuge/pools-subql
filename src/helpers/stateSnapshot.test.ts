@@ -1,6 +1,6 @@
 import { SubstrateBlock } from '@subql/types'
 import { PoolService } from '../mappings/services/poolService'
-import { stateSnapshotter } from './stateSnapshot'
+import { substrateStateSnapshotter } from './stateSnapshot'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const getByField = store.getByField as jest.Mock
@@ -22,7 +22,7 @@ describe('Given a populated pool,', () => {
     set.mockReset()
     getByField.mockReset()
     getByField.mockReturnValue([pool])
-    await stateSnapshotter('Pool', 'PoolSnapshot', {
+    await substrateStateSnapshotter('Pool', 'PoolSnapshot', {
       number: block.block.header.number.toNumber(),
       timestamp: block.timestamp,
     })
@@ -35,7 +35,7 @@ describe('Given a populated pool,', () => {
     set.mockReset()
     getByField.mockReset()
     getByField.mockReturnValue([pool])
-    await stateSnapshotter('Pool', 'PoolSnapshot', {
+    await substrateStateSnapshotter('Pool', 'PoolSnapshot', {
       number: block.block.header.number.toNumber(),
       timestamp: block.timestamp,
     })
@@ -51,7 +51,7 @@ describe('Given a populated pool,', () => {
     set.mockReset()
     getByField.mockReset()
     getByField.mockReturnValue([pool])
-    await stateSnapshotter(
+    await substrateStateSnapshotter(
       'Pool',
       'PoolSnapshot',
       {
@@ -69,7 +69,7 @@ describe('Given a populated pool,', () => {
     set.mockReset()
     getByField.mockReset()
     getByField.mockReturnValue([pool])
-    await stateSnapshotter(
+    await substrateStateSnapshotter(
       'Pool',
       'PoolSnapshot',
       {
@@ -104,7 +104,7 @@ describe('Given a pool with non zero accumulators, ', () => {
 
     Object.assign(pool, accumulatedProps)
 
-    await stateSnapshotter('Pool', 'PoolSnapshot', {
+    await substrateStateSnapshotter('Pool', 'PoolSnapshot', {
       number: block.block.header.number.toNumber(),
       timestamp: block.timestamp,
     })

@@ -1,7 +1,7 @@
 import { SubstrateBlock } from '@subql/types'
 import { getPeriodStart, TimekeeperService } from '../../helpers/timekeeperService'
 import { errorHandler } from '../../helpers/errorHandler'
-import { stateSnapshotter } from '../../helpers/stateSnapshot'
+import { substrateStateSnapshotter } from '../../helpers/stateSnapshot'
 import { SNAPSHOT_INTERVAL_SECONDS } from '../../config'
 import { PoolService } from '../services/poolService'
 import { TrancheService } from '../services/trancheService'
@@ -60,30 +60,9 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
     }
 
     //Perform Snapshots and reset accumulators
-    await stateSnapshotter(
-      'Pool',
-      'PoolSnapshot',
-      { number: block.block.header.number.toNumber(), timestamp: block.timestamp },
-      'poolId',
-      'isActive',
-      true
-    )
-    await stateSnapshotter(
-      'Tranche',
-      'TrancheSnapshot',
-      { number: block.block.header.number.toNumber(), timestamp: block.timestamp },
-      'trancheId',
-      'isActive',
-      true
-    )
-    await stateSnapshotter(
-      'Loan',
-      'LoanSnapshot',
-      { number: block.block.header.number.toNumber(), timestamp: block.timestamp },
-      'loanId',
-      'isActive',
-      true
-    )
+    await substrateStateSnapshotter('Pool', 'PoolSnapshot', block, 'poolId', 'isActive', true)
+    await substrateStateSnapshotter('Tranche', 'TrancheSnapshot', block, 'trancheId', 'isActive', true)
+    await substrateStateSnapshotter('Loan', 'LoanSnapshot', block, 'loanId', 'isActive', true)
 
     //Update tracking of period and continue
     await (await timekeeper).update(blockPeriodStart)

@@ -23,7 +23,7 @@ import { Provider } from '@ethersproject/providers'
 import { TrancheBalanceService } from '../services/trancheBalanceService'
 import { TimekeeperService, getPeriodStart } from '../../helpers/timekeeperService'
 import { LoanService } from '../services/loanService'
-import { stateSnapshotter } from '../../helpers/stateSnapshot'
+import { evmStateSnapshotter } from '../../helpers/stateSnapshot'
 
 const ethApi = api as unknown as Provider
 //const networkPromise = typeof ethApi.getNetwork === 'function' ? ethApi.getNetwork() : null
@@ -85,15 +85,8 @@ async function _handleEvmBlock(block: EthereumBlock): Promise<void> {
     }
 
     // Take snapshots
-    await stateSnapshotter('Pool', 'PoolSnapshot', { number: block.number, timestamp: date }, 'poolId')
-    await stateSnapshotter(
-      'Loan',
-      'LoanSnapshot',
-      { number: block.number, timestamp: date },
-      'loanId',
-      'isActive',
-      true
-    )
+    await evmStateSnapshotter('Pool', 'PoolSnapshot', block, 'poolId')
+    await evmStateSnapshotter('Loan', 'LoanSnapshot', block, 'loanId', 'isActive', true)
 
     //Update tracking of period and continue
     await (await timekeeper).update(blockPeriodStart)
