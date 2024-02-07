@@ -36,7 +36,7 @@ dataSources:
         - file: './abi/pile.abi.json'
           name: Pile
       handlers:
-        - handler: handleEvmBlock
+        - handler: handleEthBlock
           kind: ethereum/BlockHandler
           filter:
-            modulo: 6000
+            modulo: 3600
