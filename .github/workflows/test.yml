@@ -31,7 +31,6 @@ jobs:
         run: |
           cp chains-evm/_root.yaml project-centrifuge.yaml
           cp chains-evm/_root.yaml project-ethereum.yaml
-          cp chains-evm/_root.yaml project-base.yaml
           cp chains-evm/_root.yaml project-celo.yaml
           yarn codegen
       - name: Build
