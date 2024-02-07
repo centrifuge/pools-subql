@@ -9,6 +9,35 @@ network:
     - '18747640-18763940'
 dataSources:
   - kind: ethereum/Runtime
-    startBlock: 11063000
+    startBlock: 18063000
     options:
       address: '0x78E9e622A57f70F1E0Ec652A4931E4e278e58142'
+  - kind: ethereum/Runtime
+    startBlock: 11063000
+    options:
+      abi: navFeed
+    assets:
+      navFeed:
+        file: './abi/navfeed.abi.json'
+      reserve:
+        file: './abi/reserve.abi.json'
+      shelf:
+        file: './abi/shelf.abi.json'
+      pile:
+        file: './abi/pile.abi.json'
+    mapping:
+      file: './dist/index.js'
+      abis:
+        - file: './abi/navfeed.abi.json'
+          name: NavFeed
+        - file: './abi/reserve.abi.json'
+          name: Reserve
+        - file: './abi/shelf.abi.json'
+          name: Shelf
+        - file: './abi/pile.abi.json'
+          name: Pile
+      handlers:
+        - handler: handleEvmBlock
+          kind: ethereum/BlockHandler
+          filter:
+            modulo: 6000

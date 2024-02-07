@@ -14,36 +14,6 @@ schema:
   file: './schema.graphql'
 dataSources:
   - kind: ethereum/Runtime
-    startBlock: 11063000
-    options:
-      abi: navFeed
-    assets:
-      navFeed:
-        file: './abi/navfeed.abi.json'
-      reserve:
-        file: './abi/reserve.abi.json'
-      shelf:
-        file: './abi/shelf.abi.json'
-      pile:
-        file: './abi/pile.abi.json'
-    mapping:
-      file: './dist/index.js'
-      abis:
-        - file: './abi/navfeed.abi.json'
-          name: NavFeed
-        - file: './abi/reserve.abi.json'
-          name: Reserve
-        - file: './abi/shelf.abi.json'
-          name: Shelf
-        - file: './abi/pile.abi.json'
-          name: Pile
-      handlers:
-        - handler: handleEvmBlock
-          kind: ethereum/BlockHandler
-          filter:
-            modulo: 6000
-  - kind: ethereum/Runtime
-    startBlock: 18063000
     options:
       abi: poolManager
     assets:
