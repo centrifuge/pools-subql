@@ -66,7 +66,7 @@ async function _handleEvmBlock(block: EthereumBlock): Promise<void> {
         }
         const latestReserve = getLatestContract(tinlakePool.reserve, blockNumber)
         if (latestReserve) {
-          const reserveContract = ReserveAbi__factory.connect(latestReserve.address, api as unknown as Provider)
+          const reserveContract = ReserveAbi__factory.connect(latestReserve.address, ethApi)
           pool.totalReserve = (await reserveContract.totalBalance()).toBigInt()
           await pool.save()
           logger.info(`Updating pool ${tinlakePool.id} with totalReserve: ${pool.totalReserve}`)
