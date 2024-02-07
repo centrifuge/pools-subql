@@ -1,6 +1,6 @@
-import { EthereumBlock } from '@subql/types-ethereum'
-import { Provider } from '@ethersproject/providers'
 import { Loan, LoanStatus, createTrancheTrackerDatasource } from '../../types'
+import { EthereumBlock } from '@subql/types-ethereum'
+import { DAIMainnetAddress, tinlakePools } from '../../config'
 import { errorHandler } from '../../helpers/errorHandler'
 import { DeployTrancheLog } from '../../types/abi-interfaces/PoolManagerAbi'
 import { TransferLog } from '../../types/abi-interfaces/Erc20Abi'
@@ -19,11 +19,11 @@ import {
   Reserve__factory,
   Pile__factory,
 } from '../../types/contracts'
+import { Provider } from '@ethersproject/providers'
 import { TrancheBalanceService } from '../services/trancheBalanceService'
 import { TimekeeperService } from '../../helpers/timekeeperService'
-import { stateSnapshotter } from '../../helpers/stateSnapshot'
 import { LoanService } from '../services/loanService'
-import { DAIMainnetAddress, tinlakePools } from '../../config'
+import { stateSnapshotter } from '../../helpers/stateSnapshot'
 
 const ethApi = api as unknown as Provider
 //const networkPromise = typeof ethApi.getNetwork === 'function' ? ethApi.getNetwork() : null
