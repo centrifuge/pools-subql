@@ -26,15 +26,6 @@ dataSources:
         file: './abi/pile.abi.json'
     mapping:
       file: './dist/index.js'
-      abis:
-        - file: './abi/navfeed.abi.json'
-          name: NavFeed
-        - file: './abi/reserve.abi.json'
-          name: Reserve
-        - file: './abi/shelf.abi.json'
-          name: Shelf
-        - file: './abi/pile.abi.json'
-          name: Pile
       handlers:
         - handler: handleEthBlock
           kind: ethereum/BlockHandler
