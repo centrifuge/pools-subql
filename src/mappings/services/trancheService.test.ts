@@ -59,7 +59,7 @@ describe('Given a new tranche, when initialised', () => {
 
   test('when the supply data is fetched, then the correct values are fetched and set', async () => {
     await tranches[0].updateSupply()
-    expect(api.query.ormlTokens.totalIssuance).toBeCalledWith({ Tranche: [poolId, trancheIds[0]] })
+    expect(api.query.ormlTokens.totalIssuance).toHaveBeenCalledWith({ Tranche: [poolId, trancheIds[0]] })
     expect(tranches[0]).toMatchObject({ tokenSupply: BigInt('9999000000000000000000') })
   })
 
@@ -72,14 +72,14 @@ describe('Given a new tranche, when initialised', () => {
 describe('Given an existing tranche,', () => {
   test('when the rpc price is updated, then the value is fetched and set correctly', async () => {
     await tranches[0].updatePriceFromRpc(4058351).catch(errorLogger)
-    expect((api.rpc as ExtendedRpc).pools.trancheTokenPrices).toBeCalled()
+    expect((api.rpc as ExtendedRpc).pools.trancheTokenPrices).toHaveBeenCalled()
     expect(tranches[0].tokenPrice).toBe(BigInt('2000000000000000000'))
   })
 
   test('when a 0 rpc price is delivered, then the value is skipped and logged', async () => {
     await tranches[1].updatePriceFromRpc(4058352).catch(errorLogger)
-    expect((api.rpc as ExtendedRpc).pools.trancheTokenPrices).toBeCalled()
-    expect(logger.error).toBeCalled()
+    expect((api.rpc as ExtendedRpc).pools.trancheTokenPrices).toHaveBeenCalled()
+    expect(logger.error).toHaveBeenCalled()
     expect(tranches[1].tokenPrice).toBe(BigInt('1000000000000000000'))
   })
 })
