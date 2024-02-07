@@ -6,6 +6,8 @@ import { ExtendedRpc, TrancheDetails } from '../../helpers/types'
 import { Tranche, TrancheSnapshot } from '../../types'
 import { TrancheProps } from '../../types/models/Tranche'
 
+const MAINNET_CHAINID = '0xb3db41421702df9a7fcac62b53ffeac85f7853cc4e689e0b93aeb3db18c09d82'
+
 export class TrancheService extends Tranche {
   static seed(poolId: string, trancheId: string) {
     return new this(`${poolId}-${trancheId}`, 'ALL', poolId, trancheId, false)
@@ -69,19 +71,21 @@ export class TrancheService extends Tranche {
     return this
   }
 
-  public updatePrice(price: bigint, block: number) {
+  public updatePrice(price: bigint, block?: number) {
     // https://centrifuge.subscan.io/extrinsic/4058350-0?event=4058350-0
     // fix decimal error in old blocks, the fix was enacted at block #4058350
-    if (block < 4058350) {
+    if (MAINNET_CHAINID === chainId && !!block && block < 4058350) {
       this.tokenPrice = nToBigInt(bnToBn(price).div(bnToBn(1000000000)))
-      return this
+      logger.info(`Updating price for tranche ${this.id} to: ${this.tokenPrice} (WITH CORRECTION FACTOR)`)
+    } else {
+      this.tokenPrice = price
+      logger.info(`Updating price for tranche ${this.id} to: ${this.tokenPrice}`)
     }
-    logger.info(`Updating price for tranche ${this.id} to: ${price}`)
     this.tokenPrice = price
     return this
   }
 
-  public async updatePriceFromRpc(block: number) {
+  public async updatePriceFromRpc(block?: number) {
     logger.info(`Querying RPC price for tranche ${this.id}`)
     const poolId = this.poolId
     const tokenPrices = await (api.rpc as ExtendedRpc).pools.trancheTokenPrices(poolId)
