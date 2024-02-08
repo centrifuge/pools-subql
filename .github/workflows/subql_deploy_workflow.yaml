@@ -49,9 +49,9 @@ jobs:
         run: yarn install --frozen-lockfile
       - name: Codegen
         run: |
-          cp chains-evm/_root.yaml project-centrifuge.yaml
-          cp chains-evm/_root.yaml project-ethereum.yaml
-          cp chains-evm/_root.yaml project-celo.yaml
+          yq ". *=d load(\"chains-cfg/centrifuge.yaml\")" chains-cfg/_root.yaml > project-centrifuge.yaml || true
+          yq ". *=d load(\"chains-evm/eth/centrifuge.yaml\")" chains-evm/_root.yaml > project-ethereum.yaml || true
+          yq ". *=d load(\"chains-evm/celo/centrifuge.yaml\")" chains-evm/_root.yaml > project-celo.yaml || true
           yarn codegen
       - name: SubQL CLI Version
         run: yarn subql --version

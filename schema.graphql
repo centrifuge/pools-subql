@@ -314,8 +314,8 @@ type Loan @entity {
   id: ID! # poolId - loanId
   createdAt: Date!
 
-  collateralNftClassId: BigInt!
-  collateralNftItemId: BigInt!
+  collateralNftClassId: BigInt
+  collateralNftItemId: BigInt
 
   metadata: String
 

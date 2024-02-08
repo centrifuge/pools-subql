@@ -1,13 +1,33 @@
 network:
   chainId: '1' # Ethereum Mainnet
-  endpoint: "https://mainnet.infura.io/v3/a4ba76cd4be643618572e7467a444e3a"
-  dictionary: "https://gx.api.subquery.network/sq/subquery/eth-dictionary"
+  endpoint: 'https://mainnet.infura.io/v3/a4ba76cd4be643618572e7467a444e3a'
+  dictionary: 'https://gx.api.subquery.network/sq/subquery/eth-dictionary'
   bypassBlocks:
-  - "18721040-18735450"
-  - "18735460-18747630"
-  - "18747640-18763940"
+    - '18721040-18735450'
+    - '18735460-18747630'
+    - '18747640-18763940'
 dataSources:
   - kind: ethereum/Runtime
     startBlock: 18721030
     options:
       address: '0x78E9e622A57f70F1E0Ec652A4931E4e278e58142'
+  - kind: ethereum/Runtime
+    startBlock: 11063000
+    options:
+      abi: navFeed
+    assets:
+      navFeed:
+        file: './abi/navfeed.abi.json'
+      reserve:
+        file: './abi/reserve.abi.json'
+      shelf:
+        file: './abi/shelf.abi.json'
+      pile:
+        file: './abi/pile.abi.json'
+    mapping:
+      file: './dist/index.js'
+      handlers:
+        - handler: handleEthBlock
+          kind: ethereum/BlockHandler
+          filter:
+            modulo: 3600

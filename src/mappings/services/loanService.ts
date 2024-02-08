@@ -8,8 +8,10 @@ import { ActiveLoanData } from './poolService'
 export class LoanService extends Loan {
   static init(poolId: string, loanId: string, nftClassId: bigint, nftItemId: bigint, timestamp: Date) {
     logger.info(`Initialising loan ${loanId} for pool ${poolId}`)
-    const loan = new this(`${poolId}-${loanId}`, timestamp, nftClassId, nftItemId, poolId, false, LoanStatus.CREATED)
+    const loan = new this(`${poolId}-${loanId}`, timestamp, poolId, false, LoanStatus.CREATED)
 
+    loan.collateralNftClassId = nftClassId
+    loan.collateralNftItemId = nftItemId
     loan.outstandingPrincipal = BigInt(0)
     loan.outstandingInterest = BigInt(0)
     loan.outstandingDebt = BigInt(0)

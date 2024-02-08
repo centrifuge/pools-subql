@@ -10,7 +10,7 @@ import { CurrencyService } from '../services/currencyService'
 import { BlockchainService } from '../services/blockchainService'
 import { CurrencyBalanceService } from '../services/currencyBalanceService'
 import { InvestmentManagerAbi__factory, PoolManagerAbi__factory } from '../../types/contracts'
-import type { Provider } from '@ethersproject/abstract-provider'
+import { Provider } from '@ethersproject/providers'
 import { TrancheBalanceService } from '../services/trancheBalanceService'
 
 const ethApi = api as unknown as Provider

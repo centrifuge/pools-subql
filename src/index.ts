@@ -9,8 +9,8 @@ const ethNetworkProm =
 
 global.atob = atob
 global.getNodeChainId = async function () {
-  if(cfgChainIdProm) return (await cfgChainIdProm).toString(10)
-  if(ethNetworkProm) return (await ethNetworkProm).chainId.toString(10)
+  if (cfgChainIdProm) return (await cfgChainIdProm).toString(10)
+  if (ethNetworkProm) return (await ethNetworkProm).chainId.toString(10)
 }
 
 export * from './mappings/handlers/blockHandlers'
@@ -21,3 +21,4 @@ export * from './mappings/handlers/proxyHandlers'
 export * from './mappings/handlers/ormlTokensHandlers'
 export * from './mappings/handlers/logHandlers'
 export * from './mappings/handlers/evmHandlers'
+export * from './mappings/handlers/ethHandlers'

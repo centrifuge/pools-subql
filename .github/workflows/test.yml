@@ -1,7 +1,7 @@
 name: 'Test'
 on:
   pull_request:
-    branches:    
+    branches:
       - main
 
 # This allows a subsequently queued workflow run to interrupt previous runs
@@ -29,9 +29,9 @@ jobs:
         run: yarn install --frozen-lockfile
       - name: Codegen
         run: |
-          cp chains-evm/_root.yaml project-centrifuge.yaml
-          cp chains-evm/_root.yaml project-ethereum.yaml
-          cp chains-evm/_root.yaml project-celo.yaml
+          yq ". *=d load(\"chains-cfg/centrifuge.yaml\")" chains-cfg/_root.yaml > project-centrifuge.yaml || true
+          yq ". *=d load(\"chains-evm/eth/centrifuge.yaml\")" chains-evm/_root.yaml > project-ethereum.yaml || true
+          yq ". *=d load(\"chains-evm/celo/centrifuge.yaml\")" chains-evm/_root.yaml > project-celo.yaml || true
           yarn codegen
       - name: Build
         run: yarn build
