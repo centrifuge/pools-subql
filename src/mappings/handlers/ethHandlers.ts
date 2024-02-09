@@ -28,7 +28,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
       logger.info(`It's a new period on EVM block ${blockNumber}: ${date.toISOString()}`)
 
       // update pool states
-      for (const tinlakePool of tinlakePools) {
+      const poolUpdatePromises = tinlakePools.map(async (tinlakePool) => {
         let pool
         if (block.number >= tinlakePool.startBlock) {
           pool = await PoolService.getOrSeed(tinlakePool.id)
@@ -67,7 +67,9 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
             )
           }
         }
-      }
+      })
+
+      await Promise.all(poolUpdatePromises)
 
       // Take snapshots
       await evmStateSnapshotter('Pool', 'PoolSnapshot', block, 'poolId')
@@ -80,19 +82,16 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
 }
 
 async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile: string, navFeed: string) {
+  logger.info(`Updating loans for pool ${poolId}`)
   let existingLoans = await LoanService.getByPoolId(poolId)
-  logger.info(`Existing loans for pool ${poolId}: ${existingLoans.length}`)
   let loanIndex = existingLoans.length || 1
   const contractLoans = []
   // eslint-disable-next-line
   while (true) {
-    logger.info(`Checking loan ${loanIndex} for pool ${poolId}`)
     const shelfContract = ShelfAbi__factory.connect(shelf, api as unknown as Provider)
-    logger.info(`after shelfContract ${shelfContract}`)
     let response
     try {
       response = await shelfContract.token(loanIndex)
-      logger.info(`after response ${response}`)
     } catch (e) {
       logger.info(`Error ${e}`)
       break
@@ -105,7 +104,9 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
     contractLoans.push(loanIndex)
     loanIndex++
   }
+  logger.info(`loans for pool ${poolId}: ${contractLoans.length}`)
   const newLoans = contractLoans.filter((loanIndex) => !existingLoans.includes(loanIndex))
+
   // create new loans
   for (const loanIndex of newLoans) {
     const loan = new Loan(`${poolId}-${loanIndex}`, blockDate, poolId, true, LoanStatus.CREATED)
@@ -116,30 +117,34 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
     loan.actualMaturityDate = new Date(Number(maturityDate) * 1000)
     loan.save()
   }
+  logger.info(`New loans for pool ${poolId}: ${newLoans.length}`)
 
   // update all loans
   existingLoans = await LoanService.getByPoolId(poolId)
   for (const loan of existingLoans) {
-    const shelfContract = ShelfAbi__factory.connect(shelf, api as unknown as Provider)
-    const loanIndex = loan.id.split('-')[1]
-    const nftLocked = await shelfContract.nftLocked(loanIndex)
-    if (!nftLocked) {
-      loan.isActive = false
-      loan.status = LoanStatus.CLOSED
+    if (loan.status !== LoanStatus.CLOSED) {
+      const shelfContract = ShelfAbi__factory.connect(shelf, api as unknown as Provider)
+      const loanIndex = loan.id.split('-')[1]
+      const nftLocked = await shelfContract.nftLocked(loanIndex)
+      if (!nftLocked) {
+        loan.isActive = false
+        loan.status = LoanStatus.CLOSED
+        loan.save()
+      }
+      const pileContract = PileAbi__factory.connect(pile, api as unknown as Provider)
+      const prevDebt = loan.outstandingDebt
+      const debt = await pileContract.debt(loanIndex)
+      loan.outstandingDebt = debt.toBigInt()
+      const rateGroup = await pileContract.loanRates(loanIndex)
+      const rates = await pileContract.rates(rateGroup)
+      loan.interestRatePerSec = rates.ratePerSecond.toBigInt()
+
+      if (prevDebt > loan.outstandingDebt) {
+        loan.repaidAmountByPeriod = prevDebt - loan.outstandingDebt
+      }
+      logger.info(`Updating loan ${loan.id} for pool ${poolId}`)
       loan.save()
     }
-    const pileContract = PileAbi__factory.connect(pile, api as unknown as Provider)
-    const prevDebt = loan.outstandingDebt
-    const debt = await pileContract.debt(loanIndex)
-    loan.outstandingDebt = debt.toBigInt()
-    const rateGroup = await pileContract.loanRates(loanIndex)
-    const rates = await pileContract.rates(rateGroup)
-    loan.interestRatePerSec = rates.ratePerSecond.toBigInt()
-
-    if (prevDebt > loan.outstandingDebt) {
-      loan.repaidAmountByPeriod = prevDebt - loan.outstandingDebt
-    }
-    loan.save()
   }
 }
 
