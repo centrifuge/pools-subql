@@ -29,13 +29,11 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
 
       // update pool states
       const poolUpdatePromises = tinlakePools.map(async (tinlakePool) => {
-        let pool
         if (block.number >= tinlakePool.startBlock) {
-          pool = await PoolService.getOrSeed(tinlakePool.id)
+          const pool = await PoolService.getOrSeed(tinlakePool.id)
           if (block.number >= tinlakePool.startBlock && pool.totalReserve == null) {
             pool.totalReserve = BigInt(0)
             pool.portfolioValuation = BigInt(0)
-            pool.currency
             pool.isActive = false
             pool.currencyId = currency.id
             await pool.save()
