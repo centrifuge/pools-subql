@@ -64,6 +64,7 @@ jobs:
       - name: Publish SubQL version
         run: |
           npx subql publish -o -f .
+          echo "CFG_IPFSCID=$(cat .project-centrifuge-cid)" >> $GITHUB_ENV
       - name: Delete Project
         if: ${{ inputs.resetProject }}
         run: |
