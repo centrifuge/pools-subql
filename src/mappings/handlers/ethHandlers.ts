@@ -18,7 +18,6 @@ import { LoanService } from '../services/loanService'
 import { evmStateSnapshotter } from '../../helpers/stateSnapshot'
 
 const timekeeper = TimekeeperService.init()
-const multicall = MulticallAbi__factory.connect(multicallAddress, api as unknown as Provider)
 
 export const handleEthBlock = errorHandler(_handleEthBlock)
 async function _handleEthBlock(block: EthereumBlock): Promise<void> {
@@ -36,7 +35,8 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
 
       // update pool states
       const poolUpdateCalls = []
-      const poolUpdatePromises = tinlakePools.map(async (tinlakePool) => {
+      // const poolUpdatePromises = [tinlakePools[0]].map(async (tinlakePool) => {
+      for (const tinlakePool of [tinlakePools[0]]) {
         if (block.number >= tinlakePool.startBlock) {
           const pool = await PoolService.getOrSeed(tinlakePool.id)
 
@@ -81,19 +81,34 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
           // }
 
           if (poolUpdateCalls.length > 0) {
+            const multicall = MulticallAbi__factory.connect(multicallAddress, api as unknown as Provider)
             logger.info(`Fetching multicall data for pool ${tinlakePool.id}`)
-            const results = await multicall.callStatic.aggregate3(poolUpdateCalls)
-            logger.info(`!!!!!!!!!!!!!!!!!!!!!!!Multicall results: ${results}`)
-            // if (latestNavFeed) {
-            //   pool.portfolioValuation = results.data[0].toBigInt()
-            //   await pool.save()
-            //   logger.info(`Updating pool ${tinlakePool.id} with portfolioValuation: ${pool.portfolioValuation}`)
-            // }
-            // if (latestReserve) {
-            //   pool.totalReserve = results.data[1].toBigInt()
-            //   await pool.save()
-            //   logger.info(`Updating pool ${tinlakePool.id} with totalReserve: ${pool.totalReserve}`)
-            // }
+            const results = await multicall.callStatic.aggregate(poolUpdateCalls, { blockTag: blockNumber })
+            logger.info(`Multicall results. Block Number: ${results[0]}`)
+            if (latestNavFeed) {
+              const navFeedContract = NavfeedAbi__factory.connect(latestNavFeed.address, api as unknown as Provider)
+              logger.info(
+                `Multicall results1.portfolioValuation: ${navFeedContract.interface.decodeFunctionResult(
+                  'currentNAV',
+                  results[1][0]
+                )}`
+              )
+              //   pool.portfolioValuation = results.data[0].toBigInt()
+              //   await pool.save()
+              //   logger.info(`Updating pool ${tinlakePool.id} with portfolioValuation: ${pool.portfolioValuation}`)
+            }
+            if (latestReserve) {
+              const reserveContract = ReserveAbi__factory.connect(latestReserve.address, api as unknown as Provider)
+              logger.info(
+                `Multicall results2.totalReserve: ${reserveContract.interface.decodeFunctionResult(
+                  'totalBalance',
+                  results[1][1]
+                )}`
+              )
+              //   pool.totalReserve = results.data[1].toBigInt()
+              //   await pool.save()
+              //   logger.info(`Updating pool ${tinlakePool.id} with totalReserve: ${pool.totalReserve}`)
+            }
           }
           // Update loans
           if (latestNavFeed) {
@@ -107,9 +122,9 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
             )
           }
         }
-      })
+      }
 
-      await Promise.all(poolUpdatePromises)
+      // await Promise.all(poolUpdatePromises)
 
       // Take snapshots
       await evmStateSnapshotter('Pool', 'PoolSnapshot', block, 'poolId')
