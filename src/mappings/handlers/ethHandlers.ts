@@ -82,8 +82,8 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
 
           if (poolUpdateCalls.length > 0) {
             logger.info(`Fetching multicall data for pool ${tinlakePool.id}`)
-            const results = await multicall.aggregate(poolUpdateCalls)
-            logger.info(`Multicall results: ${results}`)
+            const results = await multicall.callStatic.aggregate3(poolUpdateCalls)
+            logger.info(`!!!!!!!!!!!!!!!!!!!!!!!Multicall results: ${results}`)
             // if (latestNavFeed) {
             //   pool.portfolioValuation = results.data[0].toBigInt()
             //   await pool.save()
