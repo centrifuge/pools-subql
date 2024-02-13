@@ -49,18 +49,12 @@ jobs:
         run: yarn install --frozen-lockfile
       - name: Codegen
         run: |
-          yq ". *=d load(\"chains-cfg/centrifuge.yaml\")" chains-cfg/_root.yaml > project-centrifuge.yaml || true
-          yq ". *=d load(\"chains-evm/eth/centrifuge.yaml\")" chains-evm/_root.yaml > project-ethereum.yaml || true
-          yq ". *=d load(\"chains-evm/celo/centrifuge.yaml\")" chains-evm/_root.yaml > project-celo.yaml || true
+          CHAIN_ID=centrifuge yarn projectgen
           yarn codegen
       - name: SubQL CLI Version
         run: yarn subql --version
-      - name: Generate new project-centrifuge.yaml
-        run: 'yq ". *=d load(\"chains-cfg/$CHAIN_ID.yaml\")" chains-cfg/_root.yaml > project-centrifuge.yaml || true'
-      - name: Generate new project-ethereum.yaml
-        run: '[ -e chains-evm/eth/$CHAIN_ID.yaml ] && yq ". *=d load(\"chains-evm/eth/$CHAIN_ID.yaml\")" chains-evm/_root.yaml > project-ethereum.yaml || true'
-      - name: Generate new project-celo.yaml
-        run: '[ -e chains-evm/celo/$CHAIN_ID.yaml ] && yq ". *=d load(\"chains-evm/celo/$CHAIN_ID.yaml\")" chains-evm/_root.yaml > project-celo.yaml || true'
+      - name: Generate new project data
+        run: 'yarn projectgen'
       - name: Extract Chain Parameters to ENV
         run: |
           echo "SUBQL_PROJ_NAME=$(yq '.name' project-centrifuge.yaml)" >> $GITHUB_ENV
@@ -71,16 +65,6 @@ jobs:
           echo "SUBQL_ETH_DICT=$(yq '.network.dictionary' project-ethereum.yaml)" >> $GITHUB_ENV
           echo "SUBQL_CELO_ENDPOINT=$(yq '.network.endpoint' project-celo.yaml)" >> $GITHUB_ENV
           echo "SUBQL_CELO_DICT=$(yq '.network.dictionary' project-celo.yaml)" >> $GITHUB_ENV
-      - name: Generate new subquery-multichain.yaml
-        run: |
-          cat > subquery-multichain.yaml <<'EOF'
-          specVersion: 1.0.0
-          query:
-            name: '@subql/query'
-            version: '2'
-          projects:
-          EOF
-          find ./ -regex '\./project-.*\.yaml$' -exec echo "  - {}" >> subquery-multichain.yaml \;
       - name: Publish SubQL version
         run: |
           npx subql publish -o -f .

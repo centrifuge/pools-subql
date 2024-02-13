@@ -10,11 +10,12 @@ import {
 } from '../../helpers/types'
 import { errorHandler, missingPool } from '../../helpers/errorHandler'
 import { PoolService } from '../services/poolService'
-import { LoanService } from '../services/loanService'
-import { BorrowerTransactionData, BorrowerTransactionService } from '../services/borrowerTransactionService'
+import { AssetService } from '../services/assetService'
+import { AssetTransactionData, AssetTransactionService } from '../services/assetTransactionService'
 import { AccountService } from '../services/accountService'
 import { EpochService } from '../services/epochService'
 import { WAD } from '../../config'
+import { AssetType, AssetValuationMethod } from '../../types'
 
 export const handleLoanCreated = errorHandler(_handleLoanCreated)
 async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedEvent>) {
@@ -26,17 +27,27 @@ async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedEvent>) {
 
   const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toHex())
 
-  const loan = await LoanService.init(
+  const isInternal = loanInfo.pricing.isInternal
+  const internalLoanPricing = isInternal ? loanInfo.pricing.asInternal : null
+
+  const assetType: AssetType =
+    isInternal && internalLoanPricing.valuationMethod.isCash ? AssetType.OffchainCash : AssetType.Other
+
+  const valuationMethod: AssetValuationMethod = isInternal
+    ? AssetValuationMethod[internalLoanPricing.valuationMethod.type]
+    : AssetValuationMethod.Oracle
+
+  const asset = await AssetService.init(
     poolId.toString(),
     loanId.toString(),
+    assetType,
+    valuationMethod, //TODO: valuationmethod
     loanInfo.collateral[0].toBigInt(),
     loanInfo.collateral[1].toBigInt(),
     event.block.timestamp
   )
 
-  const internalLoanPricing = loanInfo.pricing?.isInternal ? loanInfo.pricing.asInternal : null
-
-  const loanSpecs = {
+  const assetSpecs = {
     advanceRate:
       internalLoanPricing && internalLoanPricing.maxBorrowAmount.isUpToOutstandingDebt
         ? internalLoanPricing.maxBorrowAmount.asUpToOutstandingDebt.advanceRate.toBigInt()
@@ -60,21 +71,21 @@ async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedEvent>) {
       : null,
   }
 
-  await loan.updateLoanSpecs(loanSpecs)
-  await loan.save()
+  await asset.updateAssetSpecs(assetSpecs)
+  await asset.save()
 
-  const bt = await BorrowerTransactionService.created({
+  const at = await AssetTransactionService.created({
     poolId: poolId.toString(),
-    loanId: loanId.toString(),
+    assetId: loanId.toString(),
     address: account.id,
     epochNumber: pool.currentEpoch,
     hash: event.extrinsic.extrinsic.hash.toString(),
     timestamp: event.block.timestamp,
   })
-  await bt.save()
+  await at.save()
 
   // Update pool info
-  await pool.increaseNumberOfLoans()
+  await pool.increaseNumberOfAssets()
   await pool.save()
 }
 
@@ -96,15 +107,15 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Pr
   const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toHex())
 
   // Update loan amount
-  const loan = await LoanService.getById(poolId.toString(), loanId.toString())
-  await loan.activate()
-  await loan.borrow(amount)
-  await loan.updateItemMetadata()
-  await loan.save()
+  const asset = await AssetService.getById(poolId.toString(), loanId.toString())
+  await asset.activate()
+  await asset.borrow(amount)
+  await asset.updateItemMetadata()
+  await asset.save()
 
-  const bt = await BorrowerTransactionService.borrowed({
+  const at = await AssetTransactionService.borrowed({
     poolId: poolId.toString(),
-    loanId: loanId.toString(),
+    assetId: loanId.toString(),
     address: account.id,
     epochNumber: pool.currentEpoch,
     hash: event.extrinsic.extrinsic.hash.toString(),
@@ -114,7 +125,7 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Pr
     quantity: borrowAmount.isExternal ? borrowAmount.asExternal.quantity.toBigInt() : null,
     settlementPrice: borrowAmount.isExternal ? borrowAmount.asExternal.settlementPrice.toBigInt() : null,
   })
-  await bt.save()
+  await at.save()
 
   // Update pool info
   await pool.increaseBorrowings(amount)
@@ -145,14 +156,14 @@ async function _handleLoanRepaid(event: SubstrateEvent<LoanRepaidEvent>) {
 
   const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toHex())
 
-  const loan = await LoanService.getById(poolId.toString(), loanId.toString())
-  await loan.repay(amount)
-  await loan.updateItemMetadata()
-  await loan.save()
+  const asset = await AssetService.getById(poolId.toString(), loanId.toString())
+  await asset.repay(amount)
+  await asset.updateItemMetadata()
+  await asset.save()
 
-  const bt = await BorrowerTransactionService.repaid({
+  const at = await AssetTransactionService.repaid({
     poolId: poolId.toString(),
-    loanId: loanId.toString(),
+    assetId: loanId.toString(),
     address: account.id,
     epochNumber: pool.currentEpoch,
     hash: event.extrinsic.extrinsic.hash.toString(),
@@ -164,7 +175,7 @@ async function _handleLoanRepaid(event: SubstrateEvent<LoanRepaidEvent>) {
     quantity: principal.isExternal ? principal.asExternal.quantity.toBigInt() : null,
     settlementPrice: principal.isExternal ? principal.asExternal.settlementPrice.toBigInt() : null,
   })
-  await bt.save()
+  await at.save()
 
   // Update pool info
   await pool.increaseRepayments(principalAmount, interest.toBigInt(), unscheduled.toBigInt())
@@ -182,7 +193,7 @@ async function _handleLoanWrittenOff(event: SubstrateEvent<LoanWrittenOffEvent>)
   const [poolId, loanId, status] = event.event.data
   logger.info(`Loan writtenoff event for pool: ${poolId.toString()} loanId: ${loanId.toString()}`)
   const { percentage, penalty } = status
-  const loan = await LoanService.getById(poolId.toString(), loanId.toString())
+  const loan = await AssetService.getById(poolId.toString(), loanId.toString())
   await loan.writeOff(percentage.toBigInt(), penalty.toBigInt())
   await loan.updateItemMetadata()
   await loan.save()
@@ -204,20 +215,20 @@ async function _handleLoanClosed(event: SubstrateEvent<LoanClosedEvent>) {
 
   const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toHex())
 
-  const loan = await LoanService.getById(poolId.toString(), loanId.toString())
+  const loan = await AssetService.getById(poolId.toString(), loanId.toString())
   await loan.close()
   await loan.updateItemMetadata()
   await loan.save()
 
-  const bt = await BorrowerTransactionService.closed({
+  const at = await AssetTransactionService.closed({
     poolId: poolId.toString(),
-    loanId: loanId.toString(),
+    assetId: loanId.toString(),
     address: account.id,
     epochNumber: pool.currentEpoch,
     hash: event.extrinsic.extrinsic.hash.toString(),
     timestamp: event.block.timestamp,
   })
-  await bt.save()
+  await at.save()
 }
 
 export const handleLoanDebtTransferred = errorHandler(_handleLoanDebtTransferred)
@@ -236,17 +247,17 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
 
   const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toHex())
 
-  const fromLoan = await LoanService.getById(poolId.toString(), fromLoanId.toString())
-  await fromLoan.repay(amount.toBigInt())
-  await fromLoan.updateItemMetadata()
-  await fromLoan.save()
+  const fromAsset = await AssetService.getById(poolId.toString(), fromLoanId.toString())
+  await fromAsset.repay(amount.toBigInt())
+  await fromAsset.updateItemMetadata()
+  await fromAsset.save()
 
-  const toLoan = await LoanService.getById(poolId.toString(), toLoanId.toString())
-  await toLoan.repay(amount.toBigInt())
-  await toLoan.updateItemMetadata()
-  await toLoan.save()
+  const toAsset = await AssetService.getById(poolId.toString(), toLoanId.toString())
+  await toAsset.repay(amount.toBigInt())
+  await toAsset.updateItemMetadata()
+  await toAsset.save()
 
-  const txData: Omit<BorrowerTransactionData, 'loanId'> = {
+  const txData: Omit<AssetTransactionData, 'assetId'> = {
     poolId: poolId.toString(),
     address: account.id,
     epochNumber: pool.currentEpoch,
@@ -255,9 +266,9 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
     amount: amount.toBigInt(),
   }
 
-  const repaidBt = await BorrowerTransactionService.repaid({ ...txData, loanId: fromLoanId.toString() })
-  await repaidBt.save()
+  const repaidAt = await AssetTransactionService.repaid({ ...txData, assetId: fromLoanId.toString() })
+  await repaidAt.save()
 
-  const borrowedBt = await BorrowerTransactionService.borrowed({ ...txData, loanId: toLoanId.toString() })
-  await borrowedBt.save()
+  const borrowedAt = await AssetTransactionService.borrowed({ ...txData, assetId: toLoanId.toString() })
+  await borrowedAt.save()
 }

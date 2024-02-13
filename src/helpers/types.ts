@@ -163,10 +163,10 @@ export interface LoanInfoCreated extends Struct {
 }
 
 export interface LoanInfoActivePortfolio extends Struct {
-  activeLoan: LoanInfoActive,
-  presentValue: Balance,
-  outstandingPrincipal: Balance,
-  outstandingInterest: Balance,
+  activeLoan: LoanInfoActive
+  presentValue: Balance
+  outstandingPrincipal: Balance
+  outstandingInterest: Balance
 }
 
 export interface LoanInfoActive extends Struct {
@@ -265,8 +265,11 @@ export interface LoanPricing extends Enum {
 export interface LoanValuationMethod extends Enum {
   isDiscountedCashFlow: boolean
   isOutstandingDebt: boolean
+  isCash: boolean
   asDiscountedCashFlow: LoanValuationDiscountedCashFlow
   asOutstandingDebt: Null
+  asCash: Null
+  type: 'DiscountedCashFlow' | 'OutstandingDebt' | 'Cash'
 }
 
 export interface LoanRepaymentSchedule extends Struct {

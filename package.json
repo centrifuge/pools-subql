@@ -4,11 +4,13 @@
   "description": "Subquery for the pools functionality",
   "main": "dist/index.js",
   "scripts": {
+    "postinstall": "wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O ./node_modules/.bin/yq && chmod +x ./node_modules/.bin/yq",
     "build": "subql build",
     "build:dev": "subql build --mode=dev",
     "prepack": "rm -rf dist && subql build",
     "test": "jest",
     "codegen": "subql codegen",
+    "projectgen" : "./project-generator.sh",
     "generate:defs": "ts-node --skip-project node_modules/.bin/polkadot-types-from-defs --package centrifuge-subql/src/api-interfaces --endpoint 'wss://fullnode.development.cntrfg.com' --input ./src/api-interfaces",
     "generate:meta": "ts-node --skip-project node_modules/.bin/polkadot-types-from-chain --endpoint 'wss://fullnode.development.cntrfg.com' --output ./src/api-interfaces --strict",
     "interface-build": "yarn generate:defs && yarn generate:meta && yarn build",
