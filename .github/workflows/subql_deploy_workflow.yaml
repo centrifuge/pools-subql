@@ -61,16 +61,9 @@ jobs:
           echo "SUBQL_PROJ_DECRIPTION=$(yq '.description' project-centrifuge.yaml)" >> $GITHUB_ENV
           echo "SUBQL_CFG_ENDPOINT=$(yq '.network.endpoint' project-centrifuge.yaml)" >> $GITHUB_ENV
           echo "SUBQL_CFG_DICT=$(yq '.network.dictionary' project-centrifuge.yaml)" >> $GITHUB_ENV
-          echo "SUBQL_ETH_ENDPOINT=$(yq '.network.endpoint' project-ethereum.yaml)" >> $GITHUB_ENV
-          echo "SUBQL_ETH_DICT=$(yq '.network.dictionary' project-ethereum.yaml)" >> $GITHUB_ENV
-          echo "SUBQL_CELO_ENDPOINT=$(yq '.network.endpoint' project-celo.yaml)" >> $GITHUB_ENV
-          echo "SUBQL_CELO_DICT=$(yq '.network.dictionary' project-celo.yaml)" >> $GITHUB_ENV
       - name: Publish SubQL version
         run: |
           npx subql publish -o -f .
-          echo "CFG_IPFSCID=$(cat .project-centrifuge-cid)" >> $GITHUB_ENV || true
-          echo "ETH_IPFSCID=$(cat .project-ethereum-cid)" >> $GITHUB_ENV || true
-          echo "CELO_IPFSCID=$(cat .project-celo-cid)" >> $GITHUB_ENV || true
       - name: Delete Project
         if: ${{ inputs.resetProject }}
         run: |
@@ -100,17 +93,4 @@ jobs:
           --disableHistorical \
           --indexerVersion="$SUBQL_INDEXER_VERSION" \
           --queryVersion="$SUBQL_QUERY_VERSION"
-      # - name: Deploy ETH Version
-      #   run: |
-      #     npx subql deployment:deploy \
-      #     -d \
-      #     --org="$SUBQL_PROJ_ORG" \
-      #     --endpoint="$SUBQL_ETH_ENDPOINT" \
-      #     --dict="$SUBQL_ETH_DICT" \
-      #     --projectName="$SUBQL_PROJ_NAME" \
-      #     --ipfsCID="$ETH_IPFSCID" \
-      #     --type=$SUBQL_DEPLOYMENT_TYPE \
-      #     --disableHistorical \
-      #     --indexerBatchSize=30 \
-      #     --indexerVersion="$SUBQL_ETH_INDEXER_VERSION" \
-      #     --queryVersion="$SUBQL_QUERY_VERSION"
+
