@@ -7,6 +7,7 @@ export const RAY_DIGITS = 27
 export const RAY = bnToBn(10).pow(bnToBn(RAY_DIGITS))
 export const CPREC = (digits: number) => bnToBn(10).pow(bnToBn(digits))
 export const DAIMainnetAddress = '0x6b175474e89094c44da98b954eedeac495271d0f'
+export const multicallAddress = '0xcA11bde05977b3631167028862bE2a173976CA11'
 export const tinlakePools = [
   {
     id: '0x09e43329552c9d81cf205fd5f44796fbc40c822e',
