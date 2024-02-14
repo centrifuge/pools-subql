@@ -22,9 +22,9 @@ const timekeeper = TimekeeperService.init()
 
 export const handleEthBlock = errorHandler(_handleEthBlock)
 async function _handleEthBlock(block: EthereumBlock): Promise<void> {
-  logger.info('!!!!!!!!!!!!!!!!!!!!!!!!!!!', tinlakePools.length, tinlakePools[0].id)
-  logger.info('!!!!!!!!!!!!!!!!!!!!!!!!!!!', DAIMainnetAddress)
-  logger.info('!!!!!!!!!!!!!!!!!!!!!!!!!!!', multicallAddress)
+  // logger.info('!!!!!!!!!!!!!!!!!!!!!!!!!!!', tinlakePools.length, tinlakePools[0].id)
+  // logger.info('!!!!!!!!!!!!!!!!!!!!!!!!!!!', DAIMainnetAddress)
+  // logger.info('!!!!!!!!!!!!!!!!!!!!!!!!!!!', multicallAddress)
   if (chainId == '1') {
     const date = new Date(Number(block.timestamp) * 1000)
     const blockNumber = block.number
@@ -78,32 +78,38 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
           const chunk = callChunks[i]
           const multicall = MulticallAbi__factory.connect(multicallAddress, api as unknown as Provider)
           logger.info(`Fetching ${chunk.length * i} to ${chunk.length * (i + 1)} of ${poolUpdateCalls.length}`)
-          const results = await multicall.callStatic.aggregate(chunk)
-          logger.info(`Results: ${results[1]}`)
-          callResults = [...callResults, results[1]]
+          const results = await multicall.callStatic.tryAggregate(false, chunk)
+          logger.info(`Results: ${results}`)
+          callResults = [...callResults, results.map((result) => result[1])]
+          logger.info(`Call results: ${callResults}`)
+          logger.info(`1 ${callResults[0]}`)
+          logger.info(`2 ${Object.keys(callResults[0])}`)
+          logger.info(`3 ${callResults[0][0]}`)
         }
 
-        for (const tinlakePool of tinlakePools) {
+        for (let i = 0; i < tinlakePools.length; i++) {
+          const tinlakePool = tinlakePools[i]
           const latestNavFeed = getLatestContract(tinlakePool.navFeed, blockNumber)
           const latestReserve = getLatestContract(tinlakePool.reserve, blockNumber)
           const pool = await PoolService.getOrSeed(tinlakePool.id)
 
           // Update pool
           if (latestNavFeed) {
+            logger.info('getting currentNAV')
             const currentNAV = NavfeedAbi__factory.createInterface().decodeFunctionResult(
               'currentNAV',
-              callResults[1][0]
+              callResults[i][0]
             )[0]
-            pool.portfolioValuation = currentNAV.toBigInt()
+            pool.portfolioValuation = currentNAV as unknown as bigint
             await pool.save()
             logger.info(`Updating pool ${tinlakePool.id} with portfolioValuation: ${pool.portfolioValuation}`)
           }
           if (latestReserve) {
             const totalBalance = ReserveAbi__factory.createInterface().decodeFunctionResult(
               'totalBalance',
-              callResults[1][1]
+              callResults[i][1]
             )[0]
-            pool.totalReserve = totalBalance.toBigInt()
+            pool.totalReserve = totalBalance as unknown as bigint
             await pool.save()
             logger.info(`Updating pool ${tinlakePool.id} with totalReserve: ${pool.totalReserve}`)
           }
