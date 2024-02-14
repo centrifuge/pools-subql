@@ -35,8 +35,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
 
       // update pool states
       const poolUpdateCalls = []
-      // const poolUpdatePromises = [tinlakePools[0]].map(async (tinlakePool) => {
-      for (const tinlakePool of [tinlakePools[0]]) {
+      for (const tinlakePool of tinlakePools) {
         if (block.number >= tinlakePool.startBlock) {
           const pool = await PoolService.getOrSeed(tinlakePool.id)
 
@@ -65,51 +64,44 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
               ReserveAbi__factory.createInterface().encodeFunctionData('totalBalance'),
             ])
           }
+        }
+      }
+      if (poolUpdateCalls.length > 0) {
+        const callChunks = chunkArray(poolUpdateCalls, 30)
+        let callResults = []
+        for (let i = 0; i < callChunks.length; i++) {
+          const chunk = callChunks[i]
+          const multicall = MulticallAbi__factory.connect(multicallAddress, api as unknown as Provider)
+          logger.info(`Fetching ${chunk.length * i} to ${chunk.length * (i + 1)} of ${poolUpdateCalls.length}`)
+          const results = await multicall.callStatic.aggregate(chunk)
+          callResults = [...callResults, results[1]]
+        }
 
-          // if (latestNavFeed) {
-          //   const navFeedContract = NavfeedAbi__factory.connect(latestNavFeed.address, api as unknown as Provider)
-          //   pool.portfolioValuation = (await navFeedContract.currentNAV()).toBigInt()
-          //   await pool.save()
-          //   logger.info(`Updating pool ${tinlakePool.id} with portfolioValuation: ${pool.portfolioValuation}`)
-          // }
+        for (const tinlakePool of tinlakePools) {
+          const latestNavFeed = getLatestContract(tinlakePool.navFeed, blockNumber)
+          const latestReserve = getLatestContract(tinlakePool.reserve, blockNumber)
+          const pool = await PoolService.getOrSeed(tinlakePool.id)
 
-          // if (latestReserve) {
-          //   const reserveContract = ReserveAbi__factory.connect(latestReserve.address, api as unknown as Provider)
-          //   pool.totalReserve = (await reserveContract.totalBalance()).toBigInt()
-          //   await pool.save()
-          //   logger.info(`Updating pool ${tinlakePool.id} with totalReserve: ${pool.totalReserve}`)
-          // }
-
-          if (poolUpdateCalls.length > 0) {
-            const multicall = MulticallAbi__factory.connect(multicallAddress, api as unknown as Provider)
-            logger.info(`Fetching multicall data for pool ${tinlakePool.id}`)
-            const results = await multicall.callStatic.aggregate(poolUpdateCalls, { blockTag: blockNumber })
-            logger.info(`Multicall results. Block Number: ${results[0]}`)
-            if (latestNavFeed) {
-              const navFeedContract = NavfeedAbi__factory.connect(latestNavFeed.address, api as unknown as Provider)
-              logger.info(
-                `Multicall results1.portfolioValuation: ${navFeedContract.interface.decodeFunctionResult(
-                  'currentNAV',
-                  results[1][0]
-                )}`
-              )
-              //   pool.portfolioValuation = results.data[0].toBigInt()
-              //   await pool.save()
-              //   logger.info(`Updating pool ${tinlakePool.id} with portfolioValuation: ${pool.portfolioValuation}`)
-            }
-            if (latestReserve) {
-              const reserveContract = ReserveAbi__factory.connect(latestReserve.address, api as unknown as Provider)
-              logger.info(
-                `Multicall results2.totalReserve: ${reserveContract.interface.decodeFunctionResult(
-                  'totalBalance',
-                  results[1][1]
-                )}`
-              )
-              //   pool.totalReserve = results.data[1].toBigInt()
-              //   await pool.save()
-              //   logger.info(`Updating pool ${tinlakePool.id} with totalReserve: ${pool.totalReserve}`)
-            }
+          // Update pool
+          if (latestNavFeed) {
+            const currentNAV = NavfeedAbi__factory.createInterface().decodeFunctionResult(
+              'currentNAV',
+              callResults[1][0]
+            )[0]
+            pool.portfolioValuation = currentNAV.toBigInt()
+            await pool.save()
+            logger.info(`Updating pool ${tinlakePool.id} with portfolioValuation: ${pool.portfolioValuation}`)
           }
+          if (latestReserve) {
+            const totalBalance = ReserveAbi__factory.createInterface().decodeFunctionResult(
+              'totalBalance',
+              callResults[1][1]
+            )[0]
+            pool.totalReserve = totalBalance.toBigInt()
+            await pool.save()
+            logger.info(`Updating pool ${tinlakePool.id} with totalReserve: ${pool.totalReserve}`)
+          }
+
           // Update loans
           if (latestNavFeed) {
             logger.info(`Updating loans for pool ${tinlakePool.id}`)
@@ -123,8 +115,6 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
           }
         }
       }
-
-      // await Promise.all(poolUpdatePromises)
 
       // Take snapshots
       await evmStateSnapshotter('Pool', 'PoolSnapshot', block, 'poolId')
@@ -229,4 +219,12 @@ function getLatestContract(contractArray, blockNumber) {
       current.startBlock <= blockNumber && current.startBlock > (prev?.startBlock || 0) ? current : prev,
     null
   )
+}
+
+function chunkArray<T>(array: T[], chunkSize: number): T[][] {
+  const result = []
+  for (let i = 0; i < array.length; i += chunkSize) {
+    result.push(array.slice(i, i + chunkSize))
+  }
+  return result
 }
