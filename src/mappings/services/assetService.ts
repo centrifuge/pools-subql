@@ -1,7 +1,7 @@
 import { Option } from '@polkadot/types'
 import { bnToBn, nToBigInt } from '@polkadot/util'
 import { WAD } from '../../config'
-import { NftItemMetadata } from '../../helpers/types'
+import { LoanPricingAmount, NftItemMetadata } from '../../helpers/types'
 import { Asset, AssetType, AssetValuationMethod, AssetStatus } from '../../types'
 import { ActiveLoanData } from './poolService'
 
@@ -119,6 +119,24 @@ export class AssetService extends Asset {
     this.metadata = payload.data.toUtf8()
 
     return this
+  }
+
+  static extractPrincipalAmount(principalObject: LoanPricingAmount) {
+    let principal: bigint
+    switch (principalObject.type) {
+      case 'Internal':
+        principal = principalObject.asInternal.toBigInt()
+        break
+      case 'External':
+        principal = nToBigInt(
+          principalObject.asExternal.quantity
+            .toBn()
+            .mul(principalObject.asExternal.settlementPrice.toBn())
+            .div(WAD)
+        )
+        break
+    }
+    return principal
   }
 }
 

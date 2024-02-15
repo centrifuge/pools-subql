@@ -1,10 +1,10 @@
 import { SubstrateEvent } from '@subql/types'
-import { nToBigInt } from '@polkadot/util'
 import {
   LoanBorrowedEvent,
   LoanClosedEvent,
   LoanCreatedEvent,
   LoanDebtTransferred,
+  LoanDebtTransferred1024,
   LoanRepaidEvent,
   LoanWrittenOffEvent,
 } from '../../helpers/types'
@@ -14,7 +14,6 @@ import { AssetService } from '../services/assetService'
 import { AssetTransactionData, AssetTransactionService } from '../services/assetTransactionService'
 import { AccountService } from '../services/accountService'
 import { EpochService } from '../services/epochService'
-import { WAD } from '../../config'
 import { AssetType, AssetValuationMethod } from '../../types'
 
 export const handleLoanCreated = errorHandler(_handleLoanCreated)
@@ -96,10 +95,7 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Pr
   const pool = await PoolService.getById(poolId.toString())
   if (!pool) throw missingPool
 
-  const amount = borrowAmount.isInternal
-    ? borrowAmount.asInternal.toBigInt()
-    : nToBigInt(borrowAmount.asExternal.quantity.toBn().mul(borrowAmount.asExternal.settlementPrice.toBn()).div(WAD))
-
+  const amount = AssetService.extractPrincipalAmount(borrowAmount)
   if (amount === BigInt(0)) return
 
   logger.info(`Loan borrowed event for pool: ${poolId.toString()} amount: ${amount.toString()}`)
@@ -145,9 +141,7 @@ async function _handleLoanRepaid(event: SubstrateEvent<LoanRepaidEvent>) {
   const pool = await PoolService.getById(poolId.toString())
   if (!pool) throw missingPool
 
-  const principalAmount = principal.isInternal
-    ? principal.asInternal.toBigInt()
-    : nToBigInt(principal.asExternal.quantity.toBn().mul(principal.asExternal.settlementPrice.toBn()).div(WAD))
+  const principalAmount = AssetService.extractPrincipalAmount(principal)
   const amount = principalAmount + interest.toBigInt() + unscheduled.toBigInt()
 
   if (amount === BigInt(0)) return
@@ -233,6 +227,74 @@ async function _handleLoanClosed(event: SubstrateEvent<LoanClosedEvent>) {
 
 export const handleLoanDebtTransferred = errorHandler(_handleLoanDebtTransferred)
 async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransferred>) {
+  const [poolId, fromLoanId, toLoanId, _repaidAmount, _borrowAmount] = event.event.data
+  const pool = await PoolService.getById(poolId.toString())
+  if (!pool) throw missingPool
+
+  const repaidPrincipalAmount = AssetService.extractPrincipalAmount(_repaidAmount.principal)
+  const repaidInterestAmount = _repaidAmount.interest.toBigInt()
+  const repaidUnscheduledAmount = _repaidAmount.unscheduled.toBigInt()
+  const repaidAmount = repaidPrincipalAmount + repaidInterestAmount + repaidUnscheduledAmount
+
+  const borrowPrincipalAmount = AssetService.extractPrincipalAmount(_borrowAmount)
+
+  if (repaidAmount === BigInt(0) || borrowPrincipalAmount === BigInt(0)) return
+
+  logger.info(
+    `Asset debt transferred event for pool: ${poolId.toString()}, from loan: ${fromLoanId.toString()} ` +
+      `to loan: ${toLoanId.toString()} amount: ${repaidAmount.toString()}`
+  )
+
+  const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toHex())
+
+  const fromAsset = await AssetService.getById(poolId.toString(), fromLoanId.toString())
+  await fromAsset.repay(repaidAmount)
+  await fromAsset.updateItemMetadata()
+  await fromAsset.save()
+
+  const toAsset = await AssetService.getById(poolId.toString(), toLoanId.toString())
+  await toAsset.borrow(borrowPrincipalAmount)
+  await toAsset.updateItemMetadata()
+  await toAsset.save()
+
+  const txData: Omit<
+    AssetTransactionData,
+    'assetId' | 'amount' | 'interestAmount' | 'principalAmount' | 'unscheduledAmount'
+  > = {
+    poolId: poolId.toString(),
+    address: account.id,
+    epochNumber: pool.currentEpoch,
+    hash: event.extrinsic.extrinsic.hash.toString(),
+    timestamp: event.block.timestamp,
+  }
+
+  const repaidAt = await AssetTransactionService.repaid({
+    ...txData,
+    assetId: fromLoanId.toString(),
+    amount: repaidAmount,
+    interestAmount: repaidAmount,
+    principalAmount: repaidPrincipalAmount,
+    unscheduledAmount: repaidUnscheduledAmount,
+    quantity: _repaidAmount.principal.isExternal ? _repaidAmount.principal.asExternal.quantity.toBigInt() : null,
+    settlementPrice: _repaidAmount.principal.isExternal
+      ? _repaidAmount.principal.asExternal.settlementPrice.toBigInt()
+      : null,
+  })
+  await repaidAt.save()
+
+  const borrowedAt = await AssetTransactionService.borrowed({
+    ...txData,
+    assetId: toLoanId.toString(),
+    amount: borrowPrincipalAmount,
+    principalAmount: borrowPrincipalAmount,
+    quantity: _borrowAmount.isExternal ? _borrowAmount.asExternal.quantity.toBigInt() : null,
+    settlementPrice: _borrowAmount.isExternal ? _borrowAmount.asExternal.settlementPrice.toBigInt() : null,
+  })
+  await borrowedAt.save()
+}
+
+export const handleLoanDebtTransferred1024 = errorHandler(_handleLoanDebtTransferred1024)
+async function _handleLoanDebtTransferred1024(event: SubstrateEvent<LoanDebtTransferred1024>) {
   const [poolId, fromLoanId, toLoanId, amount] = event.event.data
 
   const pool = await PoolService.getById(poolId.toString())
@@ -241,7 +303,7 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
   if (amount.toBigInt() === BigInt(0)) return
 
   logger.info(
-    `Loan debt transferred event for pool: ${poolId.toString()}, from loan: ${fromLoanId.toString()} ` +
+    `Asset debt transferred (deprecated) event for pool: ${poolId.toString()}, from loan: ${fromLoanId.toString()} ` +
       `to loan: ${toLoanId.toString()} amount: ${amount.toString()}`
   )
 

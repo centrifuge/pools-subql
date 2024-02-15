@@ -309,6 +309,7 @@ export interface LoanPricingAmount extends Enum {
     quantity: u128
     settlementPrice: u128
   }
+  type: 'Internal' | 'External';
 }
 
 export interface LoanPricingRepaidAmount extends Struct {
@@ -335,7 +336,16 @@ export type LoanClosedEvent = ITuple<[poolId: u64, loanId: u64, collateralInfo: 
 export type LoanBorrowedEvent = ITuple<[poolId: u64, loanId: u64, amount: LoanPricingAmount]>
 export type LoanRepaidEvent = ITuple<[poolId: u64, loanId: u64, amount: LoanPricingRepaidAmount]>
 export type LoanWrittenOffEvent = ITuple<[poolId: u64, loanId: u64, writeOffStatus: LoanWriteOffStatus]>
-export type LoanDebtTransferred = ITuple<[poolId: u64, fromLoanId: u64, toLoanId: u64, amount: u128]>
+export type LoanDebtTransferred = ITuple<
+  [
+    poolId: u64,
+    fromLoanId: u64,
+    toLoanId: u64,
+    repaidAmount: LoanPricingRepaidAmount,
+    borrowAmount: LoanPricingAmount,
+  ]
+>
+export type LoanDebtTransferred1024 = ITuple<[poolId: u64, fromLoanId: u64, toLoanId: u64, amount: u128]>
 
 export type PoolCreatedEvent = ITuple<[admin: AccountId32, depositor: AccountId32, poolId: u64, essence: PoolEssence]>
 export type PoolUpdatedEvent = ITuple<[admin: AccountId32, old: PoolEssence, new: PoolEssence]>
