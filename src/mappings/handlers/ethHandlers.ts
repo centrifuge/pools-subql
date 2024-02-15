@@ -17,6 +17,7 @@ import { TimekeeperService, getPeriodStart } from '../../helpers/timekeeperServi
 import { LoanService } from '../services/loanService'
 import { evmStateSnapshotter } from '../../helpers/stateSnapshot'
 import { Multicall3 } from '../../types/contracts/MulticallAbi'
+import { BigNumber } from 'ethers'
 
 const timekeeper = TimekeeperService.init()
 
@@ -80,7 +81,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
           if (latestNavFeed) {
             const currentNAV = NavfeedAbi__factory.createInterface().decodeFunctionResult(
               'currentNAV',
-              callResults[i][0]
+              callResults[i * 2]
             )[0]
             pool.portfolioValuation = currentNAV.toBigInt()
             await pool.save()
@@ -89,7 +90,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
           if (latestReserve) {
             const totalBalance = ReserveAbi__factory.createInterface().decodeFunctionResult(
               'totalBalance',
-              callResults[i][1]
+              callResults[i * 2 + 1]
             )[0]
             pool.totalReserve = totalBalance.toBigInt()
             logger.info(`Updating pool ${tinlakePool.id} with totalReserve: ${pool.totalReserve}`)
@@ -123,32 +124,51 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
   let existingLoans = await LoanService.getByPoolId(poolId)
   const newLoans = await getNewLoans(existingLoans, shelf)
 
+  logger.info('getting nftIds')
   const nftIdCalls = []
   for (const loanIndex of newLoans) {
     nftIdCalls.push([navFeed, NavfeedAbi__factory.createInterface().encodeFunctionData('nftID', [loanIndex])])
   }
-  const nftIdResponses = await processCalls(nftIdCalls)
-  const nftIds = nftIdResponses[0].map(
-    (response) => NavfeedAbi__factory.createInterface().decodeFunctionResult('nftID', response)[0]
-  )
+  logger.info(`nftIdCalls.length: ${nftIdCalls.length}`)
+  if (nftIdCalls.length > 0) {
+    const nftIdResponses = await processCalls(nftIdCalls)
+    logger.info(`nftIdResponses.length: ${nftIdResponses.length}`)
+    logger.info(`nftIdResponses[0].length: ${nftIdResponses[0].length}`)
+    const nftIds = nftIdResponses.map(
+      (response) => NavfeedAbi__factory.createInterface().decodeFunctionResult('nftID', response)[0]
+    )
+    logger.info(`nftIds.length: ${nftIds.length}`)
 
-  const maturityDateCalls = []
-  for (const nftId of nftIds) {
-    maturityDateCalls.push([navFeed, NavfeedAbi__factory.createInterface().encodeFunctionData('maturityDate', [nftId])])
-  }
-  const maturityDateResponses = await processCalls(maturityDateCalls)
-  const maturityDates = maturityDateResponses[0].map(
-    (response) => NavfeedAbi__factory.createInterface().decodeFunctionResult('maturityDate', response)[0]
-  )
+    const maturityDateCalls = []
+    for (const nftId of nftIds) {
+      maturityDateCalls.push([
+        navFeed,
+        NavfeedAbi__factory.createInterface().encodeFunctionData('maturityDate', [nftId]),
+      ])
+    }
+    logger.info(`maturityDateCalls.length: ${maturityDateCalls.length}`)
+    const maturityDateResponses = await processCalls(maturityDateCalls)
+    logger.info(`maturityDateResponses[0].length: ${maturityDateResponses[0].length}`)
+    const maturityDates = maturityDateResponses.map(
+      (response) => NavfeedAbi__factory.createInterface().decodeFunctionResult('maturityDate', response)[0]
+    )
+    logger.info(`maturityDates.length: ${maturityDates.length}`)
 
-  // create new loans
-  for (let i = 0; i < newLoans.length; i++) {
-    const loanIndex = newLoans[i]
-    const loan = new Loan(`${poolId}-${loanIndex}`, blockDate, poolId, true, LoanStatus.CREATED)
-    loan.actualMaturityDate = new Date(Number(maturityDates[i]) * 1000)
-    loan.save()
+    // create new loans
+    for (let i = 0; i < newLoans.length; i++) {
+      logger.info(`i: ${i}`)
+      logger.info(`maturityDate length: ${maturityDates.length}`)
+      logger.info(`newLoans length: ${newLoans.length}`)
+      logger.info(`maturityDate type of: ${typeof maturityDates[i]}`)
+      logger.info(`mat keys: ${Object.keys(maturityDates[i])}`)
+      logger.info(`mat values: ${Object.values(maturityDates[i])}`)
+      const loanIndex = newLoans[i]
+      const loan = new Loan(`${poolId}-${loanIndex}`, blockDate, poolId, true, LoanStatus.CREATED)
+      loan.actualMaturityDate = new Date((maturityDates[i] as BigNumber).toNumber() * 1000)
+      loan.save()
+    }
+    logger.info(`Creating ${newLoans.length} new loans for pool ${poolId}`)
   }
-  logger.info(`Creating ${newLoans.length} new loans for pool ${poolId}`)
 
   // update all loans
   existingLoans = (await LoanService.getByPoolId(poolId)).filter((loan) => loan.status !== LoanStatus.CLOSED)
@@ -159,41 +179,46 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
     loanDetailsCalls.push([pile, PileAbi__factory.createInterface().encodeFunctionData('debt', [loanIndex])])
     loanDetailsCalls.push([pile, PileAbi__factory.createInterface().encodeFunctionData('loanRates', [loanIndex])])
   })
-  const loanDetailsResponses = await processCalls(loanDetailsCalls)
-  const loanDetails = []
-  for (let i = 0; i < loanDetailsResponses[0].length; i += 3) {
-    loanDetails.push({
-      nftLocked: ShelfAbi__factory.createInterface().decodeFunctionResult('nftLocked', loanDetailsResponses[0][i])[0],
-      debt: PileAbi__factory.createInterface().decodeFunctionResult('debt', loanDetailsResponses[0][i + 1])[0],
-      loanRates: PileAbi__factory.createInterface().decodeFunctionResult(
-        'loanRates',
-        loanDetailsResponses[0][i + 2]
-      )[0],
-    })
-  }
+  if (loanDetailsCalls.length > 0) {
+    const loanDetailsResponses = await processCalls(loanDetailsCalls)
+    const loanDetails = []
+    for (let i = 0; i < loanDetailsResponses.length; i += 3) {
+      loanDetails.push({
+        nftLocked: ShelfAbi__factory.createInterface().decodeFunctionResult('nftLocked', loanDetailsResponses[i])[0],
+        debt: PileAbi__factory.createInterface().decodeFunctionResult('debt', loanDetailsResponses[i + 1])[0],
+        loanRates: PileAbi__factory.createInterface().decodeFunctionResult('loanRates', loanDetailsResponses[i + 2])[0],
+      })
+    }
 
-  for (let i = 0; i < existingLoans.length; i++) {
-    const loan = existingLoans[i]
-    const nftLocked = loanDetails[i].nftLocked
-    if (!nftLocked) {
-      loan.isActive = false
-      loan.status = LoanStatus.CLOSED
+    for (let i = 0; i < existingLoans.length; i++) {
+      const loan = existingLoans[i]
+      const nftLocked = loanDetails[i].nftLocked
+      if (!nftLocked) {
+        loan.isActive = false
+        loan.status = LoanStatus.CLOSED
+        loan.save()
+      }
+      const prevDebt = loan.outstandingDebt
+      const debt = loanDetails[i].debt
+      loan.outstandingDebt = debt.toBigInt()
+      const rateGroup = loanDetails[i].loanRates
+
+      const pileContract = PileAbi__factory.connect(pile, api as unknown as Provider)
+      const rates = await pileContract.rates(rateGroup)
+      loan.interestRatePerSec = rates.ratePerSecond.toBigInt()
+
+      if (prevDebt * rates.ratePerSecond.toBigInt() * BigInt(86400) < loan.outstandingDebt) {
+        loan.status = LoanStatus.ACTIVE
+        loan.borrowedAmountByPeriod = loan.outstandingDebt - prevDebt * rates.ratePerSecond.toBigInt() * BigInt(86400)
+      }
+
+      if (prevDebt > loan.outstandingDebt) {
+        loan.status = LoanStatus.ACTIVE
+        loan.repaidAmountByPeriod = prevDebt - loan.outstandingDebt
+      }
+      logger.info(`Updating loan ${loan.id} for pool ${poolId}`)
       loan.save()
     }
-    const prevDebt = loan.outstandingDebt
-    const debt = loanDetails[i].debt
-    loan.outstandingDebt = debt.toBigInt()
-    const rateGroup = loanDetails[i].loanRates
-
-    const pileContract = PileAbi__factory.connect(pile, api as unknown as Provider)
-    const rates = await pileContract.rates(rateGroup)
-    loan.interestRatePerSec = rates.ratePerSecond.toBigInt()
-
-    if (prevDebt > loan.outstandingDebt) {
-      loan.repaidAmountByPeriod = prevDebt - loan.outstandingDebt
-    }
-    logger.info(`Updating loan ${loan.id} for pool ${poolId}`)
-    loan.save()
   }
 }
 
@@ -237,15 +262,17 @@ function chunkArray<T>(array: T[], chunkSize: number): T[][] {
   return result
 }
 
-async function processCalls(calls: Multicall3.CallStruct[], chunkSize = 30): Promise<string[][]> {
+async function processCalls(calls: Multicall3.CallStruct[], chunkSize = 30): Promise<string[]> {
   const callChunks = chunkArray(calls, chunkSize)
   let callResults = []
+  logger.info(`Processing ${calls.length} calls in ${callChunks.length} chunks`)
   for (let i = 0; i < callChunks.length; i++) {
     const chunk = callChunks[i]
     const multicall = MulticallAbi__factory.connect(multicallAddress, api as unknown as Provider)
     logger.info(`Fetching ${chunk.length * i} to ${chunk.length * (i + 1)} of ${calls.length}`)
     const results = await multicall.callStatic.tryAggregate(false, chunk)
-    callResults = [...callResults, results.map((result) => result[1])]
+    callResults = [...callResults, ...results.map((result) => result[1])]
+    logger.info(`Fetched ${callResults.length} of ${calls.length} calls`)
   }
 
   return callResults
