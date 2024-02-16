@@ -20,6 +20,26 @@ import { Multicall3 } from '../../types/contracts/MulticallAbi'
 import { BigNumber } from 'ethers'
 
 const timekeeper = TimekeeperService.init()
+// type PoolContract = {
+//   address: string
+//   startBlock?: number
+// }
+
+// type TinlakePool = {
+//   id: string
+//   navFeed: PoolContract[]
+//   reserve: PoolContract[]
+//   shelf: PoolContract[]
+//   pile: PoolContract[]
+//   startBlock: number
+// }
+
+type PoolMulticall = {
+  id: string
+  type: string
+  call: Multicall3.CallStruct
+  result: string
+}
 
 export const handleEthBlock = errorHandler(_handleEthBlock)
 async function _handleEthBlock(block: EthereumBlock): Promise<void> {
@@ -36,7 +56,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
       logger.info(`It's a new period on EVM block ${blockNumber}: ${date.toISOString()}`)
 
       // update pool states
-      const poolUpdateCalls = []
+      const poolUpdateCalls: PoolMulticall[] = []
       for (const tinlakePool of tinlakePools) {
         if (block.number >= tinlakePool.startBlock) {
           const pool = await PoolService.getOrSeed(tinlakePool.id)
@@ -55,24 +75,33 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
           const latestReserve = getLatestContract(tinlakePool.reserve, blockNumber)
 
           if (latestNavFeed) {
-            poolUpdateCalls.push([
-              latestNavFeed.address,
-              NavfeedAbi__factory.createInterface().encodeFunctionData('currentNAV'),
-            ])
+            poolUpdateCalls.push({
+              id: tinlakePool.id,
+              type: 'currentNAV',
+              call: {
+                target: latestNavFeed.address,
+                callData: NavfeedAbi__factory.createInterface().encodeFunctionData('currentNAV'),
+              },
+              result: '',
+            })
           }
           if (latestReserve) {
-            poolUpdateCalls.push([
-              latestReserve.address,
-              ReserveAbi__factory.createInterface().encodeFunctionData('totalBalance'),
-            ])
+            poolUpdateCalls.push({
+              id: tinlakePool.id,
+              type: 'totalBalance',
+              call: {
+                target: latestReserve.address,
+                callData: ReserveAbi__factory.createInterface().encodeFunctionData('totalBalance'),
+              },
+              result: '',
+            })
           }
         }
       }
       if (poolUpdateCalls.length > 0) {
         const callResults = await processCalls(poolUpdateCalls)
-
-        for (let i = 0; i < tinlakePools.length; i++) {
-          const tinlakePool = tinlakePools[i]
+        for (const callResult of callResults) {
+          const tinlakePool = tinlakePools.find((p) => p.id === callResult.id)
           const latestNavFeed = getLatestContract(tinlakePool.navFeed, blockNumber)
           const latestReserve = getLatestContract(tinlakePool.reserve, blockNumber)
           const pool = await PoolService.getOrSeed(tinlakePool.id)
@@ -81,7 +110,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
           if (latestNavFeed) {
             const currentNAV = NavfeedAbi__factory.createInterface().decodeFunctionResult(
               'currentNAV',
-              callResults[i * 2]
+              callResult.result
             )[0]
             pool.portfolioValuation = currentNAV.toBigInt()
             await pool.save()
@@ -90,7 +119,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
           if (latestReserve) {
             const totalBalance = ReserveAbi__factory.createInterface().decodeFunctionResult(
               'totalBalance',
-              callResults[i * 2 + 1]
+              callResult.result
             )[0]
             pool.totalReserve = totalBalance.toBigInt()
             logger.info(`Updating pool ${tinlakePool.id} with totalReserve: ${pool.totalReserve}`)
@@ -119,6 +148,12 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
   }
 }
 
+type NewLoanData = {
+  id: string
+  nftId: string
+  maturityDate?: unknown
+}
+
 async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile: string, navFeed: string) {
   logger.info(`Updating loans for pool ${poolId}`)
   let existingLoans = await LoanService.getByPoolId(poolId)
@@ -126,20 +161,34 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
   logger.info(`Found ${newLoans.length} new loans for pool ${poolId}`)
 
   logger.info('getting nftIds')
-  const nftIdCalls = []
+  const nftIdCalls: PoolMulticall[] = []
   for (const loanIndex of newLoans) {
-    nftIdCalls.push([navFeed, NavfeedAbi__factory.createInterface().encodeFunctionData('nftID', [loanIndex])])
+    nftIdCalls.push({
+      id: loanIndex,
+      call: {
+        target: navFeed,
+        callData: NavfeedAbi__factory.createInterface().encodeFunctionData('nftID', [loanIndex]),
+      },
+      type: 'nftId',
+      result: '',
+    })
   }
   logger.info(`nftIdCalls.length: ${nftIdCalls.length}`)
   if (nftIdCalls.length > 0) {
+    const newLoanData: NewLoanData[] = []
     const nftIdResponses = await processCalls(nftIdCalls)
-    logger.info(`nftIdResponses.length: ${nftIdResponses.length}`)
-    logger.info(`nftIdResponses[0].length: ${nftIdResponses[0].length}`)
-    const nftIds = nftIdResponses.map(
-      (response) => NavfeedAbi__factory.createInterface().decodeFunctionResult('nftID', response)[0]
-    )
-    logger.info(`nftIds.length: ${nftIds.length}`)
-    logger.info(`nftIds[0]: ${nftIds[0]}`)
+    for (const response of nftIdResponses) {
+      if (response.result) {
+        const data: NewLoanData = {
+          id: response.id,
+          nftId: NavfeedAbi__factory.createInterface().decodeFunctionResult('nftID', response.result)[0],
+        }
+        newLoanData.push(data)
+        logger.info('pushed data')
+      }
+    }
+    logger.info(`newLoanData.length: ${newLoanData.length}`)
+    logger.info(`newLoanData[0]: ${newLoanData[0]}`)
 
     // Ignore Blocktower pools, since their loans have no maturity dates
     const isBlocktower = [
@@ -150,39 +199,39 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
     ].includes(poolId)
     logger.info(`isBlocktower: ${isBlocktower}`)
 
-    let maturityDates = []
     if (!isBlocktower) {
-      const maturityDateCalls = []
-      for (const nftId of nftIds) {
-        maturityDateCalls.push([
-          navFeed,
-          NavfeedAbi__factory.createInterface().encodeFunctionData('maturityDate', [nftId]),
-        ])
+      const maturityDateCalls: PoolMulticall[] = []
+      for (const { id, nftId } of newLoanData) {
+        maturityDateCalls.push({
+          id,
+          type: 'maturityDate',
+          call: {
+            target: navFeed,
+            callData: NavfeedAbi__factory.createInterface().encodeFunctionData('maturityDate', [nftId]),
+          },
+          result: '',
+        })
       }
       logger.info(`maturityDateCalls.length: ${maturityDateCalls.length}`)
       const maturityDateResponses = await processCalls(maturityDateCalls)
-      // logger.info(`maturityDateResponses[0].length: ${maturityDateResponses[0].length}`)
       logger.info(`maturityDateResponses.length: ${maturityDateResponses.length}`)
-      // logger.info(`maturityDateResponses[0]: ${maturityDateResponses[0]}`)
-      // logger.info(`maturityDateResponses[1]: ${maturityDateResponses[1]}`)
-      maturityDates = maturityDateResponses.map(
-        (response) => NavfeedAbi__factory.createInterface().decodeFunctionResult('maturityDate', response)[0]
-      )
-      logger.info(`maturityDates.length: ${maturityDates.length}`)
+      maturityDateResponses.map((response) => {
+        newLoanData.find((loan) => loan.id === response.id).maturityDate =
+          NavfeedAbi__factory.createInterface().decodeFunctionResult('maturityDate', response.result)[0]
+      })
+      // logger.info(`maturityDates.length: ${maturityDates.length}`)
     }
 
     // create new loans
-    for (let i = 0; i < newLoans.length; i++) {
-      logger.info(`i: ${i}`)
-      logger.info(`maturityDate length: ${maturityDates.length}`)
-      logger.info(`newLoans length: ${newLoans.length}`)
-      logger.info(`maturityDate type of: ${typeof maturityDates[i]}`)
+    for (const { id, maturityDate } of newLoanData) {
+      // logger.info(`maturityDate length: ${maturityDates.length}`)
+      // logger.info(`newLoans length: ${newLoans.length}`)
+      // logger.info(`maturityDate type of: ${typeof maturityDates[i]}`)
       // logger.info(`mat keys: ${Object.keys(maturityDates[i])}`)
       // logger.info(`mat values: ${Object.values(maturityDates[i])}`)
-      const loanIndex = newLoans[i]
-      const loan = new Loan(`${poolId}-${loanIndex}`, blockDate, poolId, true, LoanStatus.CREATED)
+      const loan = new Loan(`${poolId}-${id}`, blockDate, poolId, true, LoanStatus.CREATED)
       if (!isBlocktower) {
-        loan.actualMaturityDate = new Date((maturityDates[i] as BigNumber).toNumber() * 1000)
+        loan.actualMaturityDate = new Date((maturityDate as BigNumber).toNumber() * 1000)
       }
       loan.save()
     }
@@ -195,18 +244,48 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
   const loanDetailsCalls = []
   existingLoans.forEach((loan) => {
     const loanIndex = loan.id.split('-')[1]
-    loanDetailsCalls.push([shelf, ShelfAbi__factory.createInterface().encodeFunctionData('nftLocked', [loanIndex])])
-    loanDetailsCalls.push([pile, PileAbi__factory.createInterface().encodeFunctionData('debt', [loanIndex])])
-    loanDetailsCalls.push([pile, PileAbi__factory.createInterface().encodeFunctionData('loanRates', [loanIndex])])
+    loanDetailsCalls.push({
+      id: loanIndex,
+      type: 'nftLocked',
+      call: {
+        target: shelf,
+        callData: ShelfAbi__factory.createInterface().encodeFunctionData('nftLocked', [loanIndex]),
+      },
+      result: '',
+    })
+    loanDetailsCalls.push({
+      pool: tinlakePools.find((p) => p.id === poolId),
+      type: 'debt',
+      call: {
+        target: pile,
+        callData: PileAbi__factory.createInterface().encodeFunctionData('debt', [loanIndex]),
+      },
+      result: '',
+    })
+    loanDetailsCalls.push({
+      pool: tinlakePools.find((p) => p.id === poolId),
+      type: 'loanRates',
+      call: {
+        target: pile,
+        callData: PileAbi__factory.createInterface().encodeFunctionData('loanRates', [loanIndex]),
+      },
+      result: '',
+    })
   })
   if (loanDetailsCalls.length > 0) {
     const loanDetailsResponses = await processCalls(loanDetailsCalls)
     const loanDetails = []
     for (let i = 0; i < loanDetailsResponses.length; i += 3) {
       loanDetails.push({
-        nftLocked: ShelfAbi__factory.createInterface().decodeFunctionResult('nftLocked', loanDetailsResponses[i])[0],
-        debt: PileAbi__factory.createInterface().decodeFunctionResult('debt', loanDetailsResponses[i + 1])[0],
-        loanRates: PileAbi__factory.createInterface().decodeFunctionResult('loanRates', loanDetailsResponses[i + 2])[0],
+        nftLocked: ShelfAbi__factory.createInterface().decodeFunctionResult(
+          'nftLocked',
+          loanDetailsResponses[i].result
+        )[0],
+        debt: PileAbi__factory.createInterface().decodeFunctionResult('debt', loanDetailsResponses[i + 1].result)[0],
+        loanRates: PileAbi__factory.createInterface().decodeFunctionResult(
+          'loanRates',
+          loanDetailsResponses[i + 2].result
+        )[0],
       })
     }
 
@@ -276,23 +355,30 @@ function chunkArray<T>(array: T[], chunkSize: number): T[][] {
   return result
 }
 
-async function processCalls(calls: Multicall3.CallStruct[], chunkSize = 30): Promise<string[]> {
-  const callChunks = chunkArray(calls, chunkSize)
-  let callResults = []
-  logger.info(`Processing ${calls.length} calls in ${callChunks.length} chunks`)
+async function processCalls(callsArray: PoolMulticall[], chunkSize = 30): Promise<PoolMulticall[]> {
+  const callChunks = chunkArray(callsArray, chunkSize)
+  // let callResults = []
+  logger.info(`Processing ${callsArray.length} calls in ${callChunks.length} chunks`)
   for (let i = 0; i < callChunks.length; i++) {
     const chunk = callChunks[i]
     const multicall = MulticallAbi__factory.connect(multicallAddress, api as unknown as Provider)
-    logger.info(`Fetching ${chunk.length * i} to ${chunk.length * (i + 1)} of ${calls.length}`)
+    logger.info(`Fetching ${chunk.length * i} to ${chunk.length * (i + 1)} of ${callsArray.length}`)
     let results = []
     try {
-      results = await multicall.callStatic.tryAggregate(true, chunk)
-      callResults = [...callResults, ...results.map((result) => result[1])]
-      logger.info(`Fetched ${callResults.length} of ${calls.length} calls`)
+      const calls = chunk.map((call) => call.call)
+      results = await multicall.callStatic.aggregate(calls)
+      logger.info(`Fetched ${results.length} results`)
+      logger.info(`results[1]: ${results[1]}`)
+      logger.info(`results[1].legth: ${results[1].length}`)
+      logger.info(`results[1][0]: ${results[1][0]}`)
+      logger.info(`results[1][0].length: ${results[1][0].length}`)
+      results[1].map((result, i) => (callsArray[i].result = result))
+      // callResults = [...callResults, ...results.map((result) => result[1])]
+      // logger.info(`Fetched ${callResults.length} of ${calls.length} calls`)
     } catch (e) {
       logger.info(`Error fetching chunk ${i}: ${e}`)
     }
   }
 
-  return callResults
+  return callsArray
 }
