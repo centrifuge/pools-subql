@@ -12,7 +12,7 @@ dataSources:
     options:
       address: '0x78E9e622A57f70F1E0Ec652A4931E4e278e58142'
   - kind: ethereum/Runtime
-    startBlock: 16242300
+    startBlock: 11063000
     options:
       abi: navFeed
     assets:

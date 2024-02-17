@@ -160,7 +160,6 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
   const newLoans = await getNewLoans(existingLoans, shelf)
   logger.info(`Found ${newLoans.length} new loans for pool ${poolId}`)
 
-  logger.info('getting nftIds')
   const nftIdCalls: PoolMulticall[] = []
   for (const loanIndex of newLoans) {
     nftIdCalls.push({
@@ -173,7 +172,6 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
       result: '',
     })
   }
-  logger.info(`nftIdCalls.length: ${nftIdCalls.length}`)
   if (nftIdCalls.length > 0) {
     const newLoanData: NewLoanData[] = []
     const nftIdResponses = await processCalls(nftIdCalls)
@@ -184,11 +182,8 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
           nftId: NavfeedAbi__factory.createInterface().decodeFunctionResult('nftID', response.result)[0],
         }
         newLoanData.push(data)
-        logger.info('pushed data')
       }
     }
-    logger.info(`newLoanData.length: ${newLoanData.length}`)
-    logger.info(`newLoanData[0]: ${newLoanData[0]}`)
 
     // Ignore Blocktower pools, since their loans have no maturity dates
     const isBlocktower = [
@@ -197,7 +192,6 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
       '0x90040f96ab8f291b6d43a8972806e977631affde',
       '0x55d86d51ac3bcab7ab7d2124931fba106c8b60c7',
     ].includes(poolId)
-    logger.info(`isBlocktower: ${isBlocktower}`)
 
     if (!isBlocktower) {
       const maturityDateCalls: PoolMulticall[] = []
@@ -212,12 +206,8 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
           result: '',
         })
       }
-      logger.info(`maturityDateCalls.length: ${maturityDateCalls.length}`)
       const maturityDateResponses = await processCalls(maturityDateCalls)
-      logger.info(`maturityDateResponses.length: ${maturityDateResponses.length}`)
       maturityDateResponses.map((response) => {
-        logger.info(`response.id: ${response.id}`)
-        logger.info(`response.result: ${response.result}`)
         if (response.result) {
           newLoanData.find((loan) => loan.id === response.id).maturityDate =
             NavfeedAbi__factory.createInterface().decodeFunctionResult('maturityDate', response.result)[0]
@@ -278,14 +268,8 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
   })
   if (loanDetailsCalls.length > 0) {
     const loanDetailsResponses = await processCalls(loanDetailsCalls)
-    logger.info(`loanDetailsResponses.length: ${loanDetailsResponses.length}`)
-    logger.info('!!!!!!!!!')
     const loanDetails = {}
     for (let i = 0; i < loanDetailsResponses.length; i++) {
-      logger.info(`loanDetailsResponses[${i}].id: ${loanDetailsResponses[i].id} `)
-      logger.info(`loanDetailsResponses[${i}].call.target: ${loanDetailsResponses[i].call.target} `)
-      logger.info(`loanDetailsResponses[${i}].type: ${loanDetailsResponses[i].type} `)
-      logger.info(`loanDetailsResponses[${i}].result: ${loanDetailsResponses[i].result} `)
       if (loanDetailsResponses[i].result) {
         if (!loanDetails[loanDetailsResponses[i].id]) {
           loanDetails[loanDetailsResponses[i].id] = {}
@@ -295,12 +279,14 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
             'nftLocked',
             loanDetailsResponses[i].result
           )[0]
-        } else if (loanDetailsResponses[i].type === 'debt') {
+        }
+        if (loanDetailsResponses[i].type === 'debt') {
           loanDetails[loanDetailsResponses[i].id].debt = PileAbi__factory.createInterface().decodeFunctionResult(
             'debt',
             loanDetailsResponses[i].result
           )[0]
-        } else if (loanDetailsResponses[i].type === 'loanRates') {
+        }
+        if (loanDetailsResponses[i].type === 'loanRates') {
           loanDetails[loanDetailsResponses[i].id].loanRates = PileAbi__factory.createInterface().decodeFunctionResult(
             'loanRates',
             loanDetailsResponses[i].result
@@ -311,16 +297,17 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
 
     for (let i = 0; i < existingLoans.length; i++) {
       const loan = existingLoans[i]
-      const nftLocked = loanDetails[loan.id].nftLocked
+      const loanIndex = loan.id.split('-')[1]
+      const nftLocked = loanDetails[loanIndex].nftLocked
       if (!nftLocked) {
         loan.isActive = false
         loan.status = LoanStatus.CLOSED
         loan.save()
       }
       const prevDebt = loan.outstandingDebt
-      const debt = loanDetails[loan.id].debt
+      const debt = loanDetails[loanIndex].debt
       loan.outstandingDebt = debt.toBigInt()
-      const rateGroup = loanDetails[loan.id].loanRates
+      const rateGroup = loanDetails[loanIndex].loanRates
       const pileContract = PileAbi__factory.connect(pile, api as unknown as Provider)
       const rates = await pileContract.rates(rateGroup)
       loan.interestRatePerSec = rates.ratePerSecond.toBigInt()
