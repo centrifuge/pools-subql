@@ -216,8 +216,12 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
       const maturityDateResponses = await processCalls(maturityDateCalls)
       logger.info(`maturityDateResponses.length: ${maturityDateResponses.length}`)
       maturityDateResponses.map((response) => {
-        newLoanData.find((loan) => loan.id === response.id).maturityDate =
-          NavfeedAbi__factory.createInterface().decodeFunctionResult('maturityDate', response.result)[0]
+        logger.info(`response.id: ${response.id}`)
+        logger.info(`response.result: ${response.result}`)
+        if (response.result) {
+          newLoanData.find((loan) => loan.id === response.id).maturityDate =
+            NavfeedAbi__factory.createInterface().decodeFunctionResult('maturityDate', response.result)[0]
+        }
       })
       // logger.info(`maturityDates.length: ${maturityDates.length}`)
     }
@@ -241,7 +245,7 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
   // update all loans
   existingLoans = (await LoanService.getByPoolId(poolId)).filter((loan) => loan.status !== LoanStatus.CLOSED)
   logger.info(`Updating ${existingLoans.length} existing loans for pool ${poolId}`)
-  const loanDetailsCalls = []
+  const loanDetailsCalls: PoolMulticall[] = []
   existingLoans.forEach((loan) => {
     const loanIndex = loan.id.split('-')[1]
     loanDetailsCalls.push({
@@ -254,7 +258,7 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
       result: '',
     })
     loanDetailsCalls.push({
-      pool: tinlakePools.find((p) => p.id === poolId),
+      id: loanIndex,
       type: 'debt',
       call: {
         target: pile,
@@ -263,7 +267,7 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
       result: '',
     })
     loanDetailsCalls.push({
-      pool: tinlakePools.find((p) => p.id === poolId),
+      id: loanIndex,
       type: 'loanRates',
       call: {
         target: pile,
@@ -274,33 +278,49 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
   })
   if (loanDetailsCalls.length > 0) {
     const loanDetailsResponses = await processCalls(loanDetailsCalls)
-    const loanDetails = []
-    for (let i = 0; i < loanDetailsResponses.length; i += 3) {
-      loanDetails.push({
-        nftLocked: ShelfAbi__factory.createInterface().decodeFunctionResult(
-          'nftLocked',
-          loanDetailsResponses[i].result
-        )[0],
-        debt: PileAbi__factory.createInterface().decodeFunctionResult('debt', loanDetailsResponses[i + 1].result)[0],
-        loanRates: PileAbi__factory.createInterface().decodeFunctionResult(
-          'loanRates',
-          loanDetailsResponses[i + 2].result
-        )[0],
-      })
+    logger.info(`loanDetailsResponses.length: ${loanDetailsResponses.length}`)
+    logger.info('!!!!!!!!!')
+    const loanDetails = {}
+    for (let i = 0; i < loanDetailsResponses.length; i++) {
+      logger.info(`loanDetailsResponses[${i}].id: ${loanDetailsResponses[i].id} `)
+      logger.info(`loanDetailsResponses[${i}].call.target: ${loanDetailsResponses[i].call.target} `)
+      logger.info(`loanDetailsResponses[${i}].type: ${loanDetailsResponses[i].type} `)
+      logger.info(`loanDetailsResponses[${i}].result: ${loanDetailsResponses[i].result} `)
+      if (loanDetailsResponses[i].result) {
+        if (!loanDetails[loanDetailsResponses[i].id]) {
+          loanDetails[loanDetailsResponses[i].id] = {}
+        }
+        if (loanDetailsResponses[i].type !== 'nftLocked') {
+          loanDetails[loanDetailsResponses[i].id].nftLocked = ShelfAbi__factory.createInterface().decodeFunctionResult(
+            'nftLocked',
+            loanDetailsResponses[i].result
+          )[0]
+        } else if (loanDetailsResponses[i].type === 'debt') {
+          loanDetails[loanDetailsResponses[i].id].debt = PileAbi__factory.createInterface().decodeFunctionResult(
+            'debt',
+            loanDetailsResponses[i].result
+          )[0]
+        } else if (loanDetailsResponses[i].type === 'loanRates') {
+          loanDetails[loanDetailsResponses[i].id].loanRates = PileAbi__factory.createInterface().decodeFunctionResult(
+            'loanRates',
+            loanDetailsResponses[i].result
+          )[0]
+        }
+      }
     }
 
     for (let i = 0; i < existingLoans.length; i++) {
       const loan = existingLoans[i]
-      const nftLocked = loanDetails[i].nftLocked
+      const nftLocked = loanDetails[loan.id].nftLocked
       if (!nftLocked) {
         loan.isActive = false
         loan.status = LoanStatus.CLOSED
         loan.save()
       }
       const prevDebt = loan.outstandingDebt
-      const debt = loanDetails[i].debt
+      const debt = loanDetails[loan.id].debt
       loan.outstandingDebt = debt.toBigInt()
-      const rateGroup = loanDetails[i].loanRates
+      const rateGroup = loanDetails[loan.id].loanRates
       const pileContract = PileAbi__factory.connect(pile, api as unknown as Provider)
       const rates = await pileContract.rates(rateGroup)
       loan.interestRatePerSec = rates.ratePerSecond.toBigInt()
@@ -367,14 +387,8 @@ async function processCalls(callsArray: PoolMulticall[], chunkSize = 30): Promis
     try {
       const calls = chunk.map((call) => call.call)
       results = await multicall.callStatic.aggregate(calls)
-      logger.info(`Fetched ${results.length} results`)
-      logger.info(`results[1]: ${results[1]}`)
-      logger.info(`results[1].legth: ${results[1].length}`)
-      logger.info(`results[1][0]: ${results[1][0]}`)
-      logger.info(`results[1][0].length: ${results[1][0].length}`)
-      results[1].map((result, i) => (callsArray[i].result = result))
-      // callResults = [...callResults, ...results.map((result) => result[1])]
-      // logger.info(`Fetched ${callResults.length} of ${calls.length} calls`)
+      logger.info(`Fetched ${results[1].length} results`)
+      results[1].map((result, j) => (callsArray[i * chunkSize + j].result = result))
     } catch (e) {
       logger.info(`Error fetching chunk ${i}: ${e}`)
     }
