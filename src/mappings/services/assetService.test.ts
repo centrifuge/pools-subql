@@ -1,4 +1,5 @@
-import { LoanService } from './loanService'
+import { AssetType, AssetValuationMethod } from '../../types'
+import { AssetService } from './assetService'
 
 const poolId = '1111111111'
 const loanId = 'ABCD'
@@ -15,7 +16,15 @@ api.query['uniques'] = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as any
 
-const loan = LoanService.init(poolId, loanId, nftClassId, nftItemId, timestamp)
+const loan = AssetService.init(
+  poolId,
+  loanId,
+  AssetType.OffchainCash,
+  AssetValuationMethod.Cash,
+  nftClassId,
+  nftItemId,
+  timestamp
+)
 
 describe('Given a new loan, when initialised', () => {
   test('then type is inactive', () => {
@@ -32,12 +41,12 @@ describe('Given a new loan, when initialised', () => {
 
   test('when the metadata is fetched, then the correct values are set', async () => {
     await loan.updateItemMetadata()
-    expect(api.query.uniques.instanceMetadataOf).toBeCalledWith(nftClassId, nftItemId)
+    expect(api.query.uniques.instanceMetadataOf).toHaveBeenCalledWith(nftClassId, nftItemId)
     expect(loan.metadata).toBe(metadata)
   })
 
   test('then it can be saved to the database with the correct id format', async () => {
     await loan.save()
-    expect(store.set).toHaveBeenCalledWith('Loan', `${poolId}-${loanId}`, expect.anything())
+    expect(store.set).toHaveBeenCalledWith('Asset', `${poolId}-${loanId}`, expect.anything())
   })
 })

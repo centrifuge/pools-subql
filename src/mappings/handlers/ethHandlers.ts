@@ -1,4 +1,4 @@
-import { Loan, LoanStatus } from '../../types'
+import { AssetStatus, AssetType, AssetValuationMethod } from '../../types'
 import { EthereumBlock } from '@subql/types-ethereum'
 import { DAIMainnetAddress, tinlakePools } from '../../config'
 import { errorHandler } from '../../helpers/errorHandler'
@@ -8,7 +8,7 @@ import { BlockchainService } from '../services/blockchainService'
 import { ShelfAbi__factory, NavfeedAbi__factory, ReserveAbi__factory, PileAbi__factory } from '../../types/contracts'
 import { Provider } from '@ethersproject/providers'
 import { TimekeeperService, getPeriodStart } from '../../helpers/timekeeperService'
-import { LoanService } from '../services/loanService'
+import { AssetService } from '../services/assetService'
 import { evmStateSnapshotter } from '../../helpers/stateSnapshot'
 
 const timekeeper = TimekeeperService.init()
@@ -80,7 +80,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
 }
 
 async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile: string, navFeed: string) {
-  let existingLoans = await LoanService.getByPoolId(poolId)
+  let existingLoans = await AssetService.getByPoolId(poolId)
   logger.info(`Existing loans for pool ${poolId}: ${existingLoans.length}`)
   let loanIndex = existingLoans.length || 1
   const contractLoans = []
@@ -108,24 +108,31 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
   const newLoans = contractLoans.filter((loanIndex) => !existingLoans.includes(loanIndex))
   // create new loans
   for (const loanIndex of newLoans) {
-    const loan = new Loan(`${poolId}-${loanIndex}`, blockDate, poolId, true, LoanStatus.CREATED)
-
     const navFeedContract = NavfeedAbi__factory.connect(navFeed, api as unknown as Provider)
     const nftId = await navFeedContract['nftID(uint256)'](loanIndex)
     const maturityDate = await navFeedContract.maturityDate(nftId)
+    const loan = AssetService.init(
+      poolId,
+      loanIndex,
+      AssetType.Other,
+      AssetValuationMethod.DiscountedCashFlow,
+      undefined,
+      undefined,
+      blockDate
+    )
     loan.actualMaturityDate = new Date(Number(maturityDate) * 1000)
     loan.save()
   }
 
   // update all loans
-  existingLoans = await LoanService.getByPoolId(poolId)
+  existingLoans = await AssetService.getByPoolId(poolId)
   for (const loan of existingLoans) {
     const shelfContract = ShelfAbi__factory.connect(shelf, api as unknown as Provider)
     const loanIndex = loan.id.split('-')[1]
     const nftLocked = await shelfContract.nftLocked(loanIndex)
     if (!nftLocked) {
       loan.isActive = false
-      loan.status = LoanStatus.CLOSED
+      loan.status = AssetStatus.CLOSED
       loan.save()
     }
     const pileContract = PileAbi__factory.connect(pile, api as unknown as Provider)

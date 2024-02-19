@@ -103,6 +103,13 @@ dataSources:
         - handler: handleLoanDebtTransferred
           kind: substrate/EventHandler
           filter:
+            specVersion: [1025]
+            module: loans
+            method: DebtTransferred
+        - handler: handleLoanDebtTransferred1024
+          kind: substrate/EventHandler
+          filter:
+            specVersion: [null, 1024]
             module: loans
             method: DebtTransferred
         - handler: handleTokenTransfer

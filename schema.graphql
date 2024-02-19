@@ -42,9 +42,9 @@ type Pool @entity {
   
   sumInvestedAmountByPeriod: BigInt
   sumRedeemedAmountByPeriod: BigInt
-  sumNumberOfLoansByPeriod: BigInt
+  sumNumberOfAssetsByPeriod: BigInt
 
-  sumNumberOfActiveLoans: BigInt
+  sumNumberOfActiveAssets: BigInt
   sumDebtOverdue: BigInt
   sumDebtWrittenOffByPeriod: BigInt
 
@@ -54,7 +54,7 @@ type Pool @entity {
   sumPrincipalRepaidAmount: BigInt
   sumInterestRepaidAmount: BigInt
   sumUnscheduledRepaidAmount: BigInt
-  sumNumberOfLoans: BigInt
+  sumNumberOfAssets: BigInt
 
   tranches: [Tranche] @derivedFrom(field: "pool")
 }
@@ -85,9 +85,9 @@ type PoolSnapshot @entity {
   
   sumInvestedAmountByPeriod: BigInt
   sumRedeemedAmountByPeriod: BigInt
-  sumNumberOfLoansByPeriod: BigInt
+  sumNumberOfAssetsByPeriod: BigInt
 
-  sumNumberOfActiveLoans: BigInt
+  sumNumberOfActiveAssets: BigInt
   sumDebtOverdue: BigInt
   sumDebtWrittenOffByPeriod: BigInt
 
@@ -97,7 +97,7 @@ type PoolSnapshot @entity {
   sumPrincipalRepaidAmount: BigInt
   sumInterestRepaidAmount: BigInt
   sumUnscheduledRepaidAmount: BigInt
-  sumNumberOfLoans: BigInt
+  sumNumberOfAssets: BigInt
 }
 
 type Tranche @entity {
@@ -243,14 +243,14 @@ type InvestorTransaction @entity {
   transactionFee: BigInt
 }
 
-enum BorrowerTransactionType {
+enum AssetTransactionType {
   CREATED
   BORROWED
   REPAID
   CLOSED
 }
 
-type BorrowerTransaction @entity {
+type AssetTransaction @entity {
   id: ID! # extrinsic hash - epoch number - transaction type
   timestamp: Date!
   pool: Pool! @index
@@ -259,8 +259,8 @@ type BorrowerTransaction @entity {
   account: Account! @index
   epochNumber: Int!
   epoch: Epoch! @index
-  loan: Loan!
-  type: BorrowerTransactionType!
+  asset: Asset!
+  type: AssetTransactionType!
 
   # applies to all BORROWED and REPAID transactions
   amount: BigInt
@@ -268,7 +268,7 @@ type BorrowerTransaction @entity {
   interestAmount: BigInt
   unscheduledAmount: BigInt
 
-  # only applies to BORROWED and REPAID transactions for external loans
+  # only applies to BORROWED and REPAID transactions for external assets
   quantity: BigInt
   settlementPrice: BigInt
 }
@@ -281,7 +281,7 @@ type Account @entity {
   pureProxies: [PureProxy] @derivedFrom(field: "account")
 
   investorTransactions: [InvestorTransaction] @derivedFrom(field: "account")
-  borrowerTransactions: [BorrowerTransaction] @derivedFrom(field: "account")
+  assetTransactions: [AssetTransaction] @derivedFrom(field: "account")
 
   outstandingOrders: [OutstandingOrder] @derivedFrom(field: "account")
   trancheBalances: [TrancheBalance] @derivedFrom(field: "account")
@@ -304,15 +304,31 @@ type TrancheBalance @entity {
   sumClaimedCurrency: BigInt!
 }
 
-enum LoanStatus {
+enum AssetStatus {
   CREATED
   ACTIVE
   CLOSED
 }
 
-type Loan @entity {
-  id: ID! # poolId - loanId
+enum AssetType {
+  OnchainCash
+  OffchainCash
+  Other
+}
+
+enum AssetValuationMethod {
+  Cash
+  DiscountedCashFlow
+  OutstandingDebt
+  Oracle
+}
+
+type Asset @entity {
+  id: ID! # poolId - assetId
   createdAt: Date!
+
+  type: AssetType!
+  valuationMethod: AssetValuationMethod!
 
   collateralNftClassId: BigInt
   collateralNftItemId: BigInt
@@ -332,7 +348,7 @@ type Loan @entity {
   pool: Pool!
 
   isActive: Boolean! @index
-  status: LoanStatus!
+  status: AssetStatus!
 
   outstandingPrincipal: BigInt
   outstandingInterest: BigInt
@@ -357,9 +373,9 @@ type Loan @entity {
   penaltyInterestRatePerSec: BigInt
 }
 
-type LoanSnapshot @entity {
+type AssetSnapshot @entity {
   id: ID! # poolId - loanId - blockNumber
-  loan: Loan!
+  asset: Asset!
 
   timestamp: Date!
   blockNumber: Int!
