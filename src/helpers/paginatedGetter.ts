@@ -3,22 +3,20 @@ import type { Entity } from '@subql/types-core'
 
 type StoreArgs = Parameters<typeof store.getByField>
 
-async function _paginatedGetter(
-  entity: StoreArgs[0],
-  field: StoreArgs[1],
-  value: StoreArgs[2]
-): Promise<Entity[]> {
+async function _paginatedGetter(entity: StoreArgs[0], field: StoreArgs[1], value: StoreArgs[2]): Promise<Entity[]> {
   let results: Entity[] = []
   const batch = 100
   let amount = 0
+  let entities: Entity[]
   do {
-    const entities: Entity[] = (await store.getByField(entity, field, value, {
+    entities = (await store.getByField(entity, field, value, {
       offset: amount,
       limit: batch,
     })) as Entity[]
+    logger.info(`Got ${entities.length} entities`)
     results = results.concat(entities)
-    amount += results.length
-  } while (results.length === batch)
+    amount += entities.length
+  } while (entities.length > 0)
   return results
 }
 export const paginatedGetter = errorHandler(_paginatedGetter)
