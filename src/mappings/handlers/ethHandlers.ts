@@ -100,14 +100,15 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
       }
       if (poolUpdateCalls.length > 0) {
         const callResults = await processCalls(poolUpdateCalls)
-        for (const callResult of callResults) {
+        for (let i = 0; i < callResults.length; i++) {
+          const callResult = callResults[i]
           const tinlakePool = tinlakePools.find((p) => p.id === callResult.id)
           const latestNavFeed = getLatestContract(tinlakePool.navFeed, blockNumber)
           const latestReserve = getLatestContract(tinlakePool.reserve, blockNumber)
           const pool = await PoolService.getOrSeed(tinlakePool.id)
 
           // Update pool
-          if (latestNavFeed) {
+          if (callResult.type === 'currentNAV' && latestNavFeed) {
             const currentNAV = NavfeedAbi__factory.createInterface().decodeFunctionResult(
               'currentNAV',
               callResult.result
@@ -116,12 +117,13 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
             await pool.save()
             logger.info(`Updating pool ${tinlakePool.id} with portfolioValuation: ${pool.portfolioValuation}`)
           }
-          if (latestReserve) {
+          if (callResult.type === 'totalBalance' && latestReserve) {
             const totalBalance = ReserveAbi__factory.createInterface().decodeFunctionResult(
               'totalBalance',
               callResult.result
             )[0]
             pool.totalReserve = totalBalance.toBigInt()
+            await pool.save()
             logger.info(`Updating pool ${tinlakePool.id} with totalReserve: ${pool.totalReserve}`)
           }
 
@@ -299,13 +301,17 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
       const loan = existingLoans[i]
       const loanIndex = loan.id.split('-')[1]
       const nftLocked = loanDetails[loanIndex].nftLocked
-      if (!nftLocked) {
+      const prevDebt = loan.outstandingDebt
+      const debt = loanDetails[loanIndex].debt
+      if (debt > BigInt(0)) {
+        loan.status = LoanStatus.ACTIVE
+      }
+      // if the loan is not locked or the debt is 0 and the loan was active before, close it
+      if (!nftLocked || (loan.status === LoanStatus.ACTIVE && debt.toBigInt() === BigInt(0))) {
         loan.isActive = false
         loan.status = LoanStatus.CLOSED
         loan.save()
       }
-      const prevDebt = loan.outstandingDebt
-      const debt = loanDetails[loanIndex].debt
       loan.outstandingDebt = debt.toBigInt()
       const rateGroup = loanDetails[loanIndex].loanRates
       const pileContract = PileAbi__factory.connect(pile, api as unknown as Provider)
@@ -313,7 +319,6 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
       loan.interestRatePerSec = rates.ratePerSecond.toBigInt()
 
       if (prevDebt > loan.outstandingDebt) {
-        loan.status = LoanStatus.ACTIVE
         loan.repaidAmountByPeriod = prevDebt - loan.outstandingDebt
       }
       logger.info(`Updating loan ${loan.id} for pool ${poolId}`)
@@ -364,17 +369,13 @@ function chunkArray<T>(array: T[], chunkSize: number): T[][] {
 
 async function processCalls(callsArray: PoolMulticall[], chunkSize = 30): Promise<PoolMulticall[]> {
   const callChunks = chunkArray(callsArray, chunkSize)
-  // let callResults = []
-  logger.info(`Processing ${callsArray.length} calls in ${callChunks.length} chunks`)
   for (let i = 0; i < callChunks.length; i++) {
     const chunk = callChunks[i]
     const multicall = MulticallAbi__factory.connect(multicallAddress, api as unknown as Provider)
-    logger.info(`Fetching ${chunk.length * i} to ${chunk.length * (i + 1)} of ${callsArray.length}`)
     let results = []
     try {
       const calls = chunk.map((call) => call.call)
       results = await multicall.callStatic.aggregate(calls)
-      logger.info(`Fetched ${results[1].length} results`)
       results[1].map((result, j) => (callsArray[i * chunkSize + j].result = result))
     } catch (e) {
       logger.info(`Error fetching chunk ${i}: ${e}`)

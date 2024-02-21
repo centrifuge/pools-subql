@@ -13,7 +13,6 @@ async function _paginatedGetter(entity: StoreArgs[0], field: StoreArgs[1], value
       offset: amount,
       limit: batch,
     })) as Entity[]
-    logger.info(`Got ${entities.length} entities`)
     results = results.concat(entities)
     amount += entities.length
   } while (entities.length > 0)
