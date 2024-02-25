@@ -1,4 +1,4 @@
 export {}
 declare global {
-  function getNodeChainId(): Promise<string>
+  function getNodeEvmChainId(): Promise<string>
 }

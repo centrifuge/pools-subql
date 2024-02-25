@@ -1,7 +1,15 @@
 import { Option, u128, Vec } from '@polkadot/types'
 import { bnToBn, nToBigInt } from '@polkadot/util'
 import { paginatedGetter } from '../../helpers/paginatedGetter'
-import { ExtendedCall, ExtendedRpc, NavDetails, PoolDetails, PoolMetadata, TrancheDetails } from '../../helpers/types'
+import {
+  ExtendedCall,
+  ExtendedRpc,
+  NavDetails,
+  PoolDetails,
+  PoolMetadata,
+  PoolNav,
+  TrancheDetails,
+} from '../../helpers/types'
 import { Pool } from '../../types'
 
 export class PoolService extends Pool {
@@ -87,8 +95,7 @@ export class PoolService extends Pool {
   }
 
   static async getById(poolId: string) {
-    const pool = (await this.get(poolId)) as PoolService
-    return pool
+    return this.get(poolId) as Promise<PoolService>
   }
 
   static async getAll() {
@@ -97,6 +104,7 @@ export class PoolService extends Pool {
   }
 
   static async getActivePools() {
+    logger.info('Fetching active pools')
     const pools = (await paginatedGetter('Pool', 'isActive', true)) as PoolService[]
     return pools.map((pool) => this.create(pool) as PoolService)
   }
@@ -113,9 +121,32 @@ export class PoolService extends Pool {
     return this
   }
 
-  public async updatePortfolioValuation() {
+  public updatePortfolioValuation() {
+    const specVersion = api.runtimeVersion.specVersion.toNumber()
+    const specName = api.runtimeVersion.specName.toString()
+    switch (specName) {
+      case 'centrifuge-devel':
+        return specVersion < 1038 ? this.updatePortfolioValuationQuery() : this.updatePortfolioValuationCall()
+      default:
+        return specVersion < 1025 ? this.updatePortfolioValuationQuery() : this.updatePortfolioValuationCall()
+    }
+  }
+
+  private async updatePortfolioValuationQuery() {
+    logger.info(`Updating portfolio valuation for pool: ${this.id} (state)`)
     const navResponse = await api.query.loans.portfolioValuation<NavDetails>(this.id)
     this.portfolioValuation = navResponse.value.toBigInt()
+    return this
+  }
+
+  private async updatePortfolioValuationCall() {
+    logger.info(`Updating portfolio valuation for pool: ${this.id} (runtime)`)
+    const apiCall = api.call as ExtendedCall
+    logger.info(JSON.stringify(apiCall.poolsApi))
+    const navResponse = await apiCall.poolsApi.nav(this.id)
+    this.portfolioValuation = navResponse
+      .unwrapOr<Pick<PoolNav, 'total'>>({ total: api.registry.createType('Balance', 0) })
+      .total.toBigInt()
     return this
   }
 

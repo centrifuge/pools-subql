@@ -30,6 +30,7 @@ async function _stateSnapshotter(
   const entitySaves: Promise<void>[] = []
   logger.info(`Performing snapshots of ${stateModel}`)
   const stateEntities = (await paginatedGetter(stateModel, filterKey, filterValue)) as ResettableEntity[]
+  if(stateEntities.length === 0) logger.info(`No ${stateModel} to snapshot!`)
   for (const stateEntity of stateEntities) {
     const blockNumber = block.number
     const { id, ...copyStateEntity } = stateEntity

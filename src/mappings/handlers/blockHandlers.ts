@@ -63,6 +63,7 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
     await substrateStateSnapshotter('Pool', 'PoolSnapshot', block, 'poolId', 'isActive', true)
     await substrateStateSnapshotter('Tranche', 'TrancheSnapshot', block, 'trancheId', 'isActive', true)
     await substrateStateSnapshotter('Asset', 'AssetSnapshot', block, 'assetId', 'isActive', true)
+    await substrateStateSnapshotter('PoolFee', 'PoolFeeSnapshot', block, 'poolFeeId', 'isActive', true)
 
     //Update tracking of period and continue
     await (await timekeeper).update(blockPeriodStart)

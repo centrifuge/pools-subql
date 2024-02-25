@@ -447,3 +447,79 @@ type CurrencyBalance @entity {
 type Blockchain @entity {
   id: ID! #EVM chainId
 }
+
+enum PoolFeeStatus {
+  PROPOSED
+  ADDED
+  REMOVED
+}
+
+enum PoolFeeType {
+  Fixed
+  ChargedUpTo
+}
+
+type PoolFee @entity {
+  id: ID! # poolId - feeId
+  feeId: String!
+  type: PoolFeeType!
+  status: PoolFeeStatus!
+  isActive: Boolean! @index
+
+  createdAt: Date
+  createdAtBlockNumber: Int
+  createdAtEpoch: Int
+
+  pool: Pool! @index
+
+  sumChargedAmount: BigInt #Applies to Fixed ONLY
+  sumAccruedAmount: BigInt #Applies toChargedUpTo ONLY
+  sumPaidAmount: BigInt #Applies to All
+  pendingAmount: BigInt #Applies to All
+
+  sumChargedAmountByPeriod: BigInt #Applies to Fixed ONLY
+  sumAccruedAmountByPeriod: BigInt #Applies toChargedUpTo ONLY
+  sumPaidAmountByPeriod: BigInt #Applies to All
+}
+
+type PoolFeeSnapshot @entity {
+  id: ID! # poolId - feeId - blockNumber
+  feeId: String!
+  poolFee: PoolFee! @index
+
+  timestamp: Date!
+  blockNumber: Int!
+  periodStart: Date! @index
+
+  sumChargedAmount: BigInt #Applies to Fixed ONLY
+  sumAccruedAmount: BigInt #Applies toChargedUpTo ONLY
+  sumPaidAmount: BigInt #Applies to All
+  pendingAmount: BigInt #Applies to All
+
+  sumChargedAmountByPeriod: BigInt #Applies to Fixed ONLY
+  sumAccruedAmountByPeriod: BigInt #Applies toChargedUpTo ONLY
+  sumPaidAmountByPeriod: BigInt #Applies to All
+}
+
+enum PoolFeeTransactionType {
+  PROPOSED
+  ADDED
+  REMOVED
+  CHARGED
+  UNCHARGED
+  PAID
+  ACCRUED
+}
+
+type PoolFeeTransaction @entity {
+  id: ID! # extrinsicHash - epochNumber  - transaction type
+  poolFee: PoolFee! @index
+  type: PoolFeeTransactionType!
+
+  timestamp: Date!
+  blockNumber: Int!
+  epochNumber: Int!
+
+  amount: BigInt
+
+}
