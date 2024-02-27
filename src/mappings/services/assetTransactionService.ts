@@ -13,6 +13,8 @@ export interface AssetTransactionData {
   readonly settlementPrice?: bigint
   readonly timestamp: Date
   readonly assetId: string
+  readonly fromAsset?: string
+  readonly toAsset?: string
 }
 
 export class AssetTransactionService extends AssetTransaction {
