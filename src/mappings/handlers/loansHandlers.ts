@@ -279,6 +279,8 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
     settlementPrice: _repaidAmount.principal.isExternal
       ? _repaidAmount.principal.asExternal.settlementPrice.toBigInt()
       : null,
+    fromAsset: fromLoanId.toString(),
+    toAsset: toLoanId.toString(),
   })
   await repaidAt.save()
 
@@ -289,6 +291,8 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
     principalAmount: borrowPrincipalAmount,
     quantity: _borrowAmount.isExternal ? _borrowAmount.asExternal.quantity.toBigInt() : null,
     settlementPrice: _borrowAmount.isExternal ? _borrowAmount.asExternal.settlementPrice.toBigInt() : null,
+    fromAsset: fromLoanId.toString(),
+    toAsset: toLoanId.toString(),
   })
   await borrowedAt.save()
 }
