@@ -8,7 +8,7 @@ import { OutstandingOrderService } from '../services/outstandingOrderService'
 import { InvestorTransactionService } from '../services/investorTransactionService'
 import { CurrencyService, currencyFormatters } from '../services/currencyService'
 import { TrancheBalanceService } from '../services/trancheBalanceService'
-import { BlockchainService } from '../services/blockchainService'
+import { BlockchainService, LOCAL_CHAIN_ID } from '../services/blockchainService'
 
 export const handlePoolCreated = errorHandler(_handlePoolCreated)
 async function _handlePoolCreated(event: SubstrateEvent<PoolCreatedEvent>): Promise<void> {
@@ -18,7 +18,7 @@ async function _handlePoolCreated(event: SubstrateEvent<PoolCreatedEvent>): Prom
       `created in block ${event.block.block.header.number}`
   )
 
-  const blockchain = await BlockchainService.getOrInit()
+  const blockchain = await BlockchainService.getOrInit(LOCAL_CHAIN_ID)
   const currency = await CurrencyService.getOrInit(
     blockchain.id,
     essence.currency.type,
@@ -26,7 +26,7 @@ async function _handlePoolCreated(event: SubstrateEvent<PoolCreatedEvent>): Prom
   )
 
   // Initialise Pool
-  const pool = await PoolService.getOrSeed(poolId.toString(), false)
+  const pool = await PoolService.getOrSeed(poolId.toString(10), false)
   await pool.init(
     currency.id,
     essence.maxReserve.toBigInt(),
@@ -60,7 +60,7 @@ async function _handlePoolCreated(event: SubstrateEvent<PoolCreatedEvent>): Prom
 
   // Initialise Epoch
   const trancheIds = tranches.map((tranche) => tranche.trancheId)
-  const epoch = await EpochService.init(poolId.toString(), pool.currentEpoch, trancheIds, event.block.timestamp)
+  const epoch = await EpochService.init(pool.id, pool.currentEpoch, trancheIds, event.block.timestamp)
   await epoch.saveWithStates()
 }
 
@@ -69,9 +69,7 @@ async function _handlePoolUpdated(event: SubstrateEvent<PoolUpdatedEvent>): Prom
   const [poolId] = event.event.data
   logger.info(`Pool ${poolId.toString()} updated on block ${event.block.block.header.number}`)
 
-  const chainId = await getNodeChainId()
-  const blockchain = await BlockchainService.getOrInit(chainId)
-
+  const blockchain = await BlockchainService.getOrInit(LOCAL_CHAIN_ID)
   const pool = await PoolService.getById(poolId.toString())
   if (!pool) throw missingPool
 
@@ -155,7 +153,7 @@ async function _handleEpochExecuted(event: SubstrateEvent<EpochClosedExecutedEve
   const tranches = await TrancheService.getByPoolId(poolId.toString())
   const nextEpoch = await EpochService.getById(poolId.toString(), epochId.toNumber() + 1)
   for (const tranche of tranches) {
-    const epochState = epoch.states.find((epochState) => epochState.trancheId === tranche.trancheId)
+    const epochState = epoch.getStates().find((epochState) => epochState.trancheId === tranche.trancheId)
     await tranche.updateSupply()
     await tranche.updatePrice(epochState.tokenPrice, event.block.block.header.number.toNumber())
     await tranche.updateFulfilledInvestOrders(epochState.sumFulfilledInvestOrders)

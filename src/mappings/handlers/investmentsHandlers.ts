@@ -14,7 +14,7 @@ async function _handleInvestOrderUpdated(event: SubstrateEvent<OrderUpdatedEvent
   const [{ poolId, trancheId }, , address, newAmount] = event.event.data
   logger.info(
     `Invest order updated for tranche ${poolId.toString()}-${trancheId.toString()}. ` +
-      `New: ${newAmount.toString()} ` +
+      `amount: ${newAmount.toString()} ` +
       `block ${event.block.block.header.number.toString()}`
   )
 
@@ -75,7 +75,7 @@ async function _handleRedeemOrderUpdated(event: SubstrateEvent<OrderUpdatedEvent
   const [{ poolId, trancheId }, , address, amount] = event.event.data
   logger.info(
     `Redeem order updated for tranche ${poolId.toString()}-${trancheId.toString()}. ` +
-      `New: ${amount.toString()} Old: HERE} at ` +
+      `amount: ${amount.toString()} at ` +
       `block ${event.block.block.header.number.toString()}`
   )
   // Get corresponding pool
@@ -140,7 +140,7 @@ async function _handleInvestOrdersCollected(event: SubstrateEvent<InvestOrdersCo
       `block ${event.block.block.header.number.toString()} hash:${event.extrinsic.extrinsic.hash.toString()}`
   )
   const account = await AccountService.getOrInit(address.toHex())
-  if (await account.isForeignEvm()) {
+  if (account.isForeignEvm()) {
     logger.info('Skipping Address as collection is from another EVM Chain')
     return
   }
@@ -190,8 +190,8 @@ async function _handleRedeemOrdersCollected(event: SubstrateEvent<RedeemOrdersCo
   )
 
   const account = await AccountService.getOrInit(address.toHex())
-  if (await account.isForeignEvm()) {
-    logger.info('Skipping as Address is EVM')
+  if (account.isForeignEvm()) {
+    logger.info('Skipping Address as collection is from another EVM Chain')
     return
   }
 
