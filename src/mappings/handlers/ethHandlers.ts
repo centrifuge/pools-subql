@@ -220,15 +220,15 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
 
     // create new loans
     for (const { id, maturityDate } of newLoanData) {
-      // logger.info(`maturityDate length: ${maturityDates.length}`)
-      // logger.info(`newLoans length: ${newLoans.length}`)
-      // logger.info(`maturityDate type of: ${typeof maturityDates[i]}`)
-      // logger.info(`mat keys: ${Object.keys(maturityDates[i])}`)
-      // logger.info(`mat values: ${Object.values(maturityDates[i])}`)
       const loan = new Loan(`${poolId}-${id}`, blockDate, poolId, true, LoanStatus.CREATED)
       if (!isBlocktower) {
         loan.actualMaturityDate = new Date((maturityDate as BigNumber).toNumber() * 1000)
       }
+      loan.totalBorrowed = BigInt(0)
+      loan.totalRepaid = BigInt(0)
+      loan.outstandingDebt = BigInt(0)
+      loan.borrowedAmountByPeriod = BigInt(0)
+      loan.repaidAmountByPeriod = BigInt(0)
       loan.save()
     }
     logger.info(`Creating ${newLoans.length} new loans for pool ${poolId}`)
@@ -320,6 +320,11 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
 
       if (prevDebt > loan.outstandingDebt) {
         loan.repaidAmountByPeriod = prevDebt - loan.outstandingDebt
+        loan.totalRepaid += loan.repaidAmountByPeriod
+      }
+      if (prevDebt * (loan.interestRatePerSec / BigInt(10) ** BigInt(27)) * BigInt(86400) < loan.outstandingDebt) {
+        loan.borrowedAmountByPeriod = loan.outstandingDebt - prevDebt
+        loan.totalBorrowed += loan.borrowedAmountByPeriod
       }
       logger.info(`Updating loan ${loan.id} for pool ${poolId}`)
       loan.save()
