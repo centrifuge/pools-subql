@@ -5,7 +5,7 @@ import { substrateStateSnapshotter } from '../../helpers/stateSnapshot'
 import { SNAPSHOT_INTERVAL_SECONDS } from '../../config'
 import { PoolService } from '../services/poolService'
 import { TrancheService } from '../services/trancheService'
-import { LoanService } from '../services/loanService'
+import { AssetService } from '../services/assetService'
 
 const timekeeper = TimekeeperService.init()
 
@@ -48,21 +48,22 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
 
       const activeLoanData = await pool.getPortfolio()
       for (const loanId in activeLoanData) {
-        const loan = await LoanService.getById(pool.id, loanId)
-        await loan.updateActiveLoanData(activeLoanData[loanId])
+        const loan = await AssetService.getById(pool.id, loanId)
+        await loan.updateActiveAssetData(activeLoanData[loanId])
         await loan.save()
 
         if (loan.actualMaturityDate < block.timestamp) await pool.increaseDebtOverdue(loan.outstandingDebt)
       }
 
-      await pool.updateNumberOfActiveLoans(BigInt(Object.keys(activeLoanData).length))
+      await pool.updateNumberOfActiveAssets(BigInt(Object.keys(activeLoanData).length))
       await pool.save()
     }
 
     //Perform Snapshots and reset accumulators
     await substrateStateSnapshotter('Pool', 'PoolSnapshot', block, 'poolId', 'isActive', true)
     await substrateStateSnapshotter('Tranche', 'TrancheSnapshot', block, 'trancheId', 'isActive', true)
-    await substrateStateSnapshotter('Loan', 'LoanSnapshot', block, 'loanId', 'isActive', true)
+    await substrateStateSnapshotter('Asset', 'AssetSnapshot', block, 'assetId', 'isActive', true)
+    await substrateStateSnapshotter('PoolFee', 'PoolFeeSnapshot', block, 'poolFeeId', 'isActive', true)
 
     //Update tracking of period and continue
     await (await timekeeper).update(blockPeriodStart)

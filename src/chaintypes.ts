@@ -13,6 +13,12 @@ const definitions: OverrideBundleDefinition = {
           outstandingPrincipal: 'Balance',
           outstandingInterest: 'Balance',
         },
+        PoolNav: {
+          navAum: 'Balance',
+          navFees: 'Balance',
+          reserve: 'Balance',
+          total: 'Balance',
+        },
       },
     },
   ],
@@ -43,6 +49,23 @@ const definitions: OverrideBundleDefinition = {
               },
             ],
             type: 'Option<PalletLoansEntitiesLoansActiveLoan>',
+          },
+        },
+        version: 1,
+      },
+    ],
+    PoolsApi: [
+      {
+        methods: {
+          nav: {
+            description: 'Get active pool NAV',
+            params: [
+              {
+                name: 'pool_id',
+                type: 'u64',
+              },
+            ],
+            type: 'Option<PoolNav>',
           },
         },
         version: 1,

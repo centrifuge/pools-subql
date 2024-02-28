@@ -25,6 +25,13 @@ export interface PoolMetadata extends Struct {
   metadata: Bytes
 }
 
+export interface PoolNav extends Struct {
+  navAum: Balance
+  navFees: Balance
+  reserve: Balance
+  total: Balance
+}
+
 export interface TrancheData extends Struct {
   tranches: TrancheDetails[]
   ids: U8aFixed[]
@@ -114,6 +121,9 @@ export interface TokensCurrencyId extends Enum {
   asForeignAsset: u32
   isStaking: boolean
   asStaking: Enum
+  isLocalAsset: boolean;
+  asLocalAsset: u32;
+  type: 'Native' | 'Tranche' | 'Ausd' | 'ForeignAsset' | 'Staking' | 'LocalAsset';
 }
 
 export interface TrancheSolution extends Struct {
@@ -163,10 +173,10 @@ export interface LoanInfoCreated extends Struct {
 }
 
 export interface LoanInfoActivePortfolio extends Struct {
-  activeLoan: LoanInfoActive,
-  presentValue: Balance,
-  outstandingPrincipal: Balance,
-  outstandingInterest: Balance,
+  activeLoan: LoanInfoActive
+  presentValue: Balance
+  outstandingPrincipal: Balance
+  outstandingInterest: Balance
 }
 
 export interface LoanInfoActive extends Struct {
@@ -265,8 +275,11 @@ export interface LoanPricing extends Enum {
 export interface LoanValuationMethod extends Enum {
   isDiscountedCashFlow: boolean
   isOutstandingDebt: boolean
+  isCash: boolean
   asDiscountedCashFlow: LoanValuationDiscountedCashFlow
   asOutstandingDebt: Null
+  asCash: Null
+  type: 'DiscountedCashFlow' | 'OutstandingDebt' | 'Cash'
 }
 
 export interface LoanRepaymentSchedule extends Struct {
@@ -306,6 +319,7 @@ export interface LoanPricingAmount extends Enum {
     quantity: u128
     settlementPrice: u128
   }
+  type: 'Internal' | 'External'
 }
 
 export interface LoanPricingRepaidAmount extends Struct {
@@ -326,13 +340,54 @@ export interface NftItemMetadata extends Struct {
   isFrozen: boolean
 }
 
+export interface PoolFeeBucket extends Enum {
+  isTop: boolean
+  type: 'Top'
+}
+
+export interface PoolFeeEditor extends Enum {
+  isRoot: boolean
+  isAccount: boolean
+  asAccount: AccountId32
+  type: 'Root' | 'Account'
+}
+
+export interface PoolFeeAmount extends Enum {
+  isShareOfPortfolioValuation: boolean
+  asShareOfPortfolioValuation: u128
+  isAmountPerSecond: boolean
+  asAmountPerSecond: u128
+  type: 'ShareOfPortfolioValuation' | 'AmountPerSecond'
+}
+
+export interface PoolFeeType extends Enum {
+  isFixed: boolean
+  asFixed: {
+    limit: PoolFeeAmount
+  } & Struct
+  isChargedUpTo: boolean
+  asChargedUpTo: {
+    limit: PoolFeeAmount
+  } & Struct
+  type: 'Fixed' | 'ChargedUpTo'
+}
+
+export interface PoolFeeInfo extends Struct {
+  destination: AccountId32
+  editor: PoolFeeEditor
+  feeType: PoolFeeType
+}
+
 export type LoanAsset = ITuple<[collectionId: u64, itemId: u128]>
 export type LoanCreatedEvent = ITuple<[poolId: u64, loanId: u64, loanInfo: LoanInfoCreated]>
 export type LoanClosedEvent = ITuple<[poolId: u64, loanId: u64, collateralInfo: LoanAsset]>
 export type LoanBorrowedEvent = ITuple<[poolId: u64, loanId: u64, amount: LoanPricingAmount]>
 export type LoanRepaidEvent = ITuple<[poolId: u64, loanId: u64, amount: LoanPricingRepaidAmount]>
 export type LoanWrittenOffEvent = ITuple<[poolId: u64, loanId: u64, writeOffStatus: LoanWriteOffStatus]>
-export type LoanDebtTransferred = ITuple<[poolId: u64, fromLoanId: u64, toLoanId: u64, amount: u128]>
+export type LoanDebtTransferred = ITuple<
+  [poolId: u64, fromLoanId: u64, toLoanId: u64, repaidAmount: LoanPricingRepaidAmount, borrowAmount: LoanPricingAmount]
+>
+export type LoanDebtTransferred1024 = ITuple<[poolId: u64, fromLoanId: u64, toLoanId: u64, amount: u128]>
 
 export type PoolCreatedEvent = ITuple<[admin: AccountId32, depositor: AccountId32, poolId: u64, essence: PoolEssence]>
 export type PoolUpdatedEvent = ITuple<[admin: AccountId32, old: PoolEssence, new: PoolEssence]>
@@ -363,6 +418,13 @@ export type TokensEndowedDepositedWithdrawnEvent = ITuple<
   [currencyId: TokensCurrencyId, who: AccountId32, amount: u128]
 >
 
+export type PoolFeesProposedEvent = ITuple<[poolId: u64, feeId: u64, bucket: PoolFeeBucket, fee: PoolFeeInfo]>
+export type PoolFeesAddedEvent = ITuple<[poolId: u64, bucket: PoolFeeBucket, feeId: u64, fee: PoolFeeInfo]>
+export type PoolFeesRemovedEvent = ITuple<[poolId: u64, bucket: PoolFeeBucket, feeId: u64]>
+export type PoolFeesChargedEvent = ITuple<[poolId: u64, feeId: u64, amount: u128, pending: u128]>
+export type PoolFeesUnchargedEvent = PoolFeesChargedEvent
+export type PoolFeesPaidEvent = ITuple<[poolId: u64, feeId: u64, amount: u128, destination: AccountId32]>
+
 export type ExtendedRpc = typeof api.rpc & {
   pools: {
     trancheTokenPrice: PromiseRpcResult<
@@ -375,5 +437,8 @@ export type ExtendedRpc = typeof api.rpc & {
 export type ExtendedCall = typeof api.call & {
   loansApi: {
     portfolio: AugmentedCall<'promise', (poolId: string) => Observable<Vec<ITuple<[u64, LoanInfoActivePortfolio]>>>>
+  }
+  poolsApi: {
+    nav: AugmentedCall<'promise', (poolId: string) => Observable<Option<PoolNav>>>
   }
 }

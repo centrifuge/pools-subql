@@ -6,7 +6,7 @@ import { OrdersFulfillment } from '../../helpers/types'
 import { Epoch, EpochState } from '../../types'
 
 export class EpochService extends Epoch {
-  readonly states: EpochState[]
+  private states: EpochState[]
 
   constructor(
     id: string,
@@ -35,23 +35,17 @@ export class EpochService extends Epoch {
       BigInt(0)
     )
 
-    for (const trancheId of trancheIds) {
-      const epochState = new EpochState(
-        `${poolId}-${epochNr}-${trancheId}`,
-        epoch.id,
-        trancheId,
-        BigInt(0),
-        BigInt(0),
-        BigInt(0)
-      )
-      epoch.states.push(epochState)
-    }
+    epoch.states = trancheIds.map(
+      (trancheId) =>
+        new EpochState(`${poolId}-${epochNr}-${trancheId}`, epoch.id, trancheId, BigInt(0), BigInt(0), BigInt(0))
+    )
+
     return epoch
   }
 
   static async getById(poolId: string, epochNr: number) {
     const epoch = (await this.get(`${poolId}-${epochNr.toString()}`)) as EpochService
-    if (epoch === undefined) return undefined
+    if (!epoch) return undefined
     const epochStates = await EpochState.getByEpochId(`${poolId}-${epochNr.toString()}`)
     epoch.states.push(...epochStates)
     return epoch
@@ -60,6 +54,10 @@ export class EpochService extends Epoch {
   async saveWithStates() {
     await this.save()
     await Promise.all(this.states.map((epochState) => epochState.save()))
+  }
+
+  public getStates() {
+    return [ ...this.states ]
   }
 
   public closeEpoch(timestamp: Date) {

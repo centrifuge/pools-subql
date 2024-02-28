@@ -1,4 +1,4 @@
-import { Loan, LoanStatus } from '../../types'
+import { AssetStatus } from '../../types'
 import { EthereumBlock } from '@subql/types-ethereum'
 import { DAIMainnetAddress, multicallAddress, tinlakePools } from '../../config'
 import { errorHandler } from '../../helpers/errorHandler'
@@ -14,7 +14,7 @@ import {
 } from '../../types/contracts'
 import { Provider } from '@ethersproject/providers'
 import { TimekeeperService, getPeriodStart } from '../../helpers/timekeeperService'
-import { LoanService } from '../services/loanService'
+import { AssetService } from '../services/assetService'
 import { evmStateSnapshotter } from '../../helpers/stateSnapshot'
 import { Multicall3 } from '../../types/contracts/MulticallAbi'
 import { BigNumber } from 'ethers'
@@ -158,7 +158,7 @@ type NewLoanData = {
 
 async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile: string, navFeed: string) {
   logger.info(`Updating loans for pool ${poolId}`)
-  let existingLoans = await LoanService.getByPoolId(poolId)
+  let existingLoans = await AssetService.getByPoolId(poolId)
   const newLoans = await getNewLoans(existingLoans, shelf)
   logger.info(`Found ${newLoans.length} new loans for pool ${poolId}`)
 
@@ -220,7 +220,7 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
 
     // create new loans
     for (const { id, maturityDate } of newLoanData) {
-      const loan = new Loan(`${poolId}-${id}`, blockDate, poolId, true, LoanStatus.CREATED)
+      const loan = new Loan(`${poolId}-${id}`, blockDate, poolId, true, AssetStatus.CREATED)
       if (!isBlocktower) {
         loan.actualMaturityDate = new Date((maturityDate as BigNumber).toNumber() * 1000)
       }
@@ -235,7 +235,7 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
   }
 
   // update all loans
-  existingLoans = (await LoanService.getByPoolId(poolId)).filter((loan) => loan.status !== LoanStatus.CLOSED)
+  existingLoans = (await AssetService.getByPoolId(poolId)).filter((loan) => loan.status !== AssetStatus.CLOSED)
   logger.info(`Updating ${existingLoans.length} existing loans for pool ${poolId}`)
   const loanDetailsCalls: PoolMulticall[] = []
   existingLoans.forEach((loan) => {
@@ -304,12 +304,12 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
       const prevDebt = loan.outstandingDebt
       const debt = loanDetails[loanIndex].debt
       if (debt > BigInt(0)) {
-        loan.status = LoanStatus.ACTIVE
+        loan.status = AssetStatus.ACTIVE
       }
       // if the loan is not locked or the debt is 0 and the loan was active before, close it
-      if (!nftLocked || (loan.status === LoanStatus.ACTIVE && debt.toBigInt() === BigInt(0))) {
+      if (!nftLocked || (loan.status === AssetStatus.ACTIVE && debt.toBigInt() === BigInt(0))) {
         loan.isActive = false
-        loan.status = LoanStatus.CLOSED
+        loan.status = AssetStatus.CLOSED
         loan.save()
       }
       loan.outstandingDebt = debt.toBigInt()

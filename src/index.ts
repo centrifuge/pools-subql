@@ -3,14 +3,14 @@ import { atob } from 'abab'
 import type { u64 } from '@polkadot/types'
 import type { Provider } from '@ethersproject/providers'
 
-const cfgChainIdProm = 'query' in api ? (api.query.evmChainId.chainId() as Promise<u64>) : null
-const ethNetworkProm =
-  typeof (api as unknown as Provider).getNetwork === 'function' ? (api as unknown as Provider).getNetwork() : null
+const isSubstrateNode = 'query' in api
+const isEvmNode = typeof (api as unknown as Provider).getNetwork === 'function'
+const ethNetworkProm = isEvmNode ? (api as unknown as Provider).getNetwork() : null
 
 global.atob = atob
-global.getNodeChainId = async function () {
-  if (cfgChainIdProm) return (await cfgChainIdProm).toString(10)
-  if (ethNetworkProm) return (await ethNetworkProm).chainId.toString(10)
+global.getNodeEvmChainId = async function () {
+  if (isSubstrateNode) return ((await api.query.evmChainId.chainId()) as u64).toString(10)
+  if (isEvmNode) return (await ethNetworkProm).chainId.toString(10)
 }
 
 export * from './mappings/handlers/blockHandlers'
@@ -22,3 +22,4 @@ export * from './mappings/handlers/ormlTokensHandlers'
 export * from './mappings/handlers/logHandlers'
 export * from './mappings/handlers/evmHandlers'
 export * from './mappings/handlers/ethHandlers'
+export * from './mappings/handlers/poolFeesHandlers'

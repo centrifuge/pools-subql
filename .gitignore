@@ -140,4 +140,5 @@ src/types
 
 **/project.yaml
 **/project-*.yaml
+**/subquery-multichain.yaml
 *-cid

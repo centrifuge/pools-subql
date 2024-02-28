@@ -62,6 +62,7 @@ export const currencyFormatters: CurrencyFormatters = {
   Native: () => [],
   Staking: () => ['BlockRewards'],
   Tranche: (value) => [value[0].toString(10), value[1].toHex()],
+  LocalAsset: (value) => [value.toString(10)],
 }
 
 export function formatEnumPayload(currencyType: string, ...currencyValue: string[]) {

@@ -7,7 +7,7 @@ import { CurrencyService, currencyFormatters } from '../services/currencyService
 import { InvestorTransactionService } from '../services/investorTransactionService'
 import { PoolService } from '../services/poolService'
 import { TrancheService } from '../services/trancheService'
-import { BlockchainService } from '../services/blockchainService'
+import { BlockchainService, LOCAL_CHAIN_ID } from '../services/blockchainService'
 
 export const handleTokenTransfer = errorHandler(_handleTokenTransfer)
 async function _handleTokenTransfer(event: SubstrateEvent<TokensTransferEvent>): Promise<void> {
@@ -16,7 +16,6 @@ async function _handleTokenTransfer(event: SubstrateEvent<TokensTransferEvent>):
   // Skip token transfers from and to excluded addresses
   const fromAddress = String.fromCharCode(...from.toU8a())
   const toAddress = String.fromCharCode(...to.toU8a())
-  logger.info(`fromAddress: ${fromAddress} toAddress: ${toAddress}`)
   const isFromExcludedAddress =
     fromAddress.startsWith('pool') || fromAddress.startsWith('invs') || fromAddress.startsWith('domn')
   const isToExcludedAddress =
@@ -27,7 +26,7 @@ async function _handleTokenTransfer(event: SubstrateEvent<TokensTransferEvent>):
     AccountService.getOrInit(to.toHex()),
   ])
 
-  const blockchain = await BlockchainService.getOrInit()
+  const blockchain = await BlockchainService.getOrInit(LOCAL_CHAIN_ID)
   const currency = await CurrencyService.getOrInit(
     blockchain.id,
     _currency.type,
@@ -37,10 +36,10 @@ async function _handleTokenTransfer(event: SubstrateEvent<TokensTransferEvent>):
   // TRANCHE TOKEN TRANSFERS BETWEEN INVESTORS
   if (_currency.isTranche && !isFromExcludedAddress && !isToExcludedAddress) {
     const pool = await PoolService.getById(_currency.asTranche[0].toString())
-    if(!pool) throw missingPool
+    if (!pool) throw missingPool
 
     const tranche = await TrancheService.getById(pool.id, _currency.asTranche[1].toString())
-    if(!tranche) throw missingPool
+    if (!tranche) throw missingPool
 
     logger.info(
       `Tranche Token transfer between investors tor tranche: ${pool.id}-${tranche.trancheId}. ` +
@@ -99,13 +98,14 @@ async function _handleTokenDeposited(event: SubstrateEvent<TokensEndowedDeposite
     `Currency deposit in ${_currency.toString()} for: ${address.toHex()} amount: ${amount.toString()} ` +
       `at block ${event.block.block.header.number.toString()}`
   )
-  const blockchain = await BlockchainService.getOrInit()
+  const toAccount = await AccountService.getOrInit(address.toHex())
+  const blockchain = await BlockchainService.getOrInit(LOCAL_CHAIN_ID)
   const currency = await CurrencyService.getOrInit(
     blockchain.id,
     _currency.type,
     ...currencyFormatters[_currency.type](_currency.value)
   )
-  const toAccount = await AccountService.getOrInit(address.toHex())
+
   const toCurrencyBalance = await CurrencyBalanceService.getOrInit(toAccount.id, currency.id)
   await toCurrencyBalance.credit(amount.toBigInt())
   await toCurrencyBalance.save()
@@ -119,13 +119,14 @@ async function _handleTokenWithdrawn(event: SubstrateEvent<TokensEndowedDeposite
     `Currency withdrawal in ${_currency.toString()} for: ${address.toHex()} amount: ${amount.toString()} ` +
       `at block ${event.block.block.header.number.toString()}`
   )
-  const blockchain = await BlockchainService.getOrInit()
+  const blockchain = await BlockchainService.getOrInit(LOCAL_CHAIN_ID)
+  const toAccount = await AccountService.getOrInit(address.toHex())
   const currency = await CurrencyService.getOrInit(
     blockchain.id,
     _currency.type,
     ...currencyFormatters[_currency.type](_currency.value)
   )
-  const toAccount = await AccountService.getOrInit(address.toHex())
+
   const toCurrencyBalance = await CurrencyBalanceService.getOrInit(toAccount.id, currency.id)
   await toCurrencyBalance.debit(amount.toBigInt())
   await toCurrencyBalance.save()

@@ -103,6 +103,13 @@ dataSources:
         - handler: handleLoanDebtTransferred
           kind: substrate/EventHandler
           filter:
+            specVersion: [1025]
+            module: loans
+            method: DebtTransferred
+        - handler: handleLoanDebtTransferred1024
+          kind: substrate/EventHandler
+          filter:
+            specVersion: [null, 1024]
             module: loans
             method: DebtTransferred
         - handler: handleTokenTransfer
@@ -120,3 +127,33 @@ dataSources:
           filter:
             module: ormlTokens
             method: Withdrawn
+        - handler: handleFeeProposed
+          kind: substrate/EventHandler
+          filter:
+            module: poolFees
+            method: Proposed
+        - handler: handleFeeAdded
+          kind: substrate/EventHandler
+          filter:
+            module: poolFees
+            method: Added
+        - handler: handleFeeRemoved
+          kind: substrate/EventHandler
+          filter:
+            module: poolFees
+            method: Removed
+        - handler: handleFeeCharged
+          kind: substrate/EventHandler
+          filter:
+            module: poolFees
+            method: Charged
+        - handler: handleFeeUncharged
+          kind: substrate/EventHandler
+          filter:
+            module: poolFees
+            method: Uncharged
+        - handler: handleFeePaid
+          kind: substrate/EventHandler
+          filter:
+            module: poolFees
+            method: Paid
