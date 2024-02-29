@@ -11,8 +11,8 @@ export class AssetService extends Asset {
     assetId: string,
     type: AssetType,
     valuationMethod: AssetValuationMethod,
-    nftClassId: bigint,
-    nftItemId: bigint,
+    nftClassId: bigint | undefined,
+    nftItemId: bigint | undefined,
     timestamp: Date
   ) {
     logger.info(`Initialising asset ${assetId} for pool ${poolId}`)
@@ -129,10 +129,7 @@ export class AssetService extends Asset {
         break
       case 'External':
         principal = nToBigInt(
-          principalObject.asExternal.quantity
-            .toBn()
-            .mul(principalObject.asExternal.settlementPrice.toBn())
-            .div(WAD)
+          principalObject.asExternal.quantity.toBn().mul(principalObject.asExternal.settlementPrice.toBn()).div(WAD)
         )
         break
     }
