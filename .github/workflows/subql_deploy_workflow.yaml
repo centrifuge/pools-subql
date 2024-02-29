@@ -93,9 +93,7 @@ jobs:
           --type=$SUBQL_DEPLOYMENT_TYPE \
           --disableHistorical \
           --disableIndexerStoreCacheAsync \
-          --scale-batch-size=false \
           --indexerVersion="$SUBQL_INDEXER_VERSION" \
           --queryVersion="$SUBQL_QUERY_VERSION" \
-          --aggregate \
-          --query-limit=100
+          --queryAggregate
 
