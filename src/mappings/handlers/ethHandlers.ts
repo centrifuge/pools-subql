@@ -206,7 +206,6 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
           }
         }
       })
-      // logger.info(`maturityDates.length: ${maturityDates.length}`)
     }
 
     // create new loans

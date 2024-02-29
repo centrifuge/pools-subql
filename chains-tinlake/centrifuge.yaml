@@ -16,6 +16,8 @@ dataSources:
         file: ./abi/shelf.abi.json
       pile:
         file: ./abi/pile.abi.json
+      multicall:
+        file: ./abi/multicall.abi.json
     mapping:
       file: ./dist/index.js
       handlers:
