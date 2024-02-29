@@ -81,7 +81,6 @@ export class TrancheService extends Tranche {
       this.tokenPrice = price
       logger.info(`Updating price for tranche ${this.id} to: ${this.tokenPrice}`)
     }
-    this.tokenPrice = price
     return this
   }
 
