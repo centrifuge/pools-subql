@@ -2,6 +2,10 @@ network:
   chainId: '1' # Ethereum Mainnet
   endpoint: 'https://mainnet.infura.io/v3/a4ba76cd4be643618572e7467a444e3a'
   dictionary: 'https://gx.api.subquery.network/sq/subquery/eth-dictionary'
+  bypassBlocks:
+    - '18721040-18735450'
+    - '18735460-18747630'
+    - '18747640-18763940'
 dataSources:
   - kind: ethereum/Runtime
     startBlock: 18721030
