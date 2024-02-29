@@ -28,7 +28,7 @@ jobs:
   subql_deploy_workflow:
     runs-on: ubuntu-latest
     env:
-      SUBQL_INDEXER_VERSION: v3.5.0
+      SUBQL_INDEXER_VERSION: v3.6.1
       SUBQL_ETH_INDEXER_VERSION: v3.7.0
       SUBQL_QUERY_VERSION: v2.9.0
       CHAIN_ID: ${{ inputs.chainId }}
@@ -92,6 +92,10 @@ jobs:
           --ipfsCID="$CFG_IPFSCID" \
           --type=$SUBQL_DEPLOYMENT_TYPE \
           --disableHistorical \
+          --disableIndexerStoreCacheAsync \
+          --scale-batch-size=false \
           --indexerVersion="$SUBQL_INDEXER_VERSION" \
-          --queryVersion="$SUBQL_QUERY_VERSION"
+          --queryVersion="$SUBQL_QUERY_VERSION" \
+          --aggregate \
+          --query-limit=100
 
