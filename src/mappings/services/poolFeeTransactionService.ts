@@ -6,13 +6,14 @@ export class PoolFeeTransactionService extends PoolFeeTransaction {
   static init(data: PoolFeeData, type: keyof typeof PoolFeeTransactionType) {
     const { hash, epochNumber, poolId, feeId, timestamp, blockNumber } = data
     const _type = PoolFeeTransactionType[type]
+    const _epochNumber = epochNumber ?? 0
     return new this(
-      `${hash}-${epochNumber ?? 0}`,
+      `${hash}-${_epochNumber}`,
       `${poolId}-${feeId}`,
       _type,
       timestamp,
       blockNumber,
-      epochNumber
+      _epochNumber
     )
   }
 
