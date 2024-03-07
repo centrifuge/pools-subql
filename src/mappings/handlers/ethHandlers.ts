@@ -128,7 +128,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
 
     // Take snapshots
     await evmStateSnapshotter('Pool', 'PoolSnapshot', block, 'poolId')
-    await evmStateSnapshotter('Loan', 'LoanSnapshot', block, 'loanId', 'isActive', true)
+    await evmStateSnapshotter('Asset', 'AssetSnapshot', block, 'assetId', 'isActive', true)
 
     //Update tracking of period and continue
     await (await timekeeper).update(blockPeriodStart)
