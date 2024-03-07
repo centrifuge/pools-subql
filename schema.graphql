@@ -516,7 +516,7 @@ enum PoolFeeTransactionType {
 }
 
 type PoolFeeTransaction @entity {
-  id: ID! # extrinsicHash - epochNumber  - transaction type
+  id: ID! # extrinsicHash - epochNumber - transaction type
   poolFee: PoolFee! @index
   type: PoolFeeTransactionType!
 
