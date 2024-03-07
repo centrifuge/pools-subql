@@ -1,0 +1,45 @@
+network:
+  chainId: '1'
+  endpoint: https://mainnet.infura.io/v3/a4ba76cd4be643618572e7467a444e3a
+  dictionary: https://gx.api.subquery.network/sq/subquery/eth-dictionary
+dataSources:
+  - kind: ethereum/Runtime
+    startBlock: 11063000
+    options:
+      abi: navFeed
+    assets:
+      navFeed:
+        file: ./abi/navfeed.abi.json
+      reserve:
+        file: ./abi/reserve.abi.json
+      shelf:
+        file: ./abi/shelf.abi.json
+      pile:
+        file: ./abi/pile.abi.json
+      multicall:
+        file: ./abi/multicall.abi.json
+    mapping:
+      file: ./dist/index.js
+      handlers:
+        - handler: handleEthBlock
+          kind: ethereum/BlockHandler
+          filter:
+            modulo: 3600
+specVersion: 1.0.0
+name: centrifuge-pools
+version: 1.0.0
+runner:
+  node:
+    name: '@subql/node-ethereum'
+    version: '3'
+  query:
+    name: '@subql/query'
+    version: '2'
+description: >-
+  SubQuery API powered by EMBRIO.tech to query Centrifuge chain data for
+  analytics insights on how Centrifuge is unlocking economic opportunity for all
+  by connecting people to borrow and lend money transparently and
+  cost-effectively.
+repository: https://github.com/centrifuge/pools-subql
+schema:
+  file: ./schema.graphql

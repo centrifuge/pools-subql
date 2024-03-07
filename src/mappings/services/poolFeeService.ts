@@ -18,14 +18,17 @@ export class PoolFeeService extends PoolFee {
     const _type = PoolFeeType[type]
     const _status = PoolFeeStatus[status]
 
-    Object.getOwnPropertyNames(this)
-      .filter((prop) => typeof this[prop] === 'bigint')
-      .forEach((prop) => {
-        logger.info(`-> initialising ${prop} to 0`)
-        this[prop] = BigInt(0)
-      })
+    const poolFee = new this(`${poolId}-${feeId}`, feeId, _type, _status, false, poolId)
 
-    return new this(`${poolId}-${feeId}`, feeId, _type, _status, false, poolId)
+    poolFee.sumChargedAmount = BigInt(0)
+    poolFee.sumAccruedAmount = BigInt(0)
+    poolFee.sumPaidAmount = BigInt(0)
+    poolFee.pendingAmount = BigInt(0)
+    poolFee.sumChargedAmountByPeriod = BigInt(0)
+    poolFee.sumAccruedAmountByPeriod = BigInt(0)
+    poolFee.sumPaidAmountByPeriod = BigInt(0)
+
+    return poolFee
   }
 
   static async getOrInit(data: PoolFeeData, type: keyof typeof PoolFeeType, status: keyof typeof PoolFeeStatus) {
