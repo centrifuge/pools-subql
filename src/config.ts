@@ -157,15 +157,6 @@ export const tinlakePools = [
     pile: [{ address: '0x6af9dA8dB1925F8ef359274A59eF01e1c6Df7bE0' }],
   },
   {
-    id: '0x92332a9831ac04275bc0f22b9140b21c72984eb8',
-    shortName: 'Pezesha 1',
-    startBlock: 12113740,
-    navFeed: [{ address: '0xcea9f97d7fe55154e4a35a8b3316a8cdf9e08626', startBlock: 12114080 }],
-    reserve: [{ address: '0x7f5dea6c463a7250c53f1347f82b506f40e1b0cb', startBlock: 12114265 }],
-    shelf: [{ address: '' }],
-    pile: [{ address: '0xAAEaCfcCc3d3249f125Ba0644495560309C266cB' }],
-  },
-  {
     id: '0x9de3064f49696a25066252c35ede68850ea33bf8',
     shortName: 'UP Series 1',
     startBlock: 12951444,

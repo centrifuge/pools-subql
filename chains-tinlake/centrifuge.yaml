@@ -24,7 +24,7 @@ dataSources:
         - handler: handleEthBlock
           kind: ethereum/BlockHandler
           filter:
-            modulo: 3600
+            modulo: 360
 specVersion: 1.0.0
 name: centrifuge-pools
 version: 1.0.0
