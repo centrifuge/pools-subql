@@ -308,7 +308,7 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
       if (!nftLocked || (loan.status === AssetStatus.ACTIVE && debt.toBigInt() === BigInt(0))) {
         loan.isActive = false
         loan.status = AssetStatus.CLOSED
-        loan.save()
+        await loan.save()
       }
       loan.outstandingDebt = debt.toBigInt()
       const currentDebt = loan.outstandingDebt || BigInt(0)
@@ -333,7 +333,7 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
           : (loan.totalBorrowed = loan.borrowedAmountByPeriod)
       }
       logger.info(`Updating loan ${loan.id} for pool ${poolId}`)
-      loan.save()
+      await loan.save()
     }
   }
 }
@@ -344,11 +344,11 @@ async function getNewLoans(existingLoans: number[], shelfAddress: string) {
   const shelfContract = ShelfAbi__factory.connect(shelfAddress, api as unknown as Provider)
   // eslint-disable-next-line
   while (true) {
-    let response
+    let response: Awaited<ReturnType<typeof shelfContract.token>>
     try {
       response = await shelfContract.token(loanIndex)
     } catch (e) {
-      logger.info(`Error ${e}`)
+      logger.error(`Failed shelfcontract.token call. ${e}`)
       break
     }
     if (!response || response.registry === '0x0000000000000000000000000000000000000000') {
@@ -390,7 +390,7 @@ async function processCalls(callsArray: PoolMulticall[], chunkSize = 30): Promis
       results = await multicall.callStatic.aggregate(calls)
       results[1].map((result, j) => (callsArray[i * chunkSize + j].result = result))
     } catch (e) {
-      logger.info(`Error fetching chunk ${i}: ${e}`)
+      logger.error(`Error fetching chunk ${i}: ${e}`)
     }
   }
 
