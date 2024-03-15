@@ -12,12 +12,12 @@ import {
   PileAbi__factory,
   MulticallAbi__factory,
 } from '../../types/contracts'
-import { Provider } from '@ethersproject/providers'
 import { TimekeeperService, getPeriodStart } from '../../helpers/timekeeperService'
 import { AssetService } from '../services/assetService'
 import { evmStateSnapshotter } from '../../helpers/stateSnapshot'
 import { Multicall3 } from '../../types/contracts/MulticallAbi'
-import { BigNumber } from 'ethers'
+import type { Provider } from '@ethersproject/providers'
+import type { BigNumber } from '@ethersproject/bignumber'
 
 const timekeeper = TimekeeperService.init()
 

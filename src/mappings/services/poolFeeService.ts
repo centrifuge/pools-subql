@@ -63,32 +63,48 @@ export class PoolFeeService extends PoolFee {
     logger.info(`Removing PoolFee ${data.feeId}`)
     const { poolId, feeId } = data
     const poolFee = await this.get(`${poolId}-${feeId}`)
-    if(!poolFee) throw new Error('Unable to remove PoolFee. PoolFee does not exist.')
+    if (!poolFee) throw new Error('Unable to remove PoolFee. PoolFee does not exist.')
     poolFee.isActive = false
     return poolFee
   }
 
   public charge(data: Omit<PoolFeeData, 'amount'> & Required<Pick<PoolFeeData, 'amount'>>) {
     logger.info(`Charging PoolFee ${data.feeId} with amount ${data.amount.toString(10)}`)
-    if(!this.isActive) throw new Error('Unable to charge inactive PolFee')
+    if (!this.isActive) throw new Error('Unable to charge inactive PolFee')
     this.sumChargedAmount += data.amount
     this.sumChargedAmountByPeriod += data.amount
+    this.pendingAmount += data.amount
     return this
   }
 
   public uncharge(data: Omit<PoolFeeData, 'amount'> & Required<Pick<PoolFeeData, 'amount'>>) {
     logger.info(`Uncharging PoolFee ${data.feeId} with amount ${data.amount.toString(10)}`)
-    if(!this.isActive) throw new Error('Unable to uncharge inactive PolFee')
+    if (!this.isActive) throw new Error('Unable to uncharge inactive PolFee')
     this.sumChargedAmount -= data.amount
     this.sumChargedAmountByPeriod -= data.amount
+    this.pendingAmount -= data.amount
     return this
   }
 
   public pay(data: Omit<PoolFeeData, 'amount'> & Required<Pick<PoolFeeData, 'amount'>>) {
     logger.info(`Paying PoolFee ${data.feeId} with amount ${data.amount.toString(10)}`)
-    if(!this.isActive) throw new Error('Unable to payinactive PolFee')
+    if (!this.isActive) throw new Error('Unable to payinactive PolFee')
     this.sumPaidAmount += data.amount
     this.sumPaidAmountByPeriod += data.amount
+    this.pendingAmount -= data.amount
+    return this
+  }
+
+  public updateAccruals(pending: bigint, disbursement: bigint) {
+    logger.info(
+      `Accruing PoolFee ${this.id} with amounts pending: ${pending.toString(10)} ` +
+        `disbursement: ${disbursement.toString(10)}`
+    )
+    this.pendingAmount = pending + disbursement
+
+    const newAccruedAmount = this.pendingAmount
+    this.sumAccruedAmountByPeriod = newAccruedAmount - this.sumAccruedAmount
+    this.sumAccruedAmount = newAccruedAmount
     return this
   }
 }

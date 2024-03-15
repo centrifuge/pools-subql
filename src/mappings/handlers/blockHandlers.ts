@@ -6,6 +6,8 @@ import { SNAPSHOT_INTERVAL_SECONDS } from '../../config'
 import { PoolService } from '../services/poolService'
 import { TrancheService } from '../services/trancheService'
 import { AssetService } from '../services/assetService'
+import { PoolFeeService } from '../services/poolFeeService'
+import { PoolFeeTransactionService } from '../services/poolFeeTransactionService'
 
 const timekeeper = TimekeeperService.init()
 
@@ -16,7 +18,10 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
   const newPeriod = (await timekeeper).processBlock(block.timestamp)
 
   if (newPeriod) {
-    logger.info(`It's a new period on block ${blockNumber}: ${block.timestamp.toISOString()}`)
+    const specVersion = api.runtimeVersion.specVersion.toNumber()
+    logger.info(
+      `It's a new period on block ${blockNumber}: ${block.timestamp.toISOString()} (specVersion: ${specVersion})`
+    )
     const lastPeriodStart = new Date(blockPeriodStart.valueOf() - SNAPSHOT_INTERVAL_SECONDS * 1000)
     const daysAgo30 = new Date(blockPeriodStart.valueOf() - 30 * 24 * 3600 * 1000)
     const daysAgo90 = new Date(blockPeriodStart.valueOf() - 90 * 24 * 3600 * 1000)
@@ -57,6 +62,26 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
 
       await pool.updateNumberOfActiveAssets(BigInt(Object.keys(activeLoanData).length))
       await pool.save()
+
+      //PoolFees Accruals
+      const accruedFees = await pool.getAccruedFees()
+      for (const accruals of accruedFees) {
+        const [feeId, pending, disbursement] = accruals
+        const poolFee = await PoolFeeService.getById(pool.id, feeId)
+        poolFee.updateAccruals(pending, disbursement)
+        await poolFee.save()
+
+        const poolFeeTransaction = PoolFeeTransactionService.accrue({
+          poolId: pool.id,
+          feeId,
+          blockNumber,
+          amount: poolFee.sumAccruedAmountByPeriod,
+          epochNumber: pool.currentEpoch,
+          hash: null,
+          timestamp: block.timestamp,
+        })
+        await poolFeeTransaction.save()
+      }
     }
 
     //Perform Snapshots and reset accumulators

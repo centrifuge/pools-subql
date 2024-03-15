@@ -19,6 +19,11 @@ const definitions: OverrideBundleDefinition = {
           reserve: 'Balance',
           total: 'Balance',
         },
+        PoolFeesOfBucket: {
+          bucket: 'CfgTraitsFeePoolFeeBucket',
+          fees: ' Vec<CfgTypesPoolsPoolFee>',
+        },
+        PoolFeesList: 'Vec<PoolFeesOfBucket>',
       },
     },
   ],
@@ -51,7 +56,7 @@ const definitions: OverrideBundleDefinition = {
             type: 'Option<PalletLoansEntitiesLoansActiveLoan>',
           },
         },
-        version: 1,
+        version: 2,
       },
     ],
     PoolsApi: [
@@ -66,6 +71,23 @@ const definitions: OverrideBundleDefinition = {
               },
             ],
             type: 'Option<PoolNav>',
+          },
+        },
+        version: 1,
+      },
+    ],
+    PoolFeesApi: [
+      {
+        methods: {
+          list_fees: {
+            description: 'Query pool fees status for a pool',
+            params: [
+              {
+                name: 'pool_id',
+                type: 'u64',
+              },
+            ],
+            type: 'Option<PoolFeesList>',
           },
         },
         version: 1,
@@ -116,6 +138,10 @@ const definitions: OverrideBundleDefinition = {
     },
   },
 }
+
+// Fix for LoansApi old runtime v1
+const loansApiRuntime = definitions['runtime']['LoansApi']
+loansApiRuntime.push({ ...loansApiRuntime[0], version: 1 })
 
 export default {
   typesBundle: { spec: { 'centrifuge-devel': definitions, altair: definitions, centrifuge: definitions } },
