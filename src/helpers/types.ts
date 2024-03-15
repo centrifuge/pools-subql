@@ -121,9 +121,9 @@ export interface TokensCurrencyId extends Enum {
   asForeignAsset: u32
   isStaking: boolean
   asStaking: Enum
-  isLocalAsset: boolean;
-  asLocalAsset: u32;
-  type: 'Native' | 'Tranche' | 'Ausd' | 'ForeignAsset' | 'Staking' | 'LocalAsset';
+  isLocalAsset: boolean
+  asLocalAsset: u32
+  type: 'Native' | 'Tranche' | 'Ausd' | 'ForeignAsset' | 'Staking' | 'LocalAsset'
 }
 
 export interface TrancheSolution extends Struct {
@@ -345,6 +345,11 @@ export interface PoolFeeBucket extends Enum {
   type: 'Top'
 }
 
+export interface PoolFeesOfBucket extends Struct {
+  bucket: PoolFeeBucket
+  fees: Vec<PoolFee>
+}
+
 export interface PoolFeeEditor extends Enum {
   isRoot: boolean
   isAccount: boolean
@@ -358,6 +363,20 @@ export interface PoolFeeAmount extends Enum {
   isAmountPerSecond: boolean
   asAmountPerSecond: u128
   type: 'ShareOfPortfolioValuation' | 'AmountPerSecond'
+}
+
+interface PayableFeeAmount extends Enum {
+  readonly isAllPending: boolean
+  readonly isUpTo: boolean
+  readonly asUpTo: u128
+  readonly type: 'AllPending' | 'UpTo'
+}
+
+export interface PoolFeeAmounts extends Struct {
+  readonly feeType: PoolFeeType
+  readonly pending: u128
+  readonly disbursement: u128
+  readonly payable: PayableFeeAmount
 }
 
 export interface PoolFeeType extends Enum {
@@ -376,6 +395,13 @@ export interface PoolFeeInfo extends Struct {
   destination: AccountId32
   editor: PoolFeeEditor
   feeType: PoolFeeType
+}
+
+export interface PoolFee extends Struct {
+  id: u64
+  destination: AccountId32
+  editor: PoolFeeEditor
+  amounts: PoolFeeAmounts
 }
 
 export type LoanAsset = ITuple<[collectionId: u64, itemId: u128]>
@@ -424,6 +450,7 @@ export type PoolFeesRemovedEvent = ITuple<[poolId: u64, bucket: PoolFeeBucket, f
 export type PoolFeesChargedEvent = ITuple<[poolId: u64, feeId: u64, amount: u128, pending: u128]>
 export type PoolFeesUnchargedEvent = PoolFeesChargedEvent
 export type PoolFeesPaidEvent = ITuple<[poolId: u64, feeId: u64, amount: u128, destination: AccountId32]>
+export type PoolFeesList = Vec<PoolFeesOfBucket>
 
 export type ExtendedRpc = typeof api.rpc & {
   pools: {
@@ -440,5 +467,8 @@ export type ExtendedCall = typeof api.call & {
   }
   poolsApi: {
     nav: AugmentedCall<'promise', (poolId: string) => Observable<Option<PoolNav>>>
+  }
+  poolFeesApi: {
+    listFees: AugmentedCall<'promise', (poolId: string) => Observable<Option<PoolFeesList>>>
   }
 }

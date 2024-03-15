@@ -6,6 +6,7 @@ import {
   ExtendedRpc,
   NavDetails,
   PoolDetails,
+  PoolFeesList,
   PoolMetadata,
   PoolNav,
   TrancheDetails,
@@ -136,17 +137,19 @@ export class PoolService extends Pool {
     logger.info(`Updating portfolio valuation for pool: ${this.id} (state)`)
     const navResponse = await api.query.loans.portfolioValuation<NavDetails>(this.id)
     this.portfolioValuation = navResponse.value.toBigInt()
+    logger.info(`portfolio valuation: ${this.portfolioValuation.toString(10)}`)
     return this
   }
 
   private async updatePortfolioValuationCall() {
     logger.info(`Updating portfolio valuation for pool: ${this.id} (runtime)`)
     const apiCall = api.call as ExtendedCall
-    logger.info(JSON.stringify(apiCall.poolsApi))
     const navResponse = await apiCall.poolsApi.nav(this.id)
+    if (navResponse.isEmpty) logger.warn('Empty pv response')
     this.portfolioValuation = navResponse
       .unwrapOr<Pick<PoolNav, 'total'>>({ total: api.registry.createType('Balance', 0) })
       .total.toBigInt()
+    logger.info(`portfolio valuation: ${this.portfolioValuation.toString(10)}`)
     return this
   }
 
@@ -228,7 +231,9 @@ export class PoolService extends Pool {
 
   public async getPortfolio(): Promise<ActiveLoanData> {
     const apiCall = api.call as ExtendedCall
+    logger.info(`Querying runtime loansApi.portfolio for pool: ${this.id}`)
     const portfolioData = await apiCall.loansApi.portfolio(this.id)
+    logger.info(`${portfolioData.length} assets found.`)
     return portfolioData.reduce<ActiveLoanData>((obj, current) => {
       const totalRepaid = current[1].activeLoan.totalRepaid
       const maturityDate = new Date(current[1].activeLoan.schedule.maturity.asFixed.date.toNumber() * 1000)
@@ -263,6 +268,30 @@ export class PoolService extends Pool {
       tokenPrices = undefined
     }
     return tokenPrices
+  }
+
+  public async getAccruedFees() {
+    const apiCall = api.call as ExtendedCall
+    const specVersion = api.runtimeVersion.specVersion.toNumber()
+    const specName = api.runtimeVersion.specName.toString()
+    switch (specName) {
+      case 'centrifuge-devel':
+        if (specVersion < 1040) return []
+        break
+      default:
+        if (specVersion < 1026) return []
+        break
+    }
+    logger.info(`Querying runtime poolFeesApi.listFees for pool ${this.id}`)
+    const poolFeesListRequest = await apiCall.poolFeesApi.listFees(this.id)
+    const poolFeesList = poolFeesListRequest.unwrapOr(<PoolFeesList>[])
+    const fees = poolFeesList.flatMap((poolFee) => poolFee.fees.filter((fee) => fee.amounts.feeType.isFixed))
+    const accruedFees = fees.map((fee): [feeId: string, pending: bigint, disbursement: bigint] => [
+      fee.id.toString(),
+      fee.amounts.pending.toBigInt(),
+      fee.amounts.disbursement.toBigInt(),
+    ])
+    return accruedFees
   }
 }
 
