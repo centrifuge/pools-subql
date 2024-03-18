@@ -9,6 +9,7 @@ export interface PoolFeeData {
   epochNumber: number
   hash: string
   amount?: bigint
+  pending?: bigint
 }
 
 export class PoolFeeService extends PoolFee {
@@ -68,21 +69,21 @@ export class PoolFeeService extends PoolFee {
     return poolFee
   }
 
-  public charge(data: Omit<PoolFeeData, 'amount'> & Required<Pick<PoolFeeData, 'amount'>>) {
+  public charge(data: Omit<PoolFeeData, 'amount'> & Required<Pick<PoolFeeData, 'amount' | 'pending'>>) {
     logger.info(`Charging PoolFee ${data.feeId} with amount ${data.amount.toString(10)}`)
     if (!this.isActive) throw new Error('Unable to charge inactive PolFee')
     this.sumChargedAmount += data.amount
     this.sumChargedAmountByPeriod += data.amount
-    this.pendingAmount += data.amount
+    this.pendingAmount = data.pending
     return this
   }
 
-  public uncharge(data: Omit<PoolFeeData, 'amount'> & Required<Pick<PoolFeeData, 'amount'>>) {
+  public uncharge(data: Omit<PoolFeeData, 'amount'> & Required<Pick<PoolFeeData, 'amount' | 'pending'>>) {
     logger.info(`Uncharging PoolFee ${data.feeId} with amount ${data.amount.toString(10)}`)
     if (!this.isActive) throw new Error('Unable to uncharge inactive PolFee')
     this.sumChargedAmount -= data.amount
     this.sumChargedAmountByPeriod -= data.amount
-    this.pendingAmount -= data.amount
+    this.pendingAmount = data.pending
     return this
   }
 
