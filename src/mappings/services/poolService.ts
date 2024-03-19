@@ -12,6 +12,7 @@ import {
   TrancheDetails,
 } from '../../helpers/types'
 import { Pool } from '../../types'
+import { cid, readIpfs } from '../../helpers/ipfsFetch'
 
 export class PoolService extends Pool {
   static seed(poolId: string) {
@@ -89,10 +90,28 @@ export class PoolService extends Pool {
     if (poolReq.isNone) throw new Error('No pool data available to create the pool')
 
     const poolData = poolReq.unwrap()
-    this.metadata = metadataReq.isSome ? metadataReq.unwrap().metadata.toUtf8() : 'NA'
+    this.metadata = metadataReq.isSome ? metadataReq.unwrap().metadata.toUtf8() : null
     this.minEpochTime = poolData.parameters.minEpochTime.toNumber()
     this.maxPortfolioValuationAge = poolData.parameters.maxNavAge.toNumber()
     return this
+  }
+
+  public async initIpfsMetadata() {
+    if (!this.metadata) {
+      logger.warn('No IPFS metadata')
+      return
+    }
+    const metadata = await readIpfs<PoolIpfsMetadata>(this.metadata.match(cid)[0])
+    this.name = metadata.pool.name
+    this.assetClass = metadata.pool.asset.class
+    this.assetSubclass = metadata.pool.asset.subClass
+    this.icon = metadata.pool.icon.uri
+  }
+
+  public async getIpfsPoolFeeName(poolFeeId: string): Promise<string> {
+    if (!this.metadata) return logger.warn('No IPFS metadata')
+    const metadata = await readIpfs<PoolIpfsMetadata>(this.metadata.match(cid)[0])
+    return metadata.pool.poolFees.find((elem) => elem.id.toString(10) === poolFeeId)?.name ?? null
   }
 
   static async getById(poolId: string) {
@@ -315,4 +334,15 @@ export interface ActiveLoanData {
 
 interface PoolTranches {
   [trancheId: string]: { index: number; data: TrancheDetails }
+}
+
+interface PoolIpfsMetadata {
+  version: number
+  pool: {
+    name: string
+    icon: { uri: string; mime: string }
+    asset: { class: string; subClass: string }
+    poolFees: Array<{ id: number; name: string }>
+  }
+  [key: string]: unknown
 }

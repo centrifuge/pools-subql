@@ -108,4 +108,8 @@ export class PoolFeeService extends PoolFee {
     this.sumAccruedAmount = newAccruedAmount
     return this
   }
+
+  public setName(name: string) {
+    this.name = name
+  }
 }

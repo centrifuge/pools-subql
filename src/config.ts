@@ -1,5 +1,6 @@
 import { bnToBn } from '@polkadot/util'
 
+export const IPFS_NODE = 'https://centrifuge.mypinata.cloud'
 export const SNAPSHOT_INTERVAL_SECONDS = 3600 * 24
 export const WAD_DIGITS = 18
 export const WAD = bnToBn(10).pow(bnToBn(WAD_DIGITS))

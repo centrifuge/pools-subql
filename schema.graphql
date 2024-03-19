@@ -17,6 +17,11 @@ type Pool @entity {
   currency: Currency
   metadata: String
 
+  name: String
+  assetClass: String
+  assetSubclass: String
+  icon: String
+
   minEpochTime: Int
   maxPortfolioValuationAge: Int
 
@@ -338,6 +343,7 @@ type Asset @entity {
   collateralNftItemId: BigInt
 
   metadata: String
+  name: String
 
   advanceRate: BigInt
   collateralValue: BigInt
@@ -473,6 +479,8 @@ type PoolFee @entity {
   createdAt: Date
   createdAtBlockNumber: Int
   createdAtEpoch: Int
+
+  name: String
 
   pool: Pool! @index
 
