@@ -37,11 +37,9 @@ export class OutstandingOrderService extends OutstandingOrder {
   }
 
   static async getAllByTrancheId(poolId: string, trancheId: string) {
-    const entities = (await paginatedGetter(
-      'OutstandingOrder',
-      'trancheId',
-      `${poolId}-${trancheId}`
-    )) as OutstandingOrder[]
+    const entities = (await paginatedGetter('OutstandingOrder', [
+      ['trancheId', '=', `${poolId}-${trancheId}`],
+    ])) as OutstandingOrder[]
     return entities.map((ooEntity) => this.create(ooEntity) as OutstandingOrderService)
   }
 

@@ -2,29 +2,47 @@ import type { OverrideBundleDefinition } from '@polkadot/types/types'
 
 /* eslint-disable sort-keys */
 
+const latestTypes = {
+  ActiveLoanInfoV2: {
+    activeLoan: 'PalletLoansEntitiesLoansActiveLoan',
+    presentValue: 'Balance',
+    outstandingPrincipal: 'Balance',
+    outstandingInterest: 'Balance',
+    currentPrice: 'Option<Balance>',
+  },
+  ActiveLoanInfoV1: {
+    activeLoan: 'PalletLoansEntitiesLoansActiveLoan',
+    presentValue: 'Balance',
+    outstandingPrincipal: 'Balance',
+    outstandingInterest: 'Balance',
+  },
+  InvestmentPortfolio: {
+    poolCurrencyId: 'CfgTypesTokensCurrencyId',
+    pendingInvestCurrency: 'Balance',
+    claimableTrancheTokens: 'Balance',
+    freeTrancheTokens: 'Balance',
+    reservedTrancheTokens: 'Balance',
+    pendingRedeemTrancheTokens: 'Balance',
+    claimableCurrency: 'Balance',
+  },
+  PoolNav: {
+    navAum: 'Balance',
+    navFees: 'Balance',
+    reserve: 'Balance',
+    total: 'Balance',
+  },
+  PoolFeesList: 'Vec<PoolFeesOfBucket>',
+  PoolFeesOfBucket: {
+    bucket: 'CfgTraitsFeePoolFeeBucket',
+    fees: 'Vec<PoolFee>',
+  },
+}
+
 const definitions: OverrideBundleDefinition = {
   types: [
     {
       minmax: [undefined, undefined],
-      types: {
-        ActiveLoanInfo: {
-          activeLoan: 'PalletLoansEntitiesLoansActiveLoan',
-          presentValue: 'Balance',
-          outstandingPrincipal: 'Balance',
-          outstandingInterest: 'Balance',
-        },
-        PoolNav: {
-          navAum: 'Balance',
-          navFees: 'Balance',
-          reserve: 'Balance',
-          total: 'Balance',
-        },
-        PoolFeesOfBucket: {
-          bucket: 'CfgTraitsFeePoolFeeBucket',
-          fees: ' Vec<CfgTypesPoolsPoolFee>',
-        },
-        PoolFeesList: 'Vec<PoolFeesOfBucket>',
-      },
+      types: latestTypes,
     },
   ],
   runtime: {
@@ -39,7 +57,7 @@ const definitions: OverrideBundleDefinition = {
                 type: 'u64',
               },
             ],
-            type: 'Vec<(u64, ActiveLoanInfo)>',
+            type: 'Vec<(u64, ActiveLoanInfoV2)>',
           },
           portfolio_loan: {
             description: 'Get active pool loan',
@@ -57,6 +75,35 @@ const definitions: OverrideBundleDefinition = {
           },
         },
         version: 2,
+      },
+      {
+        methods: {
+          portfolio: {
+            description: 'Get active pool loan',
+            params: [
+              {
+                name: 'pool_id',
+                type: 'u64',
+              },
+            ],
+            type: 'Vec<(u64, ActiveLoanInfoV1)>',
+          },
+          portfolio_loan: {
+            description: 'Get active pool loan',
+            params: [
+              {
+                name: 'pool_id',
+                type: 'u64',
+              },
+              {
+                name: 'loan_id',
+                type: 'u64',
+              },
+            ],
+            type: 'Option<PalletLoansEntitiesLoansActiveLoan>',
+          },
+        },
+        version: 1,
       },
     ],
     PoolsApi: [
@@ -139,10 +186,12 @@ const definitions: OverrideBundleDefinition = {
   },
 }
 
-// Fix for LoansApi old runtime v1
-const loansApiRuntime = definitions['runtime']['LoansApi']
-loansApiRuntime.push({ ...loansApiRuntime[0], version: 1 })
-
 export default {
-  typesBundle: { spec: { 'centrifuge-devel': definitions, altair: definitions, centrifuge: definitions } },
+  typesBundle: {
+    spec: {
+      'centrifuge-devel': definitions,
+      altair: definitions,
+      centrifuge: definitions,
+    },
+  },
 }

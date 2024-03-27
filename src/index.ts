@@ -1,6 +1,6 @@
 import '@polkadot/api-augment'
-import fetch from 'node-fetch'
 import { atob } from 'abab'
+import fetch from 'node-fetch'
 import type { u64 } from '@polkadot/types'
 import type { Provider } from '@ethersproject/providers'
 

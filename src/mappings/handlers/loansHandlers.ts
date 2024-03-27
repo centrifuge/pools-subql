@@ -71,7 +71,10 @@ async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedEvent>) {
   }
 
   await asset.updateAssetSpecs(assetSpecs)
-  await asset.updateIpfsAssetName().catch((err) => logger.error(`IPFS Request failed ${err}`))
+  await asset.updateIpfsAssetName().catch((err) => {
+    logger.error(`IPFS Request failed ${err}`)
+    return Promise.resolve()
+  })
   await asset.save()
 
   const at = await AssetTransactionService.created({

@@ -32,7 +32,10 @@ async function _handleFeeProposed(event: SubstrateEvent<PoolFeesProposedEvent>):
 
   const poolFee = await PoolFeeService.propose(poolFeeData, type)
   await poolFee.setName(
-    await pool.getIpfsPoolFeeName(poolFee.feeId).catch((err) => logger.error(`IPFS Request failed ${err}`))
+    await pool.getIpfsPoolFeeName(poolFee.feeId).catch((err) => {
+      logger.error(`IPFS Request failed ${err}`)
+      return Promise.resolve(null)
+    })
   )
   await poolFee.save()
 
@@ -60,7 +63,10 @@ async function _handleFeeAdded(event: SubstrateEvent<PoolFeesAddedEvent>): Promi
 
   const poolFee = await PoolFeeService.add(poolFeeData, type)
   await poolFee.setName(
-    await pool.getIpfsPoolFeeName(poolFee.feeId).catch((err) => logger.error(`IPFS Request failed ${err}`))
+    await pool.getIpfsPoolFeeName(poolFee.feeId).catch((err) => {
+      logger.error(`IPFS Request failed ${err}`)
+      return Promise.resolve(null)
+    })
   )
   await poolFee.save()
 

@@ -13,13 +13,13 @@ export interface PoolFeeData {
 }
 
 export class PoolFeeService extends PoolFee {
-  static init(data: PoolFeeData, type: keyof typeof PoolFeeType, status: keyof typeof PoolFeeStatus) {
+  static init(data: PoolFeeData, type: keyof typeof PoolFeeType, status: keyof typeof PoolFeeStatus, blockchain = '0') {
     logger.info(`Initialising PoolFee ${data.feeId}`)
     const { poolId, feeId } = data
     const _type = PoolFeeType[type]
     const _status = PoolFeeStatus[status]
 
-    const poolFee = new this(`${poolId}-${feeId}`, feeId, _type, _status, false, poolId)
+    const poolFee = new this(`${poolId}-${feeId}`, feeId, _type, _status, false, blockchain, poolId)
 
     poolFee.sumChargedAmount = BigInt(0)
     poolFee.sumAccruedAmount = BigInt(0)
@@ -32,11 +32,16 @@ export class PoolFeeService extends PoolFee {
     return poolFee
   }
 
-  static async getOrInit(data: PoolFeeData, type: keyof typeof PoolFeeType, status: keyof typeof PoolFeeStatus) {
+  static async getOrInit(
+    data: PoolFeeData,
+    type: keyof typeof PoolFeeType,
+    status: keyof typeof PoolFeeStatus,
+    blockchain = '0'
+  ) {
     const { poolId, feeId } = data
     let poolFee = (await this.get(`${poolId}-${feeId}`)) as PoolFeeService
     if (!poolFee) {
-      poolFee = this.init(data, type, status)
+      poolFee = this.init(data, type, status, blockchain)
     } else {
       poolFee.status = PoolFeeStatus[status]
     }

@@ -8,6 +8,7 @@ type Pool @entity {
   # It's not possible to simply retrieve all entities, but it is supported
   # to get all entities by a field. Hence we add the same type field to all
   # pools, so we can do Pool.getByType("POOL").
+  blockchain: Blockchain! @index
   type: String! @index
   isActive: Boolean! @index
 
@@ -107,6 +108,7 @@ type PoolSnapshot @entity {
 
 type Tranche @entity {
   id: ID! #poolId-trancheId
+  blockchain: Blockchain! @index
   type: String! @index
   pool: Pool! @index
   trancheId: String!
@@ -336,6 +338,7 @@ type Asset @entity {
   id: ID! # poolId - assetId
   createdAt: Date!
 
+  blockchain: Blockchain! @index
   type: AssetType!
   valuationMethod: AssetValuationMethod!
 
@@ -475,6 +478,7 @@ type PoolFee @entity {
   type: PoolFeeType!
   status: PoolFeeStatus!
   isActive: Boolean! @index
+  blockchain: Blockchain! @index
 
   createdAt: Date
   createdAtBlockNumber: Int

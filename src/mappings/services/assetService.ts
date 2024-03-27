@@ -14,13 +14,15 @@ export class AssetService extends Asset {
     valuationMethod: AssetValuationMethod,
     nftClassId: bigint | undefined,
     nftItemId: bigint | undefined,
-    timestamp: Date
+    timestamp: Date,
+    blockchain = '0'
   ) {
     logger.info(`Initialising asset ${assetId} for pool ${poolId}`)
     const isActive = false
     const asset = new this(
       `${poolId}-${assetId}`,
       timestamp,
+      blockchain,
       type,
       valuationMethod,
       poolId,

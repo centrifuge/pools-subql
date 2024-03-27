@@ -36,7 +36,10 @@ async function _handlePoolCreated(event: SubstrateEvent<PoolCreatedEvent>): Prom
     event.block.block.header.number.toNumber()
   )
   await pool.initData()
-  await pool.initIpfsMetadata().catch((err) => logger.error(`IPFS Request failed ${err}`))
+  await pool.initIpfsMetadata().catch((err) => {
+    logger.error(`IPFS Request failed ${err}`)
+    return Promise.resolve()
+  })
   await pool.save()
 
   // Initialise the tranches
@@ -75,6 +78,7 @@ async function _handlePoolUpdated(event: SubstrateEvent<PoolUpdatedEvent>): Prom
   if (!pool) throw missingPool
 
   await pool.initData()
+  await pool.initIpfsMetadata()
   await pool.save()
 
   // Deactivate active tranches
