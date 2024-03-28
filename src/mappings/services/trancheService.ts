@@ -9,8 +9,8 @@ import { TrancheProps } from '../../types/models/Tranche'
 const MAINNET_CHAINID = '0xb3db41421702df9a7fcac62b53ffeac85f7853cc4e689e0b93aeb3db18c09d82'
 
 export class TrancheService extends Tranche {
-  static seed(poolId: string, trancheId: string) {
-    return new this(`${poolId}-${trancheId}`, 'ALL', poolId, trancheId, false)
+  static seed(poolId: string, trancheId: string, blockchain = '0') {
+    return new this(`${poolId}-${trancheId}`, blockchain, 'ALL', poolId, trancheId, false)
   }
 
   static async getOrSeed(poolId: string, trancheId: string) {
@@ -51,7 +51,7 @@ export class TrancheService extends Tranche {
   }
 
   static async getByPoolId(poolId: string) {
-    const tranches = (await paginatedGetter('Tranche', 'poolId', poolId)).map((tranche) =>
+    const tranches = (await paginatedGetter<Tranche>('Tranche', [['poolId', '=', poolId]])).map((tranche) =>
       this.create(tranche as TrancheProps)
     )
     return tranches as TrancheService[]

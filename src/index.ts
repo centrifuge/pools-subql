@@ -1,5 +1,6 @@
 import '@polkadot/api-augment'
 import { atob } from 'abab'
+import fetch from 'node-fetch'
 import type { u64 } from '@polkadot/types'
 import type { Provider } from '@ethersproject/providers'
 
@@ -7,6 +8,7 @@ const isSubstrateNode = 'query' in api
 const isEvmNode = typeof (api as unknown as Provider).getNetwork === 'function'
 const ethNetworkProm = isEvmNode ? (api as unknown as Provider).getNetwork() : null
 
+global.fetch = fetch as unknown as typeof global.fetch
 global.atob = atob
 global.getNodeEvmChainId = async function () {
   if (isSubstrateNode) return ((await api.query.evmChainId.chainId()) as u64).toString(10)

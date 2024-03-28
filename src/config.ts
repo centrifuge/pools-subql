@@ -1,5 +1,6 @@
 import { bnToBn } from '@polkadot/util'
 
+export const IPFS_NODE = 'https://centrifuge.mypinata.cloud'
 export const SNAPSHOT_INTERVAL_SECONDS = 3600 * 24
 export const WAD_DIGITS = 18
 export const WAD = bnToBn(10).pow(bnToBn(WAD_DIGITS))
@@ -8,6 +9,7 @@ export const RAY = bnToBn(10).pow(bnToBn(RAY_DIGITS))
 export const CPREC = (digits: number) => bnToBn(10).pow(bnToBn(digits))
 export const DAIMainnetAddress = '0x6b175474e89094c44da98b954eedeac495271d0f'
 export const multicallAddress = '0xeefba1e63905ef1d7acba5a8513c70307c1ce441'
+
 export const tinlakePools = [
   {
     id: '0x09e43329552c9d81cf205fd5f44796fbc40c822e',

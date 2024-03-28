@@ -1,6 +1,7 @@
 import { SubstrateBlock } from '@subql/types'
 import { PoolService } from '../mappings/services/poolService'
 import { substrateStateSnapshotter } from './stateSnapshot'
+import { Pool, PoolSnapshot } from '../types'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const getByField = store.getByField as jest.Mock
@@ -45,7 +46,7 @@ describe('Given a populated pool,', () => {
     set.mockReset()
     getByField.mockReset()
     getByField.mockReturnValue([pool])
-    await substrateStateSnapshotter('Pool', 'PoolSnapshot', block, undefined, 'active', true)
+    await substrateStateSnapshotter<Pool,PoolSnapshot>('Pool', 'PoolSnapshot', block, 'isActive', true)
     expect(store.getByField).toHaveBeenNthCalledWith(1, 'Pool', 'active', true, expect.anything())
   })
 
@@ -53,7 +54,7 @@ describe('Given a populated pool,', () => {
     set.mockReset()
     getByField.mockReset()
     getByField.mockReturnValue([pool])
-    await substrateStateSnapshotter('Pool', 'PoolSnapshot', block, 'poolId')
+    await substrateStateSnapshotter<Pool, PoolSnapshot>('Pool', 'PoolSnapshot', block, 'type', 'ALL', 'poolId')
     expect(store.set).toHaveBeenNthCalledWith(
       2,
       'PoolSnapshot',

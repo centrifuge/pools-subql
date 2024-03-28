@@ -4,6 +4,7 @@ import { WAD } from '../../config'
 import { LoanPricingAmount, NftItemMetadata } from '../../helpers/types'
 import { Asset, AssetType, AssetValuationMethod, AssetStatus } from '../../types'
 import { ActiveLoanData } from './poolService'
+import { cid, readIpfs } from '../../helpers/ipfsFetch'
 
 export class AssetService extends Asset {
   static init(
@@ -13,13 +14,15 @@ export class AssetService extends Asset {
     valuationMethod: AssetValuationMethod,
     nftClassId: bigint | undefined,
     nftItemId: bigint | undefined,
-    timestamp: Date
+    timestamp: Date,
+    blockchain = '0'
   ) {
     logger.info(`Initialising asset ${assetId} for pool ${poolId}`)
     const isActive = false
     const asset = new this(
       `${poolId}-${assetId}`,
       timestamp,
+      blockchain,
       type,
       valuationMethod,
       poolId,
@@ -135,6 +138,12 @@ export class AssetService extends Asset {
     }
     return principal
   }
+
+  public async updateIpfsAssetName(): Promise<string | null> {
+    if (!this.metadata) return logger.warn('No IPFS metadata')
+    const metadata = await readIpfs<AssetIpfsMetadata>(this.metadata.match(cid)[0])
+    return metadata?.name ?? null
+  }
 }
 
 interface AssetSpecs {
@@ -144,4 +153,10 @@ interface AssetSpecs {
   lossGivenDefault?: bigint
   discountRate?: bigint
   maturityDate?: Date
+}
+
+interface AssetIpfsMetadata {
+  name: string
+  properties: unknown
+  [key: string]: unknown
 }

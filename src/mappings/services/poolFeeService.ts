@@ -9,16 +9,17 @@ export interface PoolFeeData {
   epochNumber: number
   hash: string
   amount?: bigint
+  pending?: bigint
 }
 
 export class PoolFeeService extends PoolFee {
-  static init(data: PoolFeeData, type: keyof typeof PoolFeeType, status: keyof typeof PoolFeeStatus) {
+  static init(data: PoolFeeData, type: keyof typeof PoolFeeType, status: keyof typeof PoolFeeStatus, blockchain = '0') {
     logger.info(`Initialising PoolFee ${data.feeId}`)
     const { poolId, feeId } = data
     const _type = PoolFeeType[type]
     const _status = PoolFeeStatus[status]
 
-    const poolFee = new this(`${poolId}-${feeId}`, feeId, _type, _status, false, poolId)
+    const poolFee = new this(`${poolId}-${feeId}`, feeId, _type, _status, false, blockchain, poolId)
 
     poolFee.sumChargedAmount = BigInt(0)
     poolFee.sumAccruedAmount = BigInt(0)
@@ -31,11 +32,16 @@ export class PoolFeeService extends PoolFee {
     return poolFee
   }
 
-  static async getOrInit(data: PoolFeeData, type: keyof typeof PoolFeeType, status: keyof typeof PoolFeeStatus) {
+  static async getOrInit(
+    data: PoolFeeData,
+    type: keyof typeof PoolFeeType,
+    status: keyof typeof PoolFeeStatus,
+    blockchain = '0'
+  ) {
     const { poolId, feeId } = data
     let poolFee = (await this.get(`${poolId}-${feeId}`)) as PoolFeeService
     if (!poolFee) {
-      poolFee = this.init(data, type, status)
+      poolFee = this.init(data, type, status, blockchain)
     } else {
       poolFee.status = PoolFeeStatus[status]
     }
@@ -68,21 +74,21 @@ export class PoolFeeService extends PoolFee {
     return poolFee
   }
 
-  public charge(data: Omit<PoolFeeData, 'amount'> & Required<Pick<PoolFeeData, 'amount'>>) {
+  public charge(data: Omit<PoolFeeData, 'amount'> & Required<Pick<PoolFeeData, 'amount' | 'pending'>>) {
     logger.info(`Charging PoolFee ${data.feeId} with amount ${data.amount.toString(10)}`)
     if (!this.isActive) throw new Error('Unable to charge inactive PolFee')
     this.sumChargedAmount += data.amount
     this.sumChargedAmountByPeriod += data.amount
-    this.pendingAmount += data.amount
+    this.pendingAmount = data.pending
     return this
   }
 
-  public uncharge(data: Omit<PoolFeeData, 'amount'> & Required<Pick<PoolFeeData, 'amount'>>) {
+  public uncharge(data: Omit<PoolFeeData, 'amount'> & Required<Pick<PoolFeeData, 'amount' | 'pending'>>) {
     logger.info(`Uncharging PoolFee ${data.feeId} with amount ${data.amount.toString(10)}`)
     if (!this.isActive) throw new Error('Unable to uncharge inactive PolFee')
     this.sumChargedAmount -= data.amount
     this.sumChargedAmountByPeriod -= data.amount
-    this.pendingAmount -= data.amount
+    this.pendingAmount = data.pending
     return this
   }
 
@@ -106,5 +112,9 @@ export class PoolFeeService extends PoolFee {
     this.sumAccruedAmountByPeriod = newAccruedAmount - this.sumAccruedAmount
     this.sumAccruedAmount = newAccruedAmount
     return this
+  }
+
+  public setName(name: string) {
+    this.name = name
   }
 }

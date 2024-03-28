@@ -1,5 +1,4 @@
 import { Option, u128, Vec } from '@polkadot/types'
-import { bnToBn, nToBigInt } from '@polkadot/util'
 import { paginatedGetter } from '../../helpers/paginatedGetter'
 import {
   ExtendedCall,
@@ -8,21 +7,22 @@ import {
   PoolDetails,
   PoolFeesList,
   PoolMetadata,
-  PoolNav,
   TrancheDetails,
 } from '../../helpers/types'
 import { Pool } from '../../types'
+import { cid, readIpfs } from '../../helpers/ipfsFetch'
+import { PoolProps } from '../../types/models/Pool'
 
 export class PoolService extends Pool {
-  static seed(poolId: string) {
+  static seed(poolId: string, blockchain = '0') {
     logger.info(`Seeding pool ${poolId}`)
-    return new this(`${poolId}`, 'ALL', false)
+    return new this(`${poolId}`, blockchain, 'ALL', false)
   }
 
-  static async getOrSeed(poolId: string, saveSeed = true) {
+  static async getOrSeed(poolId: string, saveSeed = true, blockchain = '0') {
     let pool = await this.getById(poolId)
     if (!pool) {
-      pool = this.seed(poolId)
+      pool = this.seed(poolId, blockchain)
       if (saveSeed) await pool.save()
     }
     return pool
@@ -89,10 +89,32 @@ export class PoolService extends Pool {
     if (poolReq.isNone) throw new Error('No pool data available to create the pool')
 
     const poolData = poolReq.unwrap()
-    this.metadata = metadataReq.isSome ? metadataReq.unwrap().metadata.toUtf8() : 'NA'
+    this.metadata = metadataReq.isSome ? metadataReq.unwrap().metadata.toUtf8() : null
     this.minEpochTime = poolData.parameters.minEpochTime.toNumber()
     this.maxPortfolioValuationAge = poolData.parameters.maxNavAge.toNumber()
     return this
+  }
+
+  public async initIpfsMetadata() {
+    if (!this.metadata) {
+      logger.warn('No IPFS metadata')
+      return
+    }
+    const metadata = await readIpfs<PoolIpfsMetadata>(this.metadata.match(cid)[0])
+    this.name = metadata.pool.name
+    this.assetClass = metadata.pool.asset.class
+    this.assetSubclass = metadata.pool.asset.subClass
+    this.icon = metadata.pool.icon.uri
+  }
+
+  public async getIpfsPoolFeeName(poolFeeId: string): Promise<string> {
+    if (!this.metadata) return logger.warn('No IPFS metadata')
+    const metadata = await readIpfs<PoolIpfsMetadata>(this.metadata.match(cid)[0])
+    if (!metadata.pool.poolFees) {
+      logger.warn('Missing poolFee object in pool metadata!')
+      return null
+    }
+    return metadata.pool.poolFees.find((elem) => elem.id.toString(10) === poolFeeId)?.name ?? null
   }
 
   static async getById(poolId: string) {
@@ -100,14 +122,14 @@ export class PoolService extends Pool {
   }
 
   static async getAll() {
-    const pools = (await paginatedGetter('Pool', 'type', 'ALL')) as PoolService[]
+    const pools = (await paginatedGetter('Pool', [['type', '=', 'ALL']])) as PoolService[]
     return pools.map((pool) => this.create(pool) as PoolService)
   }
 
-  static async getActivePools() {
+  static async getCfgActivePools(): Promise<PoolService[]> {
     logger.info('Fetching active pools')
-    const pools = (await paginatedGetter('Pool', 'isActive', true)) as PoolService[]
-    return pools.map((pool) => this.create(pool) as PoolService)
+    const pools = (await paginatedGetter<Pool>('Pool', [['isActive', '=', true],['blockchainId', '=', '0']]))
+    return pools.map((pool) => this.create(pool as PoolProps)) as PoolService[]
   }
 
   public async updateState() {
@@ -145,10 +167,11 @@ export class PoolService extends Pool {
     logger.info(`Updating portfolio valuation for pool: ${this.id} (runtime)`)
     const apiCall = api.call as ExtendedCall
     const navResponse = await apiCall.poolsApi.nav(this.id)
-    if (navResponse.isEmpty) logger.warn('Empty pv response')
-    this.portfolioValuation = navResponse
-      .unwrapOr<Pick<PoolNav, 'total'>>({ total: api.registry.createType('Balance', 0) })
-      .total.toBigInt()
+    if (navResponse.isEmpty) {
+      logger.warn('Empty pv response')
+      return
+    }
+    this.portfolioValuation = navResponse.unwrap().total.toBigInt()
     logger.info(`portfolio valuation: ${this.portfolioValuation.toString(10)}`)
     return this
   }
@@ -200,20 +223,22 @@ export class PoolService extends Pool {
   }
 
   public computePoolValue() {
-    const nav = bnToBn(this.portfolioValuation)
-    const totalReserve = bnToBn(this.totalReserve)
-    this.value = nToBigInt(nav.add(totalReserve))
+    this.value = this.portfolioValuation + this.totalReserve
+    logger.info(`Updating pool.value: ${this.value}`)
   }
 
   public resetDebtOverdue() {
+    logger.info('Resetting sumDebtOverdue')
     this.sumDebtOverdue = BigInt(0)
   }
 
   public increaseDebtOverdue(amount: bigint) {
+    logger.info(`Increasing sumDebtOverdue by ${amount}`)
     this.sumDebtOverdue += amount
   }
 
   public increaseWriteOff(amount: bigint) {
+    logger.info(`Increasing writeOff by ${amount}`)
     this.sumDebtWrittenOffByPeriod += amount
   }
 
@@ -315,4 +340,15 @@ export interface ActiveLoanData {
 
 interface PoolTranches {
   [trancheId: string]: { index: number; data: TrancheDetails }
+}
+
+interface PoolIpfsMetadata {
+  version: number
+  pool: {
+    name: string
+    icon: { uri: string; mime: string }
+    asset: { class: string; subClass: string }
+    poolFees?: Array<{ id: number; name: string }>
+  }
+  [key: string]: unknown
 }
