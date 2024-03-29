@@ -94,6 +94,7 @@ jobs:
           --disableHistorical \
           --disableIndexerStoreCacheAsync \
           --indexerVersion="$SUBQL_INDEXER_VERSION" \
+          --indexerUnsafe \
           --queryVersion="$SUBQL_QUERY_VERSION" \
           --queryAggregate
 
