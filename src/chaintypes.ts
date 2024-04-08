@@ -36,6 +36,12 @@ const latestTypes = {
     bucket: 'CfgTraitsFeePoolFeeBucket',
     fees: 'Vec<PoolFee>',
   },
+  PoolFee: {
+    id: 'u64',
+    destination: 'AccountId32',
+    editor: 'CfgTypesPoolsPoolFeeEditor',
+    amounts: 'CfgTypesPoolsPoolFeeAmounts',
+  },
 }
 
 const definitions: OverrideBundleDefinition = {

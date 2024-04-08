@@ -9,12 +9,11 @@ export async function paginatedGetter<T extends Entity>(
   let amount = 0
   let entities: T[]
   do {
-    entities = (await store.getByField(entity, filter[0][0] as string, filter[0][2], {
-      // TODO: Revert back to getByFields
+    entities = (await store.getByFields(entity, filter, {
       offset: amount,
       limit: batch,
-    })) as T[]
+    }))
     amount = results.push(...entities)
   } while (entities.length === batch)
-  return filter.length > 1 ? results.filter( entity => entity[filter[1][0]] === filter[1][2]) : results
+  return results
 }
