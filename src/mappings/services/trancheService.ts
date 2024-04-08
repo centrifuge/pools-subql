@@ -4,13 +4,14 @@ import { paginatedGetter } from '../../helpers/paginatedGetter'
 import { WAD } from '../../config'
 import { ExtendedRpc, TrancheDetails } from '../../helpers/types'
 import { Tranche, TrancheSnapshot } from '../../types'
-import { TrancheProps } from '../../types/models/Tranche'
 
 const MAINNET_CHAINID = '0xb3db41421702df9a7fcac62b53ffeac85f7853cc4e689e0b93aeb3db18c09d82'
 
 export class TrancheService extends Tranche {
   static seed(poolId: string, trancheId: string, blockchain = '0') {
-    return new this(`${poolId}-${trancheId}`, blockchain, 'ALL', poolId, trancheId, false)
+    const id = `${poolId}-${trancheId}`
+    logger.info(`Seeding tranche ${id}`)
+    return new this(id, blockchain, 'ALL', poolId, trancheId, false)
   }
 
   static async getOrSeed(poolId: string, trancheId: string) {
@@ -23,6 +24,7 @@ export class TrancheService extends Tranche {
   }
 
   public init(index: number, trancheData: TrancheDetails) {
+    logger.info(`Initializing tranche ${this.id}`)
     this.index = index
     this.isResidual = trancheData.trancheType.isResidual
     this.seniority = trancheData.seniority.toNumber()
@@ -50,23 +52,23 @@ export class TrancheService extends Tranche {
     return tranche
   }
 
-  static async getByPoolId(poolId: string) {
-    const tranches = (await paginatedGetter<Tranche>('Tranche', [['poolId', '=', poolId]])).map((tranche) =>
-      this.create(tranche as TrancheProps)
-    )
+  static async getByPoolId(poolId: string): Promise<TrancheService[]> {
+    const tranches = (await paginatedGetter<Tranche>(this, [['poolId', '=', poolId]]))
     return tranches as TrancheService[]
   }
 
-  static async getActives(poolId: string) {
-    const tranches = (await this.getByPoolId(poolId)) as TrancheService[]
-    const activeTranches = tranches.filter((state) => state.isActive === true)
-    return activeTranches
+  static async getActivesByPoolId(poolId: string): Promise<TrancheService[]> {
+    const tranches = (await paginatedGetter<Tranche>(this, [
+      ['poolId', '=', poolId],
+      ['isActive', '=', true],
+    ]))
+    return tranches as TrancheService[]
   }
 
   public async updateSupply() {
+    logger.info(`Updating supply for tranche ${this.id}`)
     const requestPayload = { Tranche: [this.poolId, this.trancheId] }
     const supplyResponse = await api.query.ormlTokens.totalIssuance<u128>(requestPayload)
-    logger.info(`SupplyResponse: ${JSON.stringify(supplyResponse)}`)
     this.tokenSupply = supplyResponse.toBigInt()
     return this
   }
@@ -167,26 +169,34 @@ export class TrancheService extends Tranche {
   }
 
   public updateOutstandingInvestOrders = (newAmount: bigint, oldAmount: bigint) => {
+    logger.info(`Updating outstanding investment orders by period for tranche ${this.id}`)
     this.sumOutstandingInvestOrdersByPeriod = this.sumOutstandingInvestOrdersByPeriod + newAmount - oldAmount
+    logger.info(`to ${this.sumOutstandingInvestOrdersByPeriod}`)
     return this
   }
 
   public updateOutstandingRedeemOrders(newAmount: bigint, oldAmount: bigint) {
+    logger.info(`Updating outstanding investment orders by period for tranche ${this.id}`)
     this.sumOutstandingRedeemOrdersByPeriod = this.sumOutstandingRedeemOrdersByPeriod + newAmount - oldAmount
     this.sumOutstandingRedeemOrdersCurrencyByPeriod = this.computeCurrencyAmount(
       this.sumOutstandingRedeemOrdersByPeriod
     )
+    logger.info(`to ${this.sumOutstandingRedeemOrdersByPeriod}`)
     return this
   }
 
   public updateFulfilledInvestOrders(amount: bigint) {
+    logger.info(`Updating fulfilled investment orders by period for tranche ${this.id}`)
     this.sumFulfilledInvestOrdersByPeriod = this.sumFulfilledInvestOrdersByPeriod + amount
+    logger.info(`to ${this.sumFulfilledInvestOrdersByPeriod}`)
     return this
   }
 
   public updateFulfilledRedeemOrders(amount: bigint) {
+    logger.info(`Updating fulfilled redeem orders by period for tranche ${this.id}`)
     this.sumFulfilledRedeemOrdersByPeriod = this.sumFulfilledRedeemOrdersByPeriod + amount
     this.sumFulfilledRedeemOrdersCurrencyByPeriod = this.computeCurrencyAmount(this.sumFulfilledRedeemOrdersByPeriod)
+    logger.info(`to ${this.sumFulfilledRedeemOrdersByPeriod}`)
     return this
   }
 
@@ -195,10 +205,12 @@ export class TrancheService extends Tranche {
   }
 
   public deactivate() {
+    logger.info(`Deactivating tranche ${this.id}`)
     this.isActive = false
   }
 
   public activate() {
+    logger.info(`Activating tranche ${this.id}`)
     this.isActive = true
   }
 }

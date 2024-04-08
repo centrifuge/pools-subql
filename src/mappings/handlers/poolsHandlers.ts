@@ -82,7 +82,7 @@ async function _handlePoolUpdated(event: SubstrateEvent<PoolUpdatedEvent>): Prom
   await pool.save()
 
   // Deactivate active tranches
-  const activeTranches = await TrancheService.getActives(poolId.toString())
+  const activeTranches = await TrancheService.getActivesByPoolId(poolId.toString())
   for (const activeTranche of activeTranches) {
     await activeTranche.deactivate()
     await activeTranche.save()
@@ -115,7 +115,7 @@ async function _handleEpochClosed(event: SubstrateEvent<EpochClosedExecutedEvent
   if (pool === undefined) throw missingPool
 
   // Close the current epoch and open a new one
-  const tranches = await TrancheService.getActives(poolId.toString())
+  const tranches = await TrancheService.getActivesByPoolId(poolId.toString())
   const epoch = await EpochService.getById(poolId.toString(), epochId.toNumber())
   await epoch.closeEpoch(event.block.timestamp)
   await epoch.saveWithStates()

@@ -11,7 +11,6 @@ import {
 } from '../../helpers/types'
 import { Pool } from '../../types'
 import { cid, readIpfs } from '../../helpers/ipfsFetch'
-import { PoolProps } from '../../types/models/Pool'
 
 export class PoolService extends Pool {
   static seed(poolId: string, blockchain = '0') {
@@ -122,14 +121,17 @@ export class PoolService extends Pool {
   }
 
   static async getAll() {
-    const pools = (await paginatedGetter('Pool', [['type', '=', 'ALL']])) as PoolService[]
-    return pools.map((pool) => this.create(pool) as PoolService)
+    const pools = await paginatedGetter(this, [['type', '=', 'ALL']])
+    return pools as PoolService[]
   }
 
   static async getCfgActivePools(): Promise<PoolService[]> {
     logger.info('Fetching active pools')
-    const pools = (await paginatedGetter<Pool>('Pool', [['isActive', '=', true],['blockchainId', '=', '0']]))
-    return pools.map((pool) => this.create(pool as PoolProps)) as PoolService[]
+    const pools = await paginatedGetter(this, [
+      ['isActive', '=', true],
+      ['blockchainId', '=', '0'],
+    ])
+    return pools as PoolService[]
   }
 
   public async updateState() {

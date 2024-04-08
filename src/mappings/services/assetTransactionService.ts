@@ -19,7 +19,7 @@ export interface AssetTransactionData {
 
 export class AssetTransactionService extends AssetTransaction {
   static init = (data: AssetTransactionData, type: AssetTransactionType) => {
-    const tx = new AssetTransactionService(
+    const tx = new this(
       `${data.hash}-${data.epochNumber.toString()}-${type.toString()}`,
       data.timestamp,
       data.poolId,

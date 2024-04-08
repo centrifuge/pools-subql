@@ -140,6 +140,7 @@ export class AssetService extends Asset {
   }
 
   public async updateIpfsAssetName(): Promise<string | null> {
+    logger.info(`Fetching IPFS asset name for asset ${this.id} `)
     if (!this.metadata) return logger.warn('No IPFS metadata')
     const metadata = await readIpfs<AssetIpfsMetadata>(this.metadata.match(cid)[0])
     return metadata?.name ?? null

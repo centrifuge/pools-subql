@@ -23,7 +23,7 @@ describe('Given a populated pool,', () => {
     set.mockReset()
     getByField.mockReset()
     getByField.mockReturnValue([pool])
-    await substrateStateSnapshotter('Pool', 'PoolSnapshot', block)
+    await substrateStateSnapshotter(Pool, PoolSnapshot, block)
     expect(store.getByField).toHaveBeenCalledWith('Pool', 'type', 'ALL', expect.anything())
     expect(store.set).toHaveBeenNthCalledWith(1, 'Pool', poolId, expect.anything())
     expect(store.set).toHaveBeenNthCalledWith(2, 'PoolSnapshot', `${poolId}-11246`, expect.anything())
@@ -33,7 +33,7 @@ describe('Given a populated pool,', () => {
     set.mockReset()
     getByField.mockReset()
     getByField.mockReturnValue([pool])
-    await substrateStateSnapshotter('Pool', 'PoolSnapshot', block)
+    await substrateStateSnapshotter(Pool, PoolSnapshot, block)
     expect(store.set).toHaveBeenNthCalledWith(
       2,
       'PoolSnapshot',
@@ -46,7 +46,7 @@ describe('Given a populated pool,', () => {
     set.mockReset()
     getByField.mockReset()
     getByField.mockReturnValue([pool])
-    await substrateStateSnapshotter<Pool,PoolSnapshot>('Pool', 'PoolSnapshot', block, 'isActive', true)
+    await substrateStateSnapshotter<Pool,PoolSnapshot>(Pool, PoolSnapshot, block, 'isActive', true)
     expect(store.getByField).toHaveBeenNthCalledWith(1, 'Pool', 'active', true, expect.anything())
   })
 
@@ -54,7 +54,7 @@ describe('Given a populated pool,', () => {
     set.mockReset()
     getByField.mockReset()
     getByField.mockReturnValue([pool])
-    await substrateStateSnapshotter<Pool, PoolSnapshot>('Pool', 'PoolSnapshot', block, 'type', 'ALL', 'poolId')
+    await substrateStateSnapshotter<Pool, PoolSnapshot>(Pool, PoolSnapshot, block, 'type', 'ALL', 'poolId')
     expect(store.set).toHaveBeenNthCalledWith(
       2,
       'PoolSnapshot',
@@ -81,7 +81,7 @@ describe('Given a pool with non zero accumulators, ', () => {
 
     Object.assign(pool, accumulatedProps)
 
-    await substrateStateSnapshotter('Pool', 'PoolSnapshot', block)
+    await substrateStateSnapshotter(Pool, PoolSnapshot, block)
 
     expect(store.set).toHaveBeenNthCalledWith(1, 'Pool', poolId, expect.objectContaining(zeroedProps))
     expect(store.set).toHaveBeenNthCalledWith(

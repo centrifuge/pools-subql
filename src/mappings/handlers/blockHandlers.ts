@@ -45,7 +45,7 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
       await pool.resetDebtOverdue()
 
       // Update tranche states
-      const tranches = await TrancheService.getActives(pool.id)
+      const tranches = await TrancheService.getActivesByPoolId(pool.id)
       const trancheData = await pool.getTranches()
       const trancheTokenPrices = await pool.getTrancheTokenPrices()
       for (const tranche of tranches) {
@@ -95,24 +95,10 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
     }
 
     //Perform Snapshots and reset accumulators
-    await substrateStateSnapshotter<Pool, PoolSnapshot>('Pool', 'PoolSnapshot', block, 'isActive', true, 'poolId')
-    await substrateStateSnapshotter<Tranche, TrancheSnapshot>(
-      'Tranche',
-      'TrancheSnapshot',
-      block,
-      'isActive',
-      true,
-      'trancheId'
-    )
-    await substrateStateSnapshotter<Asset, AssetSnapshot>('Asset', 'AssetSnapshot', block, 'isActive', true, 'assetId')
-    await substrateStateSnapshotter<PoolFee, PoolFeeSnapshot>(
-      'PoolFee',
-      'PoolFeeSnapshot',
-      block,
-      'isActive',
-      true,
-      'poolFeeId'
-    )
+    await substrateStateSnapshotter(Pool, PoolSnapshot, block, 'isActive', true, 'poolId')
+    await substrateStateSnapshotter(Tranche, TrancheSnapshot, block, 'isActive', true, 'trancheId')
+    await substrateStateSnapshotter(Asset, AssetSnapshot, block, 'isActive', true, 'assetId')
+    await substrateStateSnapshotter(PoolFee, PoolFeeSnapshot, block, 'isActive', true, 'poolFeeId')
 
     //Update tracking of period and continue
     await (await timekeeper).update(blockPeriodStart)
