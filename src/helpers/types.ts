@@ -401,7 +401,7 @@ export interface PoolFeeInfo extends Struct {
 export interface PoolFee extends Struct {
   id: u64
   destination: AccountId32
-  editor: PoolFeeEditor
+  //editor: PoolFeeEditor
   amounts: PoolFeeAmounts
 }
 

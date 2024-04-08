@@ -39,7 +39,7 @@ const latestTypes = {
   PoolFee: {
     id: 'u64',
     destination: 'AccountId32',
-    editor: 'CfgTypesPoolsPoolFeeEditor',
+    //editor: 'CfgTypesPoolsPoolFeeEditor',
     amounts: 'CfgTypesPoolsPoolFeeAmounts',
   },
 }
