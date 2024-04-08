@@ -27,10 +27,9 @@ async function stateSnapshotter<T extends SnapshottableEntity, U extends Snapsho
 ): Promise<void[]> {
   const entitySaves: Promise<void>[] = []
   logger.info(`Performing snapshots of ${stateModel.prototype._name} for blockchainId ${blockchainId}`)
-  const stateEntities = (await paginatedGetter(stateModel, [
-    ['blockchainId', '=', blockchainId],
-    [filterKey, '=', filterValue],
-  ])) as SnapshottableEntity[]
+  const filter: Parameters<typeof paginatedGetter<T>>[1] = [['blockchainId', '=', blockchainId]]
+  if (filterKey && filterValue) filter.push([filterKey, '=', filterValue])
+  const stateEntities = (await paginatedGetter(stateModel, filter)) as SnapshottableEntity[]
   if (stateEntities.length === 0) logger.info(`No ${stateModel.prototype._name} to snapshot!`)
   for (const stateEntity of stateEntities) {
     const blockNumber = block.number
