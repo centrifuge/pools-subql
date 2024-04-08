@@ -25,7 +25,7 @@ export class EpochService extends Epoch {
   static async init(poolId: string, epochNr: number, trancheIds: string[], timestamp: Date) {
     logger.info(`Initialising epoch ${epochNr} for pool ${poolId}`)
     const epoch = new this(
-      `${poolId}-${epochNr.toString()}`,
+      `${poolId}-${epochNr.toString(10)}`,
       poolId,
       epochNr,
       timestamp,
@@ -46,14 +46,14 @@ export class EpochService extends Epoch {
   static async getById(poolId: string, epochNr: number) {
     const epoch = (await this.get(`${poolId}-${epochNr.toString()}`)) as EpochService
     if (!epoch) return undefined
-    const epochStates = await EpochState.getByEpochId(`${poolId}-${epochNr.toString()}`)
-    epoch.states.push(...epochStates)
+    const epochStates = await EpochState.getByEpochId(`${poolId}-${epochNr.toString(10)}`)
+    epoch.states = epochStates
     return epoch
   }
 
   async saveWithStates() {
     await this.save()
-    await Promise.all(this.states.map((epochState) => epochState.save()))
+    return Promise.all(this.states.map((epochState) => epochState.save()))
   }
 
   public getStates() {
@@ -61,11 +61,12 @@ export class EpochService extends Epoch {
   }
 
   public closeEpoch(timestamp: Date) {
+    logger.info(`Closing epoch ${this.id} on ${timestamp}`)
     this.closedAt = timestamp
   }
 
   public async executeEpoch(timestamp: Date) {
-    logger.info(`Updating OrderFulfillmentData for pool ${this.poolId} on epoch ${this.index}`)
+    logger.info(`Updating Epoch OrderFulfillmentData for pool ${this.poolId} on epoch ${this.index}`)
     this.executedAt = timestamp
 
     for (const epochState of this.states) {
@@ -114,6 +115,7 @@ export class EpochService extends Epoch {
   }
 
   public updateOutstandingInvestOrders(trancheId: string, newAmount: bigint, oldAmount: bigint) {
+    logger.info(`Updating outstanding invest orders for epoch ${this.id}`)
     const trancheState = this.states.find((epochState) => epochState.trancheId === trancheId)
     if (trancheState === undefined) throw new Error(`No epochState with could be found for tranche: ${trancheId}`)
     trancheState.sumOutstandingInvestOrders = trancheState.sumOutstandingInvestOrders + newAmount - oldAmount
@@ -121,6 +123,7 @@ export class EpochService extends Epoch {
   }
 
   public updateOutstandingRedeemOrders(trancheId: string, newAmount: bigint, oldAmount: bigint, tokenPrice: bigint) {
+    logger.info(`Updating outstanding redeem orders for epoch ${this.id}`)
     const trancheState = this.states.find((trancheState) => trancheState.trancheId === trancheId)
     if (trancheState === undefined) throw new Error(`No epochState with could be found for tranche: ${trancheId}`)
     trancheState.sumOutstandingRedeemOrders = trancheState.sumOutstandingRedeemOrders + newAmount - oldAmount
@@ -136,10 +139,12 @@ export class EpochService extends Epoch {
   }
 
   public increaseBorrowings(amount: bigint) {
+    logger.info(`Increasing borrowings for epoch ${this.id} of ${amount}`)
     this.sumBorrowedAmount += amount
   }
 
   public increaseRepayments(amount: bigint) {
+    logger.info(`Increasing repayments for epoch ${this.id} of ${amount}`)
     this.sumRepaidAmount += amount
   }
 }

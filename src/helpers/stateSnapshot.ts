@@ -1,4 +1,4 @@
-import { paginatedGetter } from './paginatedGetter'
+import { EntityClass, paginatedGetter } from './paginatedGetter'
 import { getPeriodStart } from './timekeeperService'
 import type { Entity } from '@subql/types-core'
 import { EthereumBlock } from '@subql/types-ethereum'
@@ -17,8 +17,8 @@ import { SubstrateBlock } from '@subql/types'
  * @returns A promise resolving when all state manipulations in the DB is completed
  */
 async function stateSnapshotter<T extends SnapshottableEntity, U extends SnapshottedEntityProps>(
-  stateModel: T['_name'],
-  snapshotModel: U['_name'],
+  stateModel: EntityClass<T>,
+  snapshotModel: EntityClass<U>,
   block: { number: number; timestamp: Date },
   filterKey?: keyof T,
   filterValue?: T[keyof T],
@@ -26,39 +26,38 @@ async function stateSnapshotter<T extends SnapshottableEntity, U extends Snapsho
   blockchainId: T['blockchainId'] = '0'
 ): Promise<void[]> {
   const entitySaves: Promise<void>[] = []
-  logger.info(`Performing snapshots of ${stateModel} for blockchainId ${blockchainId}`)
-  const stateEntities = (await paginatedGetter<T>(stateModel, [
-    ['blockchainId', '=', blockchainId],
-    [filterKey, '=', filterValue],
-  ])) as SnapshottableEntity[]
-  if (stateEntities.length === 0) logger.info(`No ${stateModel} to snapshot!`)
+  logger.info(`Performing snapshots of ${stateModel.prototype._name} for blockchainId ${blockchainId}`)
+  const filter: Parameters<typeof paginatedGetter<T>>[1] = [['blockchainId', '=', blockchainId]]
+  if (filterKey && filterValue) filter.push([filterKey, '=', filterValue])
+  const stateEntities = (await paginatedGetter(stateModel, filter)) as SnapshottableEntity[]
+  if (stateEntities.length === 0) logger.info(`No ${stateModel.prototype._name} to snapshot!`)
   for (const stateEntity of stateEntities) {
     const blockNumber = block.number
     const { id, ...copyStateEntity } = stateEntity
-    logger.info(`Snapshotting ${stateModel}: ${id}`)
-    const snapshotEntity: SnapshottedEntityProps = {
+    logger.info(`Snapshotting ${stateModel.prototype._name}: ${id}`)
+    const snapshotEntity: SnapshottedEntityProps = snapshotModel.create({
       ...copyStateEntity,
       id: `${id}-${blockNumber.toString()}`,
       timestamp: block.timestamp,
       blockNumber: blockNumber,
       periodStart: getPeriodStart(block.timestamp),
-    }
+    })
     if (fkReferenceName) snapshotEntity[fkReferenceName] = stateEntity.id
 
     const propNames = Object.getOwnPropertyNames(stateEntity)
     const propNamesToReset = propNames.filter((propName) => propName.endsWith('ByPeriod')) as ResettableKey[]
     for (const propName of propNamesToReset) {
-      logger.debug(`resetting ${stateModel.toLowerCase()}.${propName} to 0`)
+      logger.debug(`resetting ${stateEntity._name.toLowerCase()}.${propName} to 0`)
       stateEntity[propName] = BigInt(0)
     }
-    entitySaves.push(store.set(stateModel, stateEntity.id, stateEntity))
-    entitySaves.push(store.set(snapshotModel, snapshotEntity.id, snapshotEntity))
+    entitySaves.push(stateEntity.save())
+    entitySaves.push(snapshotEntity.save())
   }
   return Promise.all(entitySaves)
 }
 export function evmStateSnapshotter<T extends SnapshottableEntity, U extends SnapshottedEntityProps>(
-  stateModel: T['_name'],
-  snapshotModel: U['_name'],
+  stateModel: EntityClass<T>,
+  snapshotModel: EntityClass<U>,
   block: EthereumBlock,
   filterKey?: keyof T,
   filterValue?: T[keyof T],
@@ -69,8 +68,8 @@ export function evmStateSnapshotter<T extends SnapshottableEntity, U extends Sna
 }
 
 export function substrateStateSnapshotter<T extends SnapshottableEntity, U extends SnapshottedEntityProps>(
-  stateModel: T['_name'],
-  snapshotModel: U['_name'],
+  stateModel: EntityClass<T>,
+  snapshotModel: EntityClass<U>,
   block: SubstrateBlock,
   filterKey?: keyof T,
   filterValue?: T[keyof T],

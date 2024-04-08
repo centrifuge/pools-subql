@@ -1,20 +1,25 @@
-import type { Entity, FieldsExpression } from '@subql/types-core'
+import type { Entity, FieldsExpression, GetOptions } from '@subql/types-core'
 
-export async function paginatedGetter<T extends Entity>(
-  entity: T['_name'],
-  filter: FieldsExpression<T>[]
-): Promise<T[]> {
-  const results: T[] = []
+export async function paginatedGetter<E extends Entity>(
+  entityService: EntityClass<E>,
+  filter: FieldsExpression<E>[]
+): Promise<E[]> {
+  const results: E[] = []
   const batch = 100
   let amount = 0
-  let entities: T[]
+  let entities: E[]
   do {
-    entities = (await store.getByField(entity, filter[0][0] as string, filter[0][2], {
-      // TODO: Revert back to getByFields
+    entities = await entityService.getByFields(filter, {
       offset: amount,
       limit: batch,
-    })) as T[]
+    })
     amount = results.push(...entities)
   } while (entities.length === batch)
-  return filter.length > 1 ? results.filter( entity => entity[filter[1][0]] === filter[1][2]) : results
+  return results as E[]
+}
+
+export interface EntityClass<E extends Entity> {
+  new (...args): E
+  getByFields(filter: FieldsExpression<E>[], options?: GetOptions<E>): Promise<E[]>
+  create(record): E
 }

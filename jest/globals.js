@@ -1,6 +1,7 @@
 global['store'] = {
   get: jest.fn(),
   getByField: jest.fn(),
+  getByFields: jest.fn(),
   getOneByField: jest.fn(),
   set: jest.fn((...args) => args[2]),
   bulkCreate: jest.fn(),

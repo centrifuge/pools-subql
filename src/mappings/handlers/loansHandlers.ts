@@ -246,8 +246,8 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
   if (repaidAmount === BigInt(0) || borrowPrincipalAmount === BigInt(0)) return
 
   logger.info(
-    `Asset debt transferred event for pool: ${poolId.toString()}, from loan: ${fromLoanId.toString()} ` +
-      `to loan: ${toLoanId.toString()} amount: ${repaidAmount.toString()}`
+    `Asset debt transferred event for pool: ${poolId.toString()}, from asset: ${fromLoanId.toString()} ` +
+      `to asset: ${toLoanId.toString()} amount: ${repaidAmount.toString()}`
   )
 
   const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toHex())
