@@ -74,10 +74,7 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
       await pool.save()
 
       //PoolFees Accruals
-      const accruedFees = await pool.getAccruedFees().catch((err) => {
-        logger.error(err)
-        return [] as [feeId: string, pending: bigint, disbursement: bigint][]
-      })
+      const accruedFees = await pool.getAccruedFees()
       for (const accruals of accruedFees) {
         const [feeId, pending, disbursement] = accruals
         const poolFee = await PoolFeeService.getById(pool.id, feeId)

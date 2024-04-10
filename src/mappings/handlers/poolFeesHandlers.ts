@@ -26,7 +26,7 @@ async function _handleFeeProposed(event: SubstrateEvent<PoolFeesProposedEvent>):
     blockNumber: event.block.block.header.number.toNumber(),
     timestamp: event.block.timestamp,
     epochNumber: pool.currentEpoch,
-    hash: event.extrinsic.extrinsic.hash.toString(),
+    hash: event.hash.toString(),
   }
   const type = fee.feeType.type
 
@@ -57,7 +57,7 @@ async function _handleFeeAdded(event: SubstrateEvent<PoolFeesAddedEvent>): Promi
     blockNumber: event.block.block.header.number.toNumber(),
     timestamp: event.block.timestamp,
     epochNumber: pool.currentEpoch,
-    hash: event.extrinsic.extrinsic.hash.toString(),
+    hash: event.hash.toString(),
   }
   const type = fee.feeType.type
 
@@ -89,7 +89,7 @@ async function _handleFeeRemoved(event: SubstrateEvent<PoolFeesRemovedEvent>): P
     blockNumber: event.block.block.header.number.toNumber(),
     timestamp: event.block.timestamp,
     epochNumber: pool.currentEpoch,
-    hash: event.extrinsic.extrinsic.hash.toString(),
+    hash: event.hash.toString(),
   }
 
   const poolFee = await PoolFeeService.delete(poolFeeData)
@@ -114,7 +114,7 @@ async function _handleFeeCharged(event: SubstrateEvent<PoolFeesChargedEvent>): P
     blockNumber: event.block.block.header.number.toNumber(),
     timestamp: event.block.timestamp,
     epochNumber: pool.currentEpoch,
-    hash: event.extrinsic.extrinsic.hash.toString(),
+    hash: event.hash.toString(),
     amount: amount.toBigInt(),
     pending: pending.toBigInt(),
   }
@@ -143,7 +143,7 @@ async function _handleFeeUncharged(event: SubstrateEvent<PoolFeesUnchargedEvent>
     blockNumber: event.block.block.header.number.toNumber(),
     timestamp: event.block.timestamp,
     epochNumber: pool.currentEpoch,
-    hash: event.extrinsic.extrinsic.hash.toString(),
+    hash: event.hash.toString(),
     amount: amount.toBigInt(),
     pending: pending.toBigInt(),
   }
@@ -172,7 +172,7 @@ async function _handleFeePaid(event: SubstrateEvent<PoolFeesPaidEvent>): Promise
     blockNumber: event.block.block.header.number.toNumber(),
     timestamp: event.block.timestamp,
     epochNumber: pool.currentEpoch,
-    hash: event.extrinsic.extrinsic.hash.toString(),
+    hash: event.hash.toString(),
     amount: amount.toBigInt(),
   }
 
