@@ -69,8 +69,10 @@ jobs:
             if [[ -n "$SUBQL_ENDPOINTS" ]]; then SUBQL_ENDPOINTS+=","; fi
             SUBQL_ENDPOINTS+="${chainId}:${endpoint}"
 
-            if [[ -n "$SUBQL_DICTIONARIES" ]]; then SUBQL_DICTIONARIES+=","; fi
-            SUBQL_DICTIONARIES+="${chainId}:${dictionary}"
+            if [[ "$dictionary" != "null" ]]; then
+              if [[ -n "$SUBQL_DICTIONARIES" ]]; then SUBQL_DICTIONARIES+=","; fi
+              SUBQL_DICTIONARIES+="${chainId}:${dictionary}"
+            fi
           done
           echo "SUBQL_PROJ_NAME=$(yq '.name' project-centrifuge.yaml)" >> $GITHUB_ENV
           echo "SUBQL_PROJ_DECRIPTION=$(yq '.description' project-centrifuge.yaml)" >> $GITHUB_ENV
