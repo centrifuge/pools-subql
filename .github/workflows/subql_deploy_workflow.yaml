@@ -7,9 +7,6 @@ on:
       projOrg:
         required: true
         type: string
-      projName:
-          required: true
-          type: string
       projImage:
         required: false
         type: string
@@ -37,7 +34,6 @@ jobs:
       CHAIN_ID: ${{ inputs.chainId }}
       SUBQL_ACCESS_TOKEN: ${{ secrets.accessToken }}
       SUBQL_PROJ_ORG: ${{ inputs.projOrg }}
-      SUBQL_PROJ_NAME: ${{ inputs.projName }}
       SUBQL_PROJ_IMAGE: ${{ inputs.projImage }}
       SUBQL_DEPLOYMENT_TYPE: ${{ inputs.deploymentType }}
       ETH_NODE_API_KEY: ${{ secrets.ethNodeApiKey }}
@@ -76,6 +72,7 @@ jobs:
             if [[ -n "$SUBQL_DICTIONARIES" ]]; then SUBQL_DICTIONARIES+=","; fi
             SUBQL_DICTIONARIES+="${chainId}:${dictionary}"
           done
+          echo "SUBQL_PROJ_NAME=$(yq '.name' project-centrifuge.yaml)" 
           echo "SUBQL_PROJ_DECRIPTION=$(yq '.description' project-centrifuge.yaml)" >> $GITHUB_ENV
           echo "SUBQL_ENDPOINTS=${SUBQL_ENDPOINTS}" >> $GITHUB_ENV
           echo "SUBQL_DICTIONARIES=${SUBQL_DICTIONARIES}" >> $GITHUB_ENV

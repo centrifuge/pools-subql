@@ -1,4 +1,4 @@
-name: pools
+name: pools-multichain
 network:
   dictionary: https://api.subquery.network/sq/centrifuge/centrifuge-dictionary
   endpoint: wss://fullnode.parachain.centrifuge.io

@@ -1,4 +1,4 @@
-name: 'centrifuge-subql'
+name: pools-multichain
 repository: 'https://github.com/embrio-tech/centrifuge-subql'
 network:
   endpoint: wss://fullnode.demo.k-f.dev/public-ws

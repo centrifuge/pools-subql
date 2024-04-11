@@ -1,5 +1,5 @@
 specVersion: 1.0.0
-name: centrifuge-pools
+name: pools-multichain
 description: 'SubQuery API powered by EMBRIO.tech to query Centrifuge chain data for analytics insights on how Centrifuge is unlocking economic opportunity for all by connecting people to borrow and lend money transparently and cost-effectively.'
 version: 1.0.0
 runner:
