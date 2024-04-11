@@ -102,9 +102,9 @@ jobs:
           -d \
           --location=./subquery-multichain.yaml \
           --org="$SUBQL_PROJ_ORG" \
-          --endpoint="$SUBQL_ENDPOINTS" \
-          --dict="$SUBQL_DICTIONARIES"
           --projectName="$SUBQL_PROJ_NAME" \
+          --endpoint="$SUBQL_ENDPOINTS" \
+          --dict="$SUBQL_DICTIONARIES" \
           --ipfsCID="$IPFSCID" \
           --type=$SUBQL_DEPLOYMENT_TYPE \
           --disableHistorical \
