@@ -108,6 +108,6 @@ jobs:
           --type=$SUBQL_DEPLOYMENT_TYPE \
           --disableHistorical \
           --indexerWorkers=1 \
-          --indexerUnsafe=true \
+          --indexerUnsafe \
           --queryAggregate
 
