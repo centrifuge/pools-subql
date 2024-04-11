@@ -16,7 +16,7 @@ permissions:
 jobs:
   subql_deploy_embrio_staging:
     if: ${{ github.repository == 'embrio-tech/centrifuge-subql'}}
-    name: Deploy to SubQL (CENTRIFUGE staging)
+    name: Deploy to SubQL (EMBRIO staging)
     strategy:
       matrix:
         chainId: [demo] # ADD ARRAY OF CHAINS TO DEPLOY
