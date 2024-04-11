@@ -100,7 +100,7 @@ jobs:
         run: |
           npx subql multi-chain:deploy \
           -d \
-          --location=./subquery-multichain.yaml
+          --location=./subquery-multichain.yaml \
           --org="$SUBQL_PROJ_ORG" \
           --endpoint="$SUBQL_ENDPOINTS" \
           --dict="$SUBQL_DICTIONARIES"
