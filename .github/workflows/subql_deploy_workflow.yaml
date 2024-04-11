@@ -105,7 +105,6 @@ jobs:
           --projectName="$SUBQL_PROJ_NAME" \
           --endpoint="$SUBQL_ENDPOINTS" \
           --dict="$SUBQL_DICTIONARIES" \
-          --ipfsCID="$IPFSCID" \
           --type=$SUBQL_DEPLOYMENT_TYPE \
           --disableHistorical \
           --indexerWorkers=1 \
