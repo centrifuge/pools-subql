@@ -29,6 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SUBQL_INDEXER_VERSION: v4.0.1
+      SUBQL_ETH_INDEXER_VERSION: v4.1.0
       SUBQL_QUERY_VERSION: v2.10.0
       CHAIN_ID: ${{ inputs.chainId }}
       SUBQL_ACCESS_TOKEN: ${{ secrets.accessToken }}
@@ -56,14 +57,30 @@ jobs:
         run: 'yarn projectgen'
       - name: Extract Chain Parameters to ENV
         run: |
+          SUBQL_ENDPOINTS=""
+          SUBQL_DICTIONARIES=""
+          SUBQL_VERSIONS=""
+          for projectFile in project-*.yaml; do
+            echo "Reading $projectFile"
+            chainId=$(yq '.network.chainId' $projectFile)
+            endpoint=$(yq '.network.endpoint' $projectFile)
+            dictionary=$(yq '.network.dictionary' $projectFile)
+
+            if [[ -n "$SUBQL_ENDPOINTS" ]]; then SUBQL_ENDPOINTS+=","; fi
+            SUBQL_ENDPOINTS+="${chainId}:${endpoint}"
+
+            if [[ "$dictionary" != "null" ]]; then
+              if [[ -n "$SUBQL_DICTIONARIES" ]]; then SUBQL_DICTIONARIES+=","; fi
+              SUBQL_DICTIONARIES+="${chainId}:${dictionary}"
+            fi
+          done
           echo "SUBQL_PROJ_NAME=$(yq '.name' project-centrifuge.yaml)" >> $GITHUB_ENV
           echo "SUBQL_PROJ_DECRIPTION=$(yq '.description' project-centrifuge.yaml)" >> $GITHUB_ENV
-          echo "SUBQL_CFG_ENDPOINT=$(yq '.network.endpoint' project-centrifuge.yaml)" >> $GITHUB_ENV
-          echo "SUBQL_CFG_DICT=$(yq '.network.dictionary' project-centrifuge.yaml)" >> $GITHUB_ENV
+          echo "SUBQL_ENDPOINTS=${SUBQL_ENDPOINTS}" >> $GITHUB_ENV
+          echo "SUBQL_DICTIONARIES=${SUBQL_DICTIONARIES}" >> $GITHUB_ENV
       - name: Publish SubQL version
         run: |
-          npx subql publish -o -f .
-          echo "CFG_IPFSCID=$(cat .project-centrifuge-cid)" >> $GITHUB_ENV
+          echo "IPFSCID=$(node_modules/.bin/subql publish -o)" >> $GITHUB_ENV
       - name: Delete Project
         if: ${{ inputs.resetProject }}
         run: |
@@ -81,18 +98,18 @@ jobs:
           --org="$SUBQL_PROJ_ORG" \
           --projectName="$SUBQL_PROJ_NAME" \
           --logoURL="$SUBQL_PROJ_IMAGE"
-      - name: Deploy CFG Version
+      - name: Deploy Multichain Version
         run: |
-          npx subql deployment:deploy \
+          npx subql multi-chain:deploy \
           -d \
+          --location=./subquery-multichain.yaml \
           --org="$SUBQL_PROJ_ORG" \
-          --endpoint="$SUBQL_CFG_ENDPOINT" \
           --projectName="$SUBQL_PROJ_NAME" \
-          --ipfsCID="$CFG_IPFSCID" \
+          --endpoint="$SUBQL_ENDPOINTS" \
+          --dict="$SUBQL_DICTIONARIES" \
           --type=$SUBQL_DEPLOYMENT_TYPE \
           --disableHistorical \
-          --disableIndexerStoreCacheAsync \
-          --indexerVersion="$SUBQL_INDEXER_VERSION" \
+          --indexerWorkers=1 \
           --indexerUnsafe \
-          --queryVersion="$SUBQL_QUERY_VERSION" \
           --queryAggregate
+

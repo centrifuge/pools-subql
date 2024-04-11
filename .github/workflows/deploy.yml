@@ -20,12 +20,12 @@ jobs:
     strategy:
       matrix:
         chainId: [demo] # ADD ARRAY OF CHAINS TO DEPLOY
-    uses: ./.github/workflows/subql_deploy_workflow.yaml
+    uses: ./.github/workflows/subql_multi_deploy_workflow.yaml
     with:
       chainId: ${{ matrix.chainId }}
       projOrg: centrifuge
       projImage: https://centrifuge.io/static/bfb7682cb6ed4aa422d9d2c90cd9351a/centrifuge-logomark-black.svg'
-      deploymentType: stage
+      deploymentType: primary
       resetProject: false
     secrets:
       accessToken: ${{ secrets.SUBQL_ACCESS_TOKEN }}
