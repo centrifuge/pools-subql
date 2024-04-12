@@ -23,8 +23,8 @@ jobs:
       chainId: ${{ matrix.chainId }}
       projOrg: embrio-tech
       projImage: https://centrifuge.io/static/bfb7682cb6ed4aa422d9d2c90cd9351a/centrifuge-logomark-black.svg'
-      deploymentType: stage
-      resetProject: false
+      deploymentType: primary
+      resetProject: true
     secrets:
       accessToken: ${{ secrets.SUBQL_ACCESS_TOKEN }}
       onfinalityApiKey: ${{ secrets.ONFINALITY_API_KEY }}
