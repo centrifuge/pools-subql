@@ -1,6 +1,6 @@
 network:
   chainId: '42220' #Celo Mainnet
-  endpoint: https://celo-mainnet.infura.io/v3/ed5e0e19bcbc427cbf8f661736d44516
+  endpoint: "https://celo.api.onfinality.io/ws?apikey=${ONFINALITY_API_KEY}"
   #dictionary: ""
 dataSources:
   - kind: ethereum/Runtime

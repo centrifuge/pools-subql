@@ -2,7 +2,7 @@ name: 'centrifuge-subql'
 repository: 'https://github.com/embrio-tech/centrifuge-subql'
 network:
   chainId: '5' #Goerli
-  endpoint: "https://goerli.infura.io/v3/a4ba76cd4be643618572e7467a444e3a"
+  endpoint: "https://eth-goerli.api.onfinality.io/ws?apikey=${ONFINALITY_API_KEY}"
   dictionary: "https://dict-tyk.subquery.network/query/eth-goerli"
 dataSources:
   - kind: ethereum/Runtime
