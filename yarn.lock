@@ -3047,9 +3047,9 @@
     sodium-native "^4.0.10"
 
 "@subql/cli@^4.3.0":
-  version "4.5.1"
-  resolved "https://registry.yarnpkg.com/@subql/cli/-/cli-4.5.1.tgz#310797c64231e7778f5fcd67287cc9f62a43f4f8"
-  integrity sha512-m4Gdo9Wtvn+28tE4BEp/3pJvLJEmugUUqU8+HILlZj8WTj5AMws3//WbvTuQ3bAT4EI+maeC72PTZhNYKUIITQ==
+  version "4.5.2"
+  resolved "https://registry.yarnpkg.com/@subql/cli/-/cli-4.5.2.tgz#ec5731135dc4a4dd749b6a6ac26643bb0249b44b"
+  integrity sha512-blaJrJcOuH3L2OBkSzl5IsMrPGUMWMjzHME/rL56y98uvY2FAwYdaER7295yiFa2dGu3LdJjE7l0ZwHubxoo5w==
   dependencies:
     "@oclif/core" "^2.15.0"
     "@subql/common" "3.5.0"
@@ -3061,7 +3061,7 @@
     "@subql/common-near" "^3.4.0"
     "@subql/common-stellar" "^3.4.1"
     "@subql/common-substrate" "3.4.0"
-    "@subql/utils" "2.9.0"
+    "@subql/utils" "2.9.1"
     algosdk "^1.19.0"
     boxen "5.1.2"
     cli-ux "^6.0.9"
@@ -3296,10 +3296,10 @@
   dependencies:
     "@subql/types-core" "0.6.0"
 
-"@subql/utils@2.9.0":
-  version "2.9.0"
-  resolved "https://registry.yarnpkg.com/@subql/utils/-/utils-2.9.0.tgz#c3c5098022d449504ffb4f0e2cc90613022a7eca"
-  integrity sha512-O6QqjCsbsPa/H2Zwrtw4hapVEFkZhpmQmEkZmxk+sDfJHUr0Lm3UROCAw63iMDcodYhx60Klmb7Z4RccQ2WT6A==
+"@subql/utils@2.9.1":
+  version "2.9.1"
+  resolved "https://registry.yarnpkg.com/@subql/utils/-/utils-2.9.1.tgz#eddaa81472f46e5d550039bafeccede54867df52"
+  integrity sha512-BGNTy3Lrt44Z9uitvCx9Qaxm+G7jnGxTKIUefyJCaFbD8YMFU65zZvaGiIolujJyh42+4uapg9Yv74hdTUysWQ==
   dependencies:
     "@polkadot/util" "^12.5.1"
     "@polkadot/util-crypto" "^12.5.1"
@@ -3314,7 +3314,7 @@
     pino "^6.13.3"
     rotating-file-stream "^3.0.2"
     semver "^7.5.2"
-    tar "^6.1.11"
+    tar "^6.2.1"
 
 "@subql/x-cosmology-ast@^1.4.10":
   version "1.4.10"
@@ -3544,9 +3544,9 @@
     "@types/estree" "*"
 
 "@types/eslint@*":
-  version "8.56.7"
-  resolved "https://registry.yarnpkg.com/@types/eslint/-/eslint-8.56.7.tgz#c33b5b5a9cfb66881beb7b5be6c34aa3e81d3366"
-  integrity sha512-SjDvI/x3zsZnOkYZ3lCt9lOZWZLB2jIlNKz+LBgCtDurK0JZcwucxYHn1w2BJkD34dgX9Tjnak0txtq4WTggEA==
+  version "8.56.9"
+  resolved "https://registry.yarnpkg.com/@types/eslint/-/eslint-8.56.9.tgz#403e9ced04a34e63f1c383c5b8ee1a94442c8cc4"
+  integrity sha512-W4W3KcqzjJ0sHg2vAq9vfml6OhsJ53TcUjUqfzzZf/EChUtwspszj/S0pzMxnfRcO55/iGq47dscXw71Fxc4Zg==
   dependencies:
     "@types/estree" "*"
     "@types/json-schema" "*"
@@ -4572,9 +4572,9 @@ camelcase@^6.2.0:
   integrity sha512-Gmy6FhYlCY7uOElZUSbxo2UCDH8owEk996gkbrpsgGtrJLM3J7jGxl9Ic7Qwwj4ivOE5AWZWRMecDdF7hqGjFA==
 
 caniuse-lite@^1.0.30001587:
-  version "1.0.30001608"
-  resolved "https://registry.yarnpkg.com/caniuse-lite/-/caniuse-lite-1.0.30001608.tgz#7ae6e92ffb300e4b4ec2f795e0abab456ec06cc0"
-  integrity sha512-cjUJTQkk9fQlJR2s4HMuPMvTiRggl0rAVMtthQuyOlDWuqHXqN8azLq+pi8B2TjwKJ32diHjUqRIKeFX4z1FoA==
+  version "1.0.30001609"
+  resolved "https://registry.yarnpkg.com/caniuse-lite/-/caniuse-lite-1.0.30001609.tgz#fc34fad75c0c6d6d6303bdbceec2da8f203dabd6"
+  integrity sha512-JFPQs34lHKx1B5t1EpQpWH4c+29zIyn/haGsbpfq3suuV9v56enjFt23zqijxGTMwy1p/4H2tjnQMY+p1WoAyA==
 
 capability@^0.2.5:
   version "0.2.5"
@@ -5306,9 +5306,9 @@ electron-fetch@^1.7.2:
     encoding "^0.1.13"
 
 electron-to-chromium@^1.4.668:
-  version "1.4.733"
-  resolved "https://registry.yarnpkg.com/electron-to-chromium/-/electron-to-chromium-1.4.733.tgz#708d51ce01a7ed3b401d5ced85e9f5d504fd4217"
-  integrity sha512-gUI9nhI2iBGF0OaYYLKOaOtliFMl+Bt1rY7VmEjwxOxqoYLub/D9xmduPEhbw2imE6gYkJKhIE5it+KE2ulVxQ==
+  version "1.4.735"
+  resolved "https://registry.yarnpkg.com/electron-to-chromium/-/electron-to-chromium-1.4.735.tgz#c32914ef2cd0a3a545a3def841d253a31a8a93be"
+  integrity sha512-pkYpvwg8VyOTQAeBqZ7jsmpCjko1Qc6We1ZtZCjRyYbT5v4AIUKDy5cQTRotQlSSZmMr8jqpEt6JtOj5k7lR7A==
 
 elliptic@6.5.4:
   version "6.5.4"
@@ -9631,7 +9631,7 @@ tapable@^2.1.1, tapable@^2.2.0:
   resolved "https://registry.yarnpkg.com/tapable/-/tapable-2.2.1.tgz#1967a73ef4060a82f12ab96af86d52fdb76eeca0"
   integrity sha512-GNzQvQTOIP6RyTfE2Qxb8ZVlNmw0n88vp1szwWRimP02mnTsx3Wtn5qRdqY9w2XduFNUgvOwhNnQsjwCp+kqaQ==
 
-tar@^6.1.11:
+tar@^6.2.1:
   version "6.2.1"
   resolved "https://registry.yarnpkg.com/tar/-/tar-6.2.1.tgz#717549c541bc3c2af15751bea94b1dd068d4b03a"
   integrity sha512-DZ4yORTwrbTj/7MZYq2w+/ZFdI6OZ/f9SFHR+71gIVUZhOQPHzVCLpvRnPgyaMpfWxxk/4ONva3GQSyNIKRv6A==
