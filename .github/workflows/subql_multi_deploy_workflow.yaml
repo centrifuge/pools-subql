@@ -74,7 +74,7 @@ jobs:
               SUBQL_DICTIONARIES+="${chainId}:${dictionary}"
             fi
           done
-          echo "SUBQL_PROJ_NAME=$(yq '.name' project-centrifuge.yaml)" >> $GITHUB_ENV
+          echo "SUBQL_PROJ_NAME=$(yq '.name' project-centrifuge.yaml)-multichain" >> $GITHUB_ENV
           echo "SUBQL_PROJ_DECRIPTION=$(yq '.description' project-centrifuge.yaml)" >> $GITHUB_ENV
           echo "SUBQL_ENDPOINTS=${SUBQL_ENDPOINTS}" >> $GITHUB_ENV
           echo "SUBQL_DICTIONARIES=${SUBQL_DICTIONARIES}" >> $GITHUB_ENV
