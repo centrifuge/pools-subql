@@ -31,7 +31,7 @@ jobs:
 
   subql_deploy_embrio_multichain:
     if: ${{ github.repository == 'embrio-tech/centrifuge-subql'}}
-    name: Deploy to SubQL (EMBRIO)
+    name: Deploy to SubQL Multichain (EMBRIO)
     strategy:
       matrix:
         chainId: [centrifuge]
