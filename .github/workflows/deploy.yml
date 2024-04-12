@@ -17,14 +17,31 @@ jobs:
     name: Deploy to SubQL (EMBRIO)
     strategy:
       matrix:
-        chainId: [demo] # ADD ARRAY OF CHAINS TO DEPLOY
+        chainId: [development, demo]
     uses: ./.github/workflows/subql_deploy_workflow.yaml
     with:
       chainId: ${{ matrix.chainId }}
-      projOrg: embrio-tech
-      projImage: https://centrifuge.io/static/bfb7682cb6ed4aa422d9d2c90cd9351a/centrifuge-logomark-black.svg'
-      deploymentType: primary
-      resetProject: true
+      projOrg: centrifuge
+      projImage: 'https://centrifuge.io/static/bfb7682cb6ed4aa422d9d2c90cd9351a/centrifuge-logomark-black.svg'
+      deploymentType: stage
+      resetProject: false
+    secrets:
+      accessToken: ${{ secrets.SUBQL_ACCESS_TOKEN }}
+      onfinalityApiKey: ${{ secrets.ONFINALITY_API_KEY }}
+
+  subql_deploy_embrio_multichain:
+    if: ${{ github.repository == 'embrio-tech/centrifuge-subql'}}
+    name: Deploy to SubQL (EMBRIO)
+    strategy:
+      matrix:
+        chainId: [centrifuge]
+    uses: ./.github/workflows/subql_multi_deploy_workflow.yaml
+    with:
+      chainId: ${{ matrix.chainId }}
+      projOrg: centrifuge
+      projImage: 'https://centrifuge.io/static/bfb7682cb6ed4aa422d9d2c90cd9351a/centrifuge-logomark-black.svg'
+      deploymentType: stage
+      resetProject: false
     secrets:
       accessToken: ${{ secrets.SUBQL_ACCESS_TOKEN }}
       onfinalityApiKey: ${{ secrets.ONFINALITY_API_KEY }}
