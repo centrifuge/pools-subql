@@ -21,7 +21,7 @@ on:
     secrets:
       accessToken:
         required: true
-      ethNodeApiKey:
+      onfinalityApiKey:
         required: true
 
 jobs:
