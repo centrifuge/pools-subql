@@ -54,6 +54,10 @@ type Pool @entity {
   sumDebtOverdue: BigInt
   sumDebtWrittenOffByPeriod: BigInt
 
+  sumChargedAmountByPeriod: BigInt
+  sumAccruedAmountByPeriod: BigInt
+  sumPaidAmountByPeriod: BigInt
+
   # Cumulated transaction data since pool creation
   sumBorrowedAmount: BigInt
   sumRepaidAmount: BigInt
@@ -96,6 +100,10 @@ type PoolSnapshot @entity {
   sumNumberOfActiveAssets: BigInt
   sumDebtOverdue: BigInt
   sumDebtWrittenOffByPeriod: BigInt
+
+  sumChargedAmountByPeriod: BigInt
+  sumAccruedAmountByPeriod: BigInt
+  sumPaidAmountByPeriod: BigInt
 
   # Cumulated transaction data since pool creation
   sumBorrowedAmount: BigInt

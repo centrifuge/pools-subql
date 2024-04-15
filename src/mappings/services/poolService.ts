@@ -65,6 +65,9 @@ export class PoolService extends Pool {
     this.sumInvestedAmountByPeriod = BigInt(0)
     this.sumRedeemedAmountByPeriod = BigInt(0)
     this.sumNumberOfAssetsByPeriod = BigInt(0)
+    this.sumChargedAmountByPeriod = BigInt(0)
+    this.sumAccruedAmountByPeriod = BigInt(0)
+    this.sumPaidAmountByPeriod = BigInt(0)
 
     this.sumBorrowedAmount = BigInt(0)
     this.sumRepaidAmount = BigInt(0)
@@ -324,6 +327,30 @@ export class PoolService extends Pool {
       fee.amounts.disbursement.toBigInt(),
     ])
     return accruedFees
+  }
+
+  public increaseChargedFees(chargedAmount: bigint) {
+    logger.info(`Increasing charged fees for pool ${this.id} by ${chargedAmount.toString(10)}`)
+    this.sumChargedAmountByPeriod += chargedAmount
+    return this
+  }
+
+  public decreaseChargedFees(unchargedAmount: bigint) {
+    logger.info(`Decreasing charged fees for pool ${this.id} by ${unchargedAmount.toString(10)}`)
+    this.sumChargedAmountByPeriod -= unchargedAmount
+    return this
+  }
+
+  public increaseAccruedFees(accruedAmount: bigint) {
+    logger.info(`Increasing accrued fees for pool ${this.id} by ${accruedAmount.toString(10)}`)
+    this.sumAccruedAmountByPeriod += accruedAmount
+    return this
+  }
+
+  public increasePaidFees(paidAmount: bigint) {
+    logger.info(`Increasing paid fees for pool ${this.id} by ${paidAmount.toString(10)}`)
+    this.sumPaidAmountByPeriod += paidAmount
+    return this
   }
 }
 

@@ -124,6 +124,9 @@ async function _handleFeeCharged(event: SubstrateEvent<PoolFeesChargedEvent>): P
   await poolFee.charge(poolFeeData)
   await poolFee.save()
 
+  await pool.increaseChargedFees(poolFeeData.amount)
+  await pool.save()
+
   const poolFeeTransaction = PoolFeeTransactionService.charge(poolFeeData)
   await poolFeeTransaction.save()
 }
@@ -153,6 +156,9 @@ async function _handleFeeUncharged(event: SubstrateEvent<PoolFeesUnchargedEvent>
   await poolFee.uncharge(poolFeeData)
   await poolFee.save()
 
+  await pool.decreaseChargedFees(poolFeeData.amount)
+  await pool.save()
+
   const poolFeeTransaction = PoolFeeTransactionService.uncharge(poolFeeData)
   await poolFeeTransaction.save()
 }
@@ -180,6 +186,9 @@ async function _handleFeePaid(event: SubstrateEvent<PoolFeesPaidEvent>): Promise
   if (!poolFee) throw new Error('PoolFee not found!')
   await poolFee.pay(poolFeeData)
   await poolFee.save()
+
+  await pool.increasePaidFees(poolFeeData.amount)
+  await pool.save()
 
   const poolFeeTransaction = PoolFeeTransactionService.pay(poolFeeData)
   await poolFeeTransaction.save()
