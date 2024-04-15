@@ -46,6 +46,8 @@ export class AssetService extends Asset {
 
     asset.borrowedAmountByPeriod = BigInt(0)
     asset.repaidAmountByPeriod = BigInt(0)
+    asset.writtenOffPercentageByPeriod = BigInt(0)
+    asset.writtenOffAmountByPeriod = BigInt(0)
 
     return asset
   }

@@ -44,6 +44,11 @@ dataSources:
           filter:
             module: poolSystem
             method: EpochExecuted
+        - handler: handleMetadataSet
+          kind: substrate/EventHandler
+          filter:
+            module: poolRegistry
+            method: MetadataSet
         - handler: handleInvestOrderUpdated
           kind: substrate/EventHandler
           filter:

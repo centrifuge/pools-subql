@@ -94,6 +94,11 @@ export class PoolService extends Pool {
     return this
   }
 
+  public updateMetadata(metadata: string) {
+    logger.info(`Updating metadata for pool ${this.id} to ${metadata}`)
+    this.metadata = metadata
+  }
+
   public async initIpfsMetadata() {
     if (!this.metadata) {
       logger.warn('No IPFS metadata')

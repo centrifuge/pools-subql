@@ -2,6 +2,7 @@ import type { Config } from 'jest'
 
 const config: Config = {
   verbose: true,
+  workerThreads: true,
   preset: 'ts-jest',
   testEnvironment: 'node',
   setupFiles: ['./jest/globals.js'],
