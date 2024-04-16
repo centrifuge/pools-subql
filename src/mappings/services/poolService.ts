@@ -68,6 +68,7 @@ export class PoolService extends Pool {
     this.sumChargedAmountByPeriod = BigInt(0)
     this.sumAccruedAmountByPeriod = BigInt(0)
     this.sumPaidAmountByPeriod = BigInt(0)
+    this.deltaPortfolioValuationByPeriod = BigInt(0)
 
     this.sumBorrowedAmount = BigInt(0)
     this.sumRepaidAmount = BigInt(0)
@@ -168,8 +169,12 @@ export class PoolService extends Pool {
   private async updatePortfolioValuationQuery() {
     logger.info(`Updating portfolio valuation for pool: ${this.id} (state)`)
     const navResponse = await api.query.loans.portfolioValuation<NavDetails>(this.id)
-    this.portfolioValuation = navResponse.value.toBigInt()
-    logger.info(`portfolio valuation: ${this.portfolioValuation.toString(10)}`)
+    const newPortfolioValuation = navResponse.value.toBigInt()
+    this.deltaPortfolioValuationByPeriod = newPortfolioValuation - this.portfolioValuation
+    this.portfolioValuation = newPortfolioValuation
+    logger.info(
+      `portfolio valuation: ${this.portfolioValuation.toString(10)} delta: ${this.deltaPortfolioValuationByPeriod}`
+    )
     return this
   }
 
@@ -181,8 +186,12 @@ export class PoolService extends Pool {
       logger.warn('Empty pv response')
       return
     }
-    this.portfolioValuation = navResponse.unwrap().total.toBigInt()
-    logger.info(`portfolio valuation: ${this.portfolioValuation.toString(10)}`)
+    const newPortfolioValuation = navResponse.unwrap().total.toBigInt()
+    this.deltaPortfolioValuationByPeriod = newPortfolioValuation - this.portfolioValuation
+    this.portfolioValuation = newPortfolioValuation
+    logger.info(
+      `portfolio valuation: ${this.portfolioValuation.toString(10)} delta: ${this.deltaPortfolioValuationByPeriod}`
+    )
     return this
   }
 

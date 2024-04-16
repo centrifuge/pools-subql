@@ -53,6 +53,7 @@ type Pool @entity {
   sumNumberOfActiveAssets: BigInt
   sumDebtOverdue: BigInt
   sumDebtWrittenOffByPeriod: BigInt
+  deltaPortfolioValuationByPeriod: BigInt
 
   sumChargedAmountByPeriod: BigInt
   sumAccruedAmountByPeriod: BigInt
@@ -100,6 +101,7 @@ type PoolSnapshot @entity {
   sumNumberOfActiveAssets: BigInt
   sumDebtOverdue: BigInt
   sumDebtWrittenOffByPeriod: BigInt
+  deltaPortfolioValuationByPeriod: BigInt
 
   sumChargedAmountByPeriod: BigInt
   sumAccruedAmountByPeriod: BigInt
