@@ -77,11 +77,14 @@ async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedEvent>) {
   })
   await asset.save()
 
+  const epoch = await EpochService.getById(pool.id, pool.currentEpoch)
+  if (!epoch) throw new Error('Epoch not found!')
+
   const at = await AssetTransactionService.created({
     poolId: poolId.toString(),
     assetId: loanId.toString(),
     address: account.id,
-    epochNumber: pool.currentEpoch,
+    epochNumber: epoch.index,
     hash: event.extrinsic.extrinsic.hash.toString(),
     timestamp: event.block.timestamp,
   })
@@ -114,11 +117,14 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Pr
   await asset.updateIpfsAssetName().catch((err) => logger.error(`IPFS Request failed ${err}`))
   await asset.save()
 
+  const epoch = await EpochService.getById(pool.id, pool.currentEpoch)
+  if (!epoch) throw new Error('Epoch not found!')
+
   const at = await AssetTransactionService.borrowed({
     poolId: poolId.toString(),
     assetId: loanId.toString(),
     address: account.id,
-    epochNumber: pool.currentEpoch,
+    epochNumber: epoch.index,
     hash: event.extrinsic.extrinsic.hash.toString(),
     timestamp: event.block.timestamp,
     amount: amount,
@@ -133,8 +139,6 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Pr
   await pool.save()
 
   // Update epoch info
-  const epoch = await EpochService.getById(pool.id, pool.currentEpoch)
-  if (epoch === undefined) throw new Error('Epoch not found!')
   await epoch.increaseBorrowings(BigInt(amount))
   await epoch.save()
 }
@@ -160,11 +164,14 @@ async function _handleLoanRepaid(event: SubstrateEvent<LoanRepaidEvent>) {
   await asset.updateItemMetadata()
   await asset.save()
 
+  const epoch = await EpochService.getById(pool.id, pool.currentEpoch)
+  if (!epoch) throw new Error('Epoch not found!')
+
   const at = await AssetTransactionService.repaid({
     poolId: poolId.toString(),
     assetId: loanId.toString(),
     address: account.id,
-    epochNumber: pool.currentEpoch,
+    epochNumber: epoch.index,
     hash: event.extrinsic.extrinsic.hash.toString(),
     timestamp: event.block.timestamp,
     amount: amount,
@@ -181,8 +188,6 @@ async function _handleLoanRepaid(event: SubstrateEvent<LoanRepaidEvent>) {
   await pool.save()
 
   // Update epoch info
-  const epoch = await EpochService.getById(pool.id, pool.currentEpoch)
-  if (!epoch) throw new Error('Epoch not found!')
   await epoch.increaseRepayments(amount)
   await epoch.save()
 }
@@ -219,11 +224,14 @@ async function _handleLoanClosed(event: SubstrateEvent<LoanClosedEvent>) {
   await loan.updateItemMetadata()
   await loan.save()
 
+  const epoch = await EpochService.getById(pool.id, pool.currentEpoch)
+  if (!epoch) throw new Error('Epoch not found!')
+
   const at = await AssetTransactionService.closed({
     poolId: poolId.toString(),
     assetId: loanId.toString(),
     address: account.id,
-    epochNumber: pool.currentEpoch,
+    epochNumber: epoch.index,
     hash: event.extrinsic.extrinsic.hash.toString(),
     timestamp: event.block.timestamp,
   })
@@ -262,13 +270,16 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
   await toAsset.updateItemMetadata()
   await toAsset.save()
 
+  const epoch = await EpochService.getById(pool.id, pool.currentEpoch)
+  if (!epoch) throw new Error('Epoch not found!')
+
   const txData: Omit<
     AssetTransactionData,
     'assetId' | 'amount' | 'interestAmount' | 'principalAmount' | 'unscheduledAmount'
   > = {
     poolId: poolId.toString(),
     address: account.id,
-    epochNumber: pool.currentEpoch,
+    epochNumber: epoch.index,
     hash: event.extrinsic.extrinsic.hash.toString(),
     timestamp: event.block.timestamp,
   }
@@ -328,10 +339,13 @@ async function _handleLoanDebtTransferred1024(event: SubstrateEvent<LoanDebtTran
   await toAsset.updateItemMetadata()
   await toAsset.save()
 
+  const epoch = await EpochService.getById(pool.id, pool.currentEpoch)
+  if (!epoch) throw new Error('Epoch not found!')
+
   const txData: Omit<AssetTransactionData, 'assetId'> = {
     poolId: poolId.toString(),
     address: account.id,
-    epochNumber: pool.currentEpoch,
+    epochNumber: epoch.index,
     hash: event.extrinsic.extrinsic.hash.toString(),
     timestamp: event.block.timestamp,
     amount: amount.toBigInt(),
