@@ -111,6 +111,5 @@ jobs:
           --disableHistorical \
           --indexerWorkers=1 \
           --indexerUnsafe \
-          --disableIndexerStoreCacheAsync \
           --queryAggregate
 
