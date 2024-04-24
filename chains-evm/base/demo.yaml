@@ -1,9 +1,0 @@
-network:
-  chainId: '84531' #Base Goerli
-  endpoint: https://goerli.base.org
-  dictionary: "https://api.subquery.network/sq/subquery/base-goerli-dictionary"
-dataSources:
-  - kind: ethereum/Runtime
-    startBlock: 13078300 
-    options:
-      address: '0xa5Beda1F48a07740b8f4bDb223C861Cc7702b14e'

@@ -12,9 +12,9 @@ permissions:
   issues: write
 
 jobs:
-  subql_deploy_embrio:
+  subql_deploy_staging:
     if: ${{ github.repository == 'embrio-tech/centrifuge-subql'}}
-    name: Deploy to SubQL (EMBRIO)
+    name: Deploy to SubQL
     strategy:
       matrix:
         chainId: [demo]
@@ -29,9 +29,9 @@ jobs:
       accessToken: ${{ secrets.SUBQL_ACCESS_TOKEN }}
       onfinalityApiKey: ${{ secrets.ONFINALITY_API_KEY }}
 
-  subql_deploy_embrio_multichain:
+  subql_deploy_staging_multichain:
     if: ${{ github.repository == 'embrio-tech/centrifuge-subql'}}
-    name: Deploy to SubQL Multichain (EMBRIO)
+    name: Deploy to SubQL Multichain
     strategy:
       matrix:
         chainId: [demo, centrifuge]

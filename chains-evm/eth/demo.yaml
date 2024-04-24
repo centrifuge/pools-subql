@@ -1,6 +1,6 @@
 network:
   chainId: '11155111' #Ethereum Sepolia
-  endpoint: "https://eth-sepolia.api.onfinality.io/ws?apikey=${ONFINALITY_API_KEY}"
+  endpoint: "https://sepolia.infura.io/v3/ed5e0e19bcbc427cbf8f661736d44516"
 dataSources:
   - kind: ethereum/Runtime
     startBlock: 5232630
