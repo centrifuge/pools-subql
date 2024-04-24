@@ -48,6 +48,7 @@ export class AssetService extends Asset {
     asset.repaidAmountByPeriod = BigInt(0)
     asset.writtenOffPercentageByPeriod = BigInt(0)
     asset.writtenOffAmountByPeriod = BigInt(0)
+    asset.interestAccruedByPeriod = BigInt(0)
 
     return asset
   }
@@ -98,8 +99,12 @@ export class AssetService extends Asset {
   }
 
   public async updateActiveAssetData(activeAssetData: ActiveLoanData[keyof ActiveLoanData]) {
+    const oldOutstaidingInterest = this.outstandingInterest
+    const oldTotalRepaidInterest = this.totalRepaidInterest
     Object.assign(this, activeAssetData)
-    logger.info(`Updating outstanding debt for asset: ${this.id} to ${this.outstandingDebt.toString()}`)
+    const deltaRepaidInterestAmount = this.totalRepaid - oldTotalRepaidInterest
+    this.interestAccruedByPeriod = this.outstandingInterest - oldOutstaidingInterest + deltaRepaidInterestAmount
+    logger.info(`Updated outstanding debt for asset: ${this.id} to ${this.outstandingDebt.toString()}`)
   }
 
   public async updateItemMetadata() {

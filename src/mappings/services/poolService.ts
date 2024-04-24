@@ -69,6 +69,7 @@ export class PoolService extends Pool {
     this.sumAccruedAmountByPeriod = BigInt(0)
     this.sumPaidAmountByPeriod = BigInt(0)
     this.deltaPortfolioValuationByPeriod = BigInt(0)
+    this.sumInterestAccruedByPeriod = BigInt(0)
 
     this.sumBorrowedAmount = BigInt(0)
     this.sumRepaidAmount = BigInt(0)
@@ -259,6 +260,11 @@ export class PoolService extends Pool {
   public increaseWriteOff(amount: bigint) {
     logger.info(`Increasing writeOff by ${amount}`)
     this.sumDebtWrittenOffByPeriod += amount
+  }
+
+  public increaseInterestAccrued(amount: bigint) {
+    logger.info(`Increasing interestAccrued by ${amount}`)
+    this.sumInterestAccruedByPeriod += amount
   }
 
   public async getTranches() {

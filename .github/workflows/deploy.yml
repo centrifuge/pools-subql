@@ -17,7 +17,7 @@ jobs:
     name: Deploy to SubQL (EMBRIO)
     strategy:
       matrix:
-        chainId: [development, demo]
+        chainId: [demo]
     uses: ./.github/workflows/subql_deploy_workflow.yaml
     with:
       chainId: ${{ matrix.chainId }}
@@ -34,7 +34,7 @@ jobs:
     name: Deploy to SubQL Multichain (EMBRIO)
     strategy:
       matrix:
-        chainId: [centrifuge]
+        chainId: [demo, centrifuge]
     uses: ./.github/workflows/subql_multi_deploy_workflow.yaml
     with:
       chainId: ${{ matrix.chainId }}

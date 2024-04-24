@@ -1,7 +1,7 @@
 network:
   chainId: '1' # Ethereum Mainnet
   endpoint: 'https://eth.api.onfinality.io/ws?apikey=${ONFINALITY_API_KEY}'
-  dictionary: 'https://gx.api.subquery.network/sq/subquery/eth-dictionary'
+  #dictionary: 'https://gx.api.subquery.network/sq/subquery/eth-dictionary'
 dataSources:
   - kind: ethereum/Runtime
     startBlock: 18721030
