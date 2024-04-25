@@ -1,7 +1,5 @@
 name: SubQL Deploy
-
 # **What it does**: This action deploys to subql
-
 on:
   push:
     branches:
@@ -14,22 +12,39 @@ permissions:
   issues: write
 
 jobs:
-  subql_deploy_embrio_staging:
+  subql_deploy_staging:
     if: ${{ github.repository == 'embrio-tech/centrifuge-subql'}}
-    name: Deploy to SubQL (EMBRIO staging)
+    name: Deploy to SubQL
     strategy:
       matrix:
-        chainId: [development-embrio] # ADD ARRAY OF CHAINS TO DEPLOY
+        chainId: [demo]
     uses: ./.github/workflows/subql_deploy_workflow.yaml
     with:
       chainId: ${{ matrix.chainId }}
-      projOrg: embrio-tech
-      projImage: 'https://explorer.subquery.network/uploads/1660216119964.png'
-      deploymentType: primary
-      resetProject: true
+      projOrg: centrifuge
+      projImage: 'https://centrifuge.io/static/bfb7682cb6ed4aa422d9d2c90cd9351a/centrifuge-logomark-black.svg'
+      deploymentType: stage
+      resetProject: false
     secrets:
       accessToken: ${{ secrets.SUBQL_ACCESS_TOKEN }}
-      ethNodeApiKey: ${{ secrets.ETH_NODE_API_KEY }}
+      onfinalityApiKey: ${{ secrets.ONFINALITY_API_KEY }}
+
+  subql_deploy_staging_multichain:
+    if: ${{ github.repository == 'embrio-tech/centrifuge-subql'}}
+    name: Deploy to SubQL Multichain
+    strategy:
+      matrix:
+        chainId: [demo, centrifuge]
+    uses: ./.github/workflows/subql_multi_deploy_workflow.yaml
+    with:
+      chainId: ${{ matrix.chainId }}
+      projOrg: centrifuge
+      projImage: 'https://centrifuge.io/static/bfb7682cb6ed4aa422d9d2c90cd9351a/centrifuge-logomark-black.svg'
+      deploymentType: stage
+      resetProject: false
+    secrets:
+      accessToken: ${{ secrets.SUBQL_ACCESS_TOKEN }}
+      onfinalityApiKey: ${{ secrets.ONFINALITY_API_KEY }}
 
   subql_deploy_centrifuge_staging:
     if: ${{ github.repository == 'centrifuge/pools-subql' && github.ref_name == 'main' }}
@@ -46,7 +61,7 @@ jobs:
       resetProject: true
     secrets:
       accessToken: ${{ secrets.SUBQL_ACCESS_TOKEN }}
-      ethNodeApiKey: ${{ secrets.ETH_NODE_API_KEY }}
+      onfinalityApiKey: ${{ secrets.ONFINALITY_API_KEY }}
 
   subql_deploy_centrifuge_production:
     if: ${{ github.repository == 'centrifuge/pools-subql' && startsWith(github.ref_name, 'release-') }}
@@ -63,4 +78,21 @@ jobs:
       resetProject: false
     secrets:
       accessToken: ${{ secrets.SUBQL_ACCESS_TOKEN }}
-      ethNodeApiKey: ${{ secrets.ETH_NODE_API_KEY }}
+      onfinalityApiKey: ${{ secrets.ONFINALITY_API_KEY }}
+
+  subql_deploy_centrifuge_multichain_production:
+    if: ${{ github.repository == 'centrifuge/pools-subql' && startsWith(github.ref_name, 'release-') }}
+    name: Deploy to SubQL multichain (CENTRIFUGE mainnet)
+    strategy:
+      matrix:
+        chainId: [centrifuge] # ADD ARRAY OF CHAINS TO DEPLOY
+    uses: ./.github/workflows/subql_multi_deploy_workflow.yaml
+    with:
+      chainId: ${{ matrix.chainId }}
+      projOrg: centrifuge
+      projImage: 'https://centrifuge.io/static/bfb7682cb6ed4aa422d9d2c90cd9351a/centrifuge-logomark-black.svg'
+      deploymentType: stage
+      resetProject: false
+    secrets:
+      accessToken: ${{ secrets.SUBQL_ACCESS_TOKEN }}
+      onfinalityApiKey: ${{ secrets.ONFINALITY_API_KEY }}

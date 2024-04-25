@@ -1,6 +1,6 @@
 network:
   chainId: '8453' #Base Mainnet
-  endpoint: https://mainnet.base.org
+  endpoint: "https://base.api.onfinality.io/ws?apikey=${ONFINALITY_API_KEY}"
   dictionary: "https://api.subquery.network/sq/subquery/base-dictionary"
 dataSources:
   - kind: ethereum/Runtime

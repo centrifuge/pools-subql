@@ -418,6 +418,7 @@ export type LoanDebtTransferred1024 = ITuple<[poolId: u64, fromLoanId: u64, toLo
 
 export type PoolCreatedEvent = ITuple<[admin: AccountId32, depositor: AccountId32, poolId: u64, essence: PoolEssence]>
 export type PoolUpdatedEvent = ITuple<[admin: AccountId32, old: PoolEssence, new: PoolEssence]>
+export type PoolMetadataSetEvent = ITuple<[poolId: u64, metadata: Bytes]>
 
 export type EpochClosedExecutedEvent = ITuple<[poolId: u64, epochId: u32]>
 export type EpochSolutionEvent = ITuple<[poolId: u64, epochId: u32, solution: EpochSolution]>

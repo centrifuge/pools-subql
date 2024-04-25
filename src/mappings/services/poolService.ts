@@ -65,6 +65,11 @@ export class PoolService extends Pool {
     this.sumInvestedAmountByPeriod = BigInt(0)
     this.sumRedeemedAmountByPeriod = BigInt(0)
     this.sumNumberOfAssetsByPeriod = BigInt(0)
+    this.sumChargedAmountByPeriod = BigInt(0)
+    this.sumAccruedAmountByPeriod = BigInt(0)
+    this.sumPaidAmountByPeriod = BigInt(0)
+    this.deltaPortfolioValuationByPeriod = BigInt(0)
+    this.sumInterestAccruedByPeriod = BigInt(0)
 
     this.sumBorrowedAmount = BigInt(0)
     this.sumRepaidAmount = BigInt(0)
@@ -92,6 +97,11 @@ export class PoolService extends Pool {
     this.minEpochTime = poolData.parameters.minEpochTime.toNumber()
     this.maxPortfolioValuationAge = poolData.parameters.maxNavAge.toNumber()
     return this
+  }
+
+  public updateMetadata(metadata: string) {
+    logger.info(`Updating metadata for pool ${this.id} to ${metadata}`)
+    this.metadata = metadata
   }
 
   public async initIpfsMetadata() {
@@ -160,8 +170,12 @@ export class PoolService extends Pool {
   private async updatePortfolioValuationQuery() {
     logger.info(`Updating portfolio valuation for pool: ${this.id} (state)`)
     const navResponse = await api.query.loans.portfolioValuation<NavDetails>(this.id)
-    this.portfolioValuation = navResponse.value.toBigInt()
-    logger.info(`portfolio valuation: ${this.portfolioValuation.toString(10)}`)
+    const newPortfolioValuation = navResponse.value.toBigInt()
+    this.deltaPortfolioValuationByPeriod = newPortfolioValuation - this.portfolioValuation
+    this.portfolioValuation = newPortfolioValuation
+    logger.info(
+      `portfolio valuation: ${this.portfolioValuation.toString(10)} delta: ${this.deltaPortfolioValuationByPeriod}`
+    )
     return this
   }
 
@@ -173,8 +187,12 @@ export class PoolService extends Pool {
       logger.warn('Empty pv response')
       return
     }
-    this.portfolioValuation = navResponse.unwrap().total.toBigInt()
-    logger.info(`portfolio valuation: ${this.portfolioValuation.toString(10)}`)
+    const newPortfolioValuation = navResponse.unwrap().total.toBigInt()
+    this.deltaPortfolioValuationByPeriod = newPortfolioValuation - this.portfolioValuation
+    this.portfolioValuation = newPortfolioValuation
+    logger.info(
+      `portfolio valuation: ${this.portfolioValuation.toString(10)} delta: ${this.deltaPortfolioValuationByPeriod}`
+    )
     return this
   }
 
@@ -242,6 +260,11 @@ export class PoolService extends Pool {
   public increaseWriteOff(amount: bigint) {
     logger.info(`Increasing writeOff by ${amount}`)
     this.sumDebtWrittenOffByPeriod += amount
+  }
+
+  public increaseInterestAccrued(amount: bigint) {
+    logger.info(`Increasing interestAccrued by ${amount}`)
+    this.sumInterestAccruedByPeriod += amount
   }
 
   public async getTranches() {
@@ -319,6 +342,30 @@ export class PoolService extends Pool {
       fee.amounts.disbursement.toBigInt(),
     ])
     return accruedFees
+  }
+
+  public increaseChargedFees(chargedAmount: bigint) {
+    logger.info(`Increasing charged fees for pool ${this.id} by ${chargedAmount.toString(10)}`)
+    this.sumChargedAmountByPeriod += chargedAmount
+    return this
+  }
+
+  public decreaseChargedFees(unchargedAmount: bigint) {
+    logger.info(`Decreasing charged fees for pool ${this.id} by ${unchargedAmount.toString(10)}`)
+    this.sumChargedAmountByPeriod -= unchargedAmount
+    return this
+  }
+
+  public increaseAccruedFees(accruedAmount: bigint) {
+    logger.info(`Increasing accrued fees for pool ${this.id} by ${accruedAmount.toString(10)}`)
+    this.sumAccruedAmountByPeriod += accruedAmount
+    return this
+  }
+
+  public increasePaidFees(paidAmount: bigint) {
+    logger.info(`Increasing paid fees for pool ${this.id} by ${paidAmount.toString(10)}`)
+    this.sumPaidAmountByPeriod += paidAmount
+    return this
   }
 }
 

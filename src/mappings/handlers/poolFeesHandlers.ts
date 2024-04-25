@@ -26,7 +26,7 @@ async function _handleFeeProposed(event: SubstrateEvent<PoolFeesProposedEvent>):
     blockNumber: event.block.block.header.number.toNumber(),
     timestamp: event.block.timestamp,
     epochNumber: pool.currentEpoch,
-    hash: event.extrinsic.extrinsic.hash.toString(),
+    hash: event.hash.toString(),
   }
   const type = fee.feeType.type
 
@@ -57,7 +57,7 @@ async function _handleFeeAdded(event: SubstrateEvent<PoolFeesAddedEvent>): Promi
     blockNumber: event.block.block.header.number.toNumber(),
     timestamp: event.block.timestamp,
     epochNumber: pool.currentEpoch,
-    hash: event.extrinsic.extrinsic.hash.toString(),
+    hash: event.hash.toString(),
   }
   const type = fee.feeType.type
 
@@ -89,7 +89,7 @@ async function _handleFeeRemoved(event: SubstrateEvent<PoolFeesRemovedEvent>): P
     blockNumber: event.block.block.header.number.toNumber(),
     timestamp: event.block.timestamp,
     epochNumber: pool.currentEpoch,
-    hash: event.extrinsic.extrinsic.hash.toString(),
+    hash: event.hash.toString(),
   }
 
   const poolFee = await PoolFeeService.delete(poolFeeData)
@@ -114,7 +114,7 @@ async function _handleFeeCharged(event: SubstrateEvent<PoolFeesChargedEvent>): P
     blockNumber: event.block.block.header.number.toNumber(),
     timestamp: event.block.timestamp,
     epochNumber: pool.currentEpoch,
-    hash: event.extrinsic.extrinsic.hash.toString(),
+    hash: event.hash.toString(),
     amount: amount.toBigInt(),
     pending: pending.toBigInt(),
   }
@@ -123,6 +123,9 @@ async function _handleFeeCharged(event: SubstrateEvent<PoolFeesChargedEvent>): P
   if (!poolFee) throw new Error('PoolFee not found!')
   await poolFee.charge(poolFeeData)
   await poolFee.save()
+
+  await pool.increaseChargedFees(poolFeeData.amount)
+  await pool.save()
 
   const poolFeeTransaction = PoolFeeTransactionService.charge(poolFeeData)
   await poolFeeTransaction.save()
@@ -143,7 +146,7 @@ async function _handleFeeUncharged(event: SubstrateEvent<PoolFeesUnchargedEvent>
     blockNumber: event.block.block.header.number.toNumber(),
     timestamp: event.block.timestamp,
     epochNumber: pool.currentEpoch,
-    hash: event.extrinsic.extrinsic.hash.toString(),
+    hash: event.hash.toString(),
     amount: amount.toBigInt(),
     pending: pending.toBigInt(),
   }
@@ -152,6 +155,9 @@ async function _handleFeeUncharged(event: SubstrateEvent<PoolFeesUnchargedEvent>
   if (!poolFee) throw new Error('PoolFee not found!')
   await poolFee.uncharge(poolFeeData)
   await poolFee.save()
+
+  await pool.decreaseChargedFees(poolFeeData.amount)
+  await pool.save()
 
   const poolFeeTransaction = PoolFeeTransactionService.uncharge(poolFeeData)
   await poolFeeTransaction.save()
@@ -172,7 +178,7 @@ async function _handleFeePaid(event: SubstrateEvent<PoolFeesPaidEvent>): Promise
     blockNumber: event.block.block.header.number.toNumber(),
     timestamp: event.block.timestamp,
     epochNumber: pool.currentEpoch,
-    hash: event.extrinsic.extrinsic.hash.toString(),
+    hash: event.hash.toString(),
     amount: amount.toBigInt(),
   }
 
@@ -180,6 +186,9 @@ async function _handleFeePaid(event: SubstrateEvent<PoolFeesPaidEvent>): Promise
   if (!poolFee) throw new Error('PoolFee not found!')
   await poolFee.pay(poolFeeData)
   await poolFee.save()
+
+  await pool.increasePaidFees(poolFeeData.amount)
+  await pool.save()
 
   const poolFeeTransaction = PoolFeeTransactionService.pay(poolFeeData)
   await poolFeeTransaction.save()

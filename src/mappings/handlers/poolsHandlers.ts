@@ -3,7 +3,7 @@ import { errorHandler, missingPool } from '../../helpers/errorHandler'
 import { EpochService } from '../services/epochService'
 import { PoolService } from '../services/poolService'
 import { TrancheService } from '../services/trancheService'
-import { EpochClosedExecutedEvent, PoolCreatedEvent, PoolUpdatedEvent } from '../../helpers/types'
+import { EpochClosedExecutedEvent, PoolCreatedEvent, PoolMetadataSetEvent, PoolUpdatedEvent } from '../../helpers/types'
 import { OutstandingOrderService } from '../services/outstandingOrderService'
 import { InvestorTransactionService } from '../services/investorTransactionService'
 import { CurrencyService, currencyFormatters } from '../services/currencyService'
@@ -103,6 +103,19 @@ async function _handlePoolUpdated(event: SubstrateEvent<PoolUpdatedEvent>): Prom
     await currency.initTrancheDetails(pool.id, trancheService.trancheId)
     await currency.save()
   }
+}
+
+export const handleMetadataSet = errorHandler(_handleMetadataSet)
+async function _handleMetadataSet(event: SubstrateEvent<PoolMetadataSetEvent>) {
+  const [poolId, metadata] = event.event.data
+  logger.info(
+    `Pool metadata set for pool ${poolId.toString(10)}`
+  )
+  const pool = await PoolService.getById(poolId.toString())
+  if (!pool) throw missingPool
+  await pool.updateMetadata(metadata.toUtf8())
+  await pool.initIpfsMetadata()
+  await pool.save()
 }
 
 export const handleEpochClosed = errorHandler(_handleEpochClosed)

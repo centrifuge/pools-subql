@@ -34,13 +34,7 @@ const latestTypes = {
   PoolFeesList: 'Vec<PoolFeesOfBucket>',
   PoolFeesOfBucket: {
     bucket: 'CfgTraitsFeePoolFeeBucket',
-    fees: 'Vec<PoolFee>',
-  },
-  PoolFee: {
-    id: 'u64',
-    destination: 'AccountId32',
-    editor: 'CfgTypesPoolsPoolFeeEditor',
-    amounts: 'CfgTypesPoolsPoolFeeAmounts',
+    fees: 'Vec<CfgTypesPoolsPoolFee>',
   },
 }
 

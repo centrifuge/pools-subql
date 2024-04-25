@@ -26,7 +26,7 @@ export class AssetTransactionService extends AssetTransaction {
       data.hash,
       data.address,
       data.epochNumber,
-      `${data.poolId}-${data.epochNumber.toString()}`,
+      `${data.poolId}-${data.epochNumber.toString(10)}`,
       `${data.poolId}-${data.assetId}`,
       type
     )

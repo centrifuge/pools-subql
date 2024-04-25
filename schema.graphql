@@ -53,6 +53,12 @@ type Pool @entity {
   sumNumberOfActiveAssets: BigInt
   sumDebtOverdue: BigInt
   sumDebtWrittenOffByPeriod: BigInt
+  deltaPortfolioValuationByPeriod: BigInt
+  sumInterestAccruedByPeriod: BigInt
+
+  sumChargedAmountByPeriod: BigInt
+  sumAccruedAmountByPeriod: BigInt
+  sumPaidAmountByPeriod: BigInt
 
   # Cumulated transaction data since pool creation
   sumBorrowedAmount: BigInt
@@ -96,6 +102,12 @@ type PoolSnapshot @entity {
   sumNumberOfActiveAssets: BigInt
   sumDebtOverdue: BigInt
   sumDebtWrittenOffByPeriod: BigInt
+  deltaPortfolioValuationByPeriod: BigInt
+  sumInterestAccruedByPeriod: BigInt
+
+  sumChargedAmountByPeriod: BigInt
+  sumAccruedAmountByPeriod: BigInt
+  sumPaidAmountByPeriod: BigInt
 
   # Cumulated transaction data since pool creation
   sumBorrowedAmount: BigInt
@@ -380,6 +392,8 @@ type Asset @entity {
   borrowedAmountByPeriod: BigInt
   repaidAmountByPeriod: BigInt
 
+  interestAccruedByPeriod: BigInt
+
   writeOffIndex: Int
   writtenOffPercentageByPeriod: BigInt
   writtenOffAmountByPeriod: BigInt
@@ -410,6 +424,8 @@ type AssetSnapshot @entity {
 
   borrowedAmountByPeriod: BigInt
   repaidAmountByPeriod: BigInt
+
+  interestAccruedByPeriod: BigInt
 
   writtenOffPercentageByPeriod: BigInt
   writtenOffAmountByPeriod: BigInt

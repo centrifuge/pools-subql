@@ -65,24 +65,22 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
       for (const loanId in activeLoanData) {
         const loan = await AssetService.getById(pool.id, loanId)
         await loan.updateActiveAssetData(activeLoanData[loanId])
+        await pool.increaseInterestAccrued(loan.interestAccruedByPeriod)
         await loan.save()
-
         if (loan.actualMaturityDate < block.timestamp) pool.increaseDebtOverdue(loan.outstandingDebt)
       }
 
       await pool.updateNumberOfActiveAssets(BigInt(Object.keys(activeLoanData).length))
-      await pool.save()
 
       //PoolFees Accruals
-      const accruedFees = await pool.getAccruedFees().catch((err) => {
-        logger.error(err)
-        return [] as [feeId: string, pending: bigint, disbursement: bigint][]
-      })
+      const accruedFees = await pool.getAccruedFees()
       for (const accruals of accruedFees) {
         const [feeId, pending, disbursement] = accruals
         const poolFee = await PoolFeeService.getById(pool.id, feeId)
         await poolFee.updateAccruals(pending, disbursement)
         await poolFee.save()
+
+        await pool.increaseAccruedFees(poolFee.sumAccruedAmountByPeriod)
 
         const poolFeeTransaction = PoolFeeTransactionService.accrue({
           poolId: pool.id,
@@ -95,6 +93,8 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
         })
         await poolFeeTransaction.save()
       }
+
+      await pool.save()
     }
 
     //Perform Snapshots and reset accumulators
