@@ -266,6 +266,7 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
   await fromAsset.save()
 
   const toAsset = await AssetService.getById(poolId.toString(), toLoanId.toString())
+  await toAsset.activate()
   await toAsset.borrow(borrowPrincipalAmount)
   await toAsset.updateItemMetadata()
   await toAsset.save()
