@@ -13,9 +13,9 @@ permissions:
   issues: write
 
 jobs:
-  subql_deploy_centrifuge_staging:
+  subql_deploy_staging:
     if: ${{ github.ref_name == 'development' }}
-    name: Deploy to SubQL (CENTRIFUGE staging)
+    name: Deploy to SubQL (staging)
     strategy:
       matrix:
         chainId: [development, demo] # ADD ARRAY OF CHAINS TO DEPLOY
@@ -32,7 +32,7 @@ jobs:
 
   subql_deploy_multichain_staging:
     if: ${{ github.ref_name == 'development' }}
-    name: Deploy to SubQL (CENTRIFUGE staging)
+    name: Deploy to SubQL multichain (staging)
     strategy:
       matrix:
         chainId: [demo] # ADD ARRAY OF CHAINS TO DEPLOY
@@ -47,9 +47,9 @@ jobs:
       accessToken: ${{ secrets.SUBQL_ACCESS_TOKEN }}
       onfinalityApiKey: ${{ secrets.ONFINALITY_API_KEY }}
 
-  subql_deploy_centrifuge_production:
+  subql_deploy_production:
     if: ${{ github.ref_name == 'main' }}
-    name: Deploy to SubQL (CENTRIFUGE mainnet)
+    name: Deploy to SubQL (mainnet)
     strategy:
       matrix:
         chainId: [centrifuge] # ADD ARRAY OF CHAINS TO DEPLOY
@@ -64,9 +64,9 @@ jobs:
       accessToken: ${{ secrets.SUBQL_ACCESS_TOKEN }}
       onfinalityApiKey: ${{ secrets.ONFINALITY_API_KEY }}
 
-  subql_deploy_centrifuge_multichain_production:
+  subql_deploy_multichain_production:
     if: ${{ github.ref_name == 'main' }}
-    name: Deploy to SubQL multichain (CENTRIFUGE mainnet)
+    name: Deploy to SubQL multichain (mainnet)
     strategy:
       matrix:
         chainId: [centrifuge] # ADD ARRAY OF CHAINS TO DEPLOY
