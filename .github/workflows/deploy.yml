@@ -4,7 +4,8 @@ on:
   push:
     branches:
       - main
-      - release-*
+      - development
+      #- release-*
   workflow_dispatch:
 
 permissions:
@@ -13,7 +14,7 @@ permissions:
 
 jobs:
   subql_deploy_centrifuge_staging:
-    if: ${{ github.ref_name == 'main' }}
+    if: ${{ github.ref_name == 'development' }}
     name: Deploy to SubQL (CENTRIFUGE staging)
     strategy:
       matrix:
@@ -30,7 +31,7 @@ jobs:
       onfinalityApiKey: ${{ secrets.ONFINALITY_API_KEY }}
 
   subql_deploy_multichain_staging:
-    if: ${{ github.ref_name == 'main' }}
+    if: ${{ github.ref_name == 'development' }}
     name: Deploy to SubQL (CENTRIFUGE staging)
     strategy:
       matrix:
@@ -47,7 +48,7 @@ jobs:
       onfinalityApiKey: ${{ secrets.ONFINALITY_API_KEY }}
 
   subql_deploy_centrifuge_production:
-    if: ${{ startsWith(github.ref_name, 'release-') }}
+    if: ${{ github.ref_name == 'main' }}
     name: Deploy to SubQL (CENTRIFUGE mainnet)
     strategy:
       matrix:
@@ -64,7 +65,7 @@ jobs:
       onfinalityApiKey: ${{ secrets.ONFINALITY_API_KEY }}
 
   subql_deploy_centrifuge_multichain_production:
-    if: ${{ startsWith(github.ref_name, 'release-') }}
+    if: ${{ github.ref_name == 'main' }}
     name: Deploy to SubQL multichain (CENTRIFUGE mainnet)
     strategy:
       matrix:
