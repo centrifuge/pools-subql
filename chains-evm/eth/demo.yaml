@@ -3,6 +3,6 @@ network:
   endpoint: "https://eth-sepolia.api.onfinality.io/rpc?apikey=${ONFINALITY_API_KEY}"
 dataSources:
   - kind: ethereum/Runtime
-    startBlock: 5602400
+    startBlock: 5602400 # April 1st 2024
     options:
       address: '0x5c8657b827a138D52a4e3f03683A28B1FaD86893'
