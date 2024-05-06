@@ -289,7 +289,7 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
     ...txData,
     assetId: fromLoanId.toString(),
     amount: repaidAmount,
-    interestAmount: repaidAmount,
+    interestAmount: repaidInterestAmount,
     principalAmount: repaidPrincipalAmount,
     unscheduledAmount: repaidUnscheduledAmount,
     quantity: _repaidAmount.principal.isExternal ? _repaidAmount.principal.asExternal.quantity.toBigInt() : null,
@@ -350,6 +350,9 @@ async function _handleLoanDebtTransferred1024(event: SubstrateEvent<LoanDebtTran
     hash: event.extrinsic.extrinsic.hash.toString(),
     timestamp: event.block.timestamp,
     amount: amount.toBigInt(),
+    fromAsset: fromLoanId.toString(),
+    toAsset: toLoanId.toString(),
+    principalAmount: amount.toBigInt(),
   }
 
   const repaidAt = await AssetTransactionService.repaid({ ...txData, assetId: fromLoanId.toString() })
