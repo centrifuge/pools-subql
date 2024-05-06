@@ -37,6 +37,7 @@ jobs:
       SUBQL_PROJ_IMAGE: ${{ inputs.projImage }}
       SUBQL_DEPLOYMENT_TYPE: ${{ inputs.deploymentType }}
       ONFINALITY_API_KEY: ${{ secrets.onfinalityApiKey }}
+    environment:  ${{ inputs.chainId == 'centrifuge' && 'pools-multichain' || format('pools-{0}-multichain', inputs.chainId) }}
     steps:
       - name: Check out repo's default branch
         uses: actions/checkout@v3
