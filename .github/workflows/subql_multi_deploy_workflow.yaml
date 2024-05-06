@@ -103,6 +103,7 @@ jobs:
         run: |
           npx subql multi-chain:deploy \
           -d \
+          --ipfsCID=$IPFSCID \
           --location=./subquery-multichain.yaml \
           --org="$SUBQL_PROJ_ORG" \
           --projectName="$SUBQL_PROJ_NAME" \
