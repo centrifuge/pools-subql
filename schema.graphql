@@ -267,6 +267,9 @@ enum AssetTransactionType {
   BORROWED
   REPAID
   CLOSED
+  CASH_DEPOSIT
+  CASH_WITHDRAWAL
+  CASH_TRANSFER
 }
 
 type AssetTransaction @entity {
