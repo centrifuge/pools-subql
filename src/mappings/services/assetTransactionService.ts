@@ -13,8 +13,8 @@ export interface AssetTransactionData {
   readonly settlementPrice?: bigint
   readonly timestamp: Date
   readonly assetId: string
-  readonly fromAsset?: string
-  readonly toAsset?: string
+  readonly fromAssetId?: string
+  readonly toAssetId?: string
 }
 
 export class AssetTransactionService extends AssetTransaction {
@@ -37,6 +37,8 @@ export class AssetTransactionService extends AssetTransaction {
     tx.unscheduledAmount = data.unscheduledAmount ?? null
     tx.quantity = data.quantity ?? null
     tx.settlementPrice = data.settlementPrice ?? null
+    tx.fromAssetId = `${data.poolId}-${data.fromAssetId}` ?? null
+    tx.toAssetId = `${data.poolId}-${data.toAssetId}` ?? null
 
     return tx
   }
@@ -73,6 +75,24 @@ export class AssetTransactionService extends AssetTransaction {
         `for loan ${data.assetId} amount: ${data.amount}`
     )
     const tx = this.init(data, AssetTransactionType.CLOSED)
+    return tx
+  }
+
+  static cashDeposit(data: AssetTransactionData) {
+    logger.info(
+      `Asset transaction of type cash deposit for address ${data.address} in pool ${data.poolId} ` +
+        `for loan ${data.assetId} amount: ${data.amount}`
+    )
+    const tx = this.init(data, AssetTransactionType.CASH_DEPOSIT)
+    return tx
+  }
+
+  static cashWithdrawal(data: AssetTransactionData) {
+    logger.info(
+      `Asset transaction of type cash withdrawal for address ${data.address} in pool ${data.poolId} ` +
+        `for loan ${data.assetId} amount: ${data.amount}`
+    )
+    const tx = this.init(data, AssetTransactionType.CASH_WITHDRAWAL)
     return tx
   }
 }

@@ -40,7 +40,7 @@ async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedEvent>) {
     poolId.toString(),
     loanId.toString(),
     assetType,
-    valuationMethod, //TODO: valuationmethod
+    valuationMethod,
     loanInfo.collateral[0].toBigInt(),
     loanInfo.collateral[1].toBigInt(),
     event.block.timestamp
@@ -103,7 +103,6 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Pr
   if (!pool) throw missingPool
 
   const amount = AssetService.extractPrincipalAmount(borrowAmount)
-  if (amount === BigInt(0)) return
 
   logger.info(`Loan borrowed event for pool: ${poolId.toString()} amount: ${amount.toString()}`)
 
@@ -139,7 +138,7 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Pr
   await pool.save()
 
   // Update epoch info
-  await epoch.increaseBorrowings(BigInt(amount))
+  await epoch.increaseBorrowings(amount)
   await epoch.save()
 }
 
@@ -251,8 +250,6 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
 
   const borrowPrincipalAmount = AssetService.extractPrincipalAmount(_borrowAmount)
 
-  if (repaidAmount === BigInt(0) || borrowPrincipalAmount === BigInt(0)) return
-
   logger.info(
     `Asset debt transferred event for pool: ${poolId.toString()}, from asset: ${fromLoanId.toString()} ` +
       `to asset: ${toLoanId.toString()} amount: ${repaidAmount.toString()}`
@@ -261,15 +258,7 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
   const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toHex())
 
   const fromAsset = await AssetService.getById(poolId.toString(), fromLoanId.toString())
-  await fromAsset.repay(repaidAmount)
-  await fromAsset.updateItemMetadata()
-  await fromAsset.save()
-
   const toAsset = await AssetService.getById(poolId.toString(), toLoanId.toString())
-  await toAsset.activate()
-  await toAsset.borrow(borrowPrincipalAmount)
-  await toAsset.updateItemMetadata()
-  await toAsset.save()
 
   const epoch = await EpochService.getById(pool.id, pool.currentEpoch)
   if (!epoch) throw new Error('Epoch not found!')
@@ -278,86 +267,172 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
     AssetTransactionData,
     'assetId' | 'amount' | 'interestAmount' | 'principalAmount' | 'unscheduledAmount'
   > = {
-    poolId: poolId.toString(),
+    poolId: pool.id,
     address: account.id,
     epochNumber: epoch.index,
     hash: event.extrinsic.extrinsic.hash.toString(),
     timestamp: event.block.timestamp,
   }
 
-  const repaidAt = await AssetTransactionService.repaid({
-    ...txData,
-    assetId: fromLoanId.toString(),
-    amount: repaidAmount,
-    interestAmount: repaidInterestAmount,
-    principalAmount: repaidPrincipalAmount,
-    unscheduledAmount: repaidUnscheduledAmount,
-    quantity: _repaidAmount.principal.isExternal ? _repaidAmount.principal.asExternal.quantity.toBigInt() : null,
-    settlementPrice: _repaidAmount.principal.isExternal
-      ? _repaidAmount.principal.asExternal.settlementPrice.toBigInt()
-      : null,
-    fromAsset: fromLoanId.toString(),
-    toAsset: toLoanId.toString(),
-  })
-  await repaidAt.save()
+  if (fromAsset.type === AssetType.Other && toAsset.type === AssetType.OffchainCash) {
+    //Track repayment
+    await fromAsset.activate()
+    await fromAsset.repay(repaidAmount)
+    await fromAsset.updateIpfsAssetName()
+    await fromAsset.save()
 
-  const borrowedAt = await AssetTransactionService.borrowed({
-    ...txData,
-    assetId: toLoanId.toString(),
-    amount: borrowPrincipalAmount,
-    principalAmount: borrowPrincipalAmount,
-    quantity: _borrowAmount.isExternal ? _borrowAmount.asExternal.quantity.toBigInt() : null,
-    settlementPrice: _borrowAmount.isExternal ? _borrowAmount.asExternal.settlementPrice.toBigInt() : null,
-    fromAsset: fromLoanId.toString(),
-    toAsset: toLoanId.toString(),
-  })
-  await borrowedAt.save()
+    // principal repayment transaction
+    const principalRepayment = await AssetTransactionService.repaid({
+      ...txData,
+      assetId: fromLoanId.toString(10),
+      amount: repaidAmount,
+      interestAmount: repaidInterestAmount,
+      principalAmount: repaidPrincipalAmount,
+      unscheduledAmount: repaidUnscheduledAmount,
+      quantity: _repaidAmount.principal.isExternal ? _repaidAmount.principal.asExternal.quantity.toBigInt() : null,
+      settlementPrice: _repaidAmount.principal.isExternal
+        ? _repaidAmount.principal.asExternal.settlementPrice.toBigInt()
+        : null,
+      fromAssetId: toLoanId.toString(10),
+    })
+    await principalRepayment.save()
+
+    // cash deposit transaction
+    const cashDeposit = await AssetTransactionService.cashDeposit({
+      ...txData,
+      assetId: toLoanId.toString(10),
+      amount: borrowPrincipalAmount,
+      principalAmount: borrowPrincipalAmount,
+      quantity: _repaidAmount.principal.isExternal ? _repaidAmount.principal.asExternal.quantity.toBigInt() : null,
+      settlementPrice: _repaidAmount.principal.isExternal
+        ? _repaidAmount.principal.asExternal.settlementPrice.toBigInt()
+        : null,
+      toAssetId: fromLoanId.toString(10),
+    })
+    await cashDeposit.save()
+  }
+
+  if (fromAsset.type === AssetType.OffchainCash && toAsset.type === AssetType.Other) {
+    //Track borrowed / financed amount
+    await toAsset.activate()
+    await toAsset.borrow(borrowPrincipalAmount)
+    await toAsset.updateIpfsAssetName()
+    await toAsset.save()
+
+    // purchase transaction
+    const purchaseTransaction = await AssetTransactionService.borrowed({
+      ...txData,
+      assetId: toLoanId.toString(10),
+      amount: borrowPrincipalAmount,
+      principalAmount: borrowPrincipalAmount,
+      quantity: _repaidAmount.principal.isExternal ? _repaidAmount.principal.asExternal.quantity.toBigInt() : null,
+      settlementPrice: _repaidAmount.principal.isExternal
+        ? _repaidAmount.principal.asExternal.settlementPrice.toBigInt()
+        : null,
+      fromAssetId: fromLoanId.toString(10),
+    })
+    await purchaseTransaction.save()
+
+    // cash withdrawal transaction
+    const cashWithdrawal = await AssetTransactionService.cashWithdrawal({
+      ...txData,
+      assetId: fromLoanId.toString(10),
+      amount: repaidAmount,
+      interestAmount: repaidInterestAmount,
+      principalAmount: repaidPrincipalAmount,
+      unscheduledAmount: repaidUnscheduledAmount,
+      quantity: _repaidAmount.principal.isExternal ? _repaidAmount.principal.asExternal.quantity.toBigInt() : null,
+      settlementPrice: _repaidAmount.principal.isExternal
+        ? _repaidAmount.principal.asExternal.settlementPrice.toBigInt()
+        : null,
+      toAssetId: fromLoanId.toString(10),
+    })
+    await cashWithdrawal.save()
+  }
 }
 
 export const handleLoanDebtTransferred1024 = errorHandler(_handleLoanDebtTransferred1024)
 async function _handleLoanDebtTransferred1024(event: SubstrateEvent<LoanDebtTransferred1024>) {
-  const [poolId, fromLoanId, toLoanId, amount] = event.event.data
+  const [poolId, fromLoanId, toLoanId, _amount] = event.event.data
 
   const pool = await PoolService.getById(poolId.toString())
   if (!pool) throw missingPool
 
-  if (amount.toBigInt() === BigInt(0)) return
+  const amount = _amount.toBigInt()
 
   logger.info(
     `Asset debt transferred (deprecated) event for pool: ${poolId.toString()}, from loan: ${fromLoanId.toString()} ` +
-      `to loan: ${toLoanId.toString()} amount: ${amount.toString()}`
+      `to loan: ${toLoanId.toString()} amount: ${amount.toString(10)}`
   )
 
   const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toHex())
 
   const fromAsset = await AssetService.getById(poolId.toString(), fromLoanId.toString())
-  await fromAsset.repay(amount.toBigInt())
-  await fromAsset.updateItemMetadata()
-  await fromAsset.save()
-
   const toAsset = await AssetService.getById(poolId.toString(), toLoanId.toString())
-  await toAsset.repay(amount.toBigInt())
-  await toAsset.updateItemMetadata()
-  await toAsset.save()
 
   const epoch = await EpochService.getById(pool.id, pool.currentEpoch)
   if (!epoch) throw new Error('Epoch not found!')
 
-  const txData: Omit<AssetTransactionData, 'assetId'> = {
-    poolId: poolId.toString(),
+  const txData: Omit<
+    AssetTransactionData,
+    'assetId' | 'amount' | 'interestAmount' | 'principalAmount' | 'unscheduledAmount'
+  > = {
+    poolId: pool.id,
     address: account.id,
     epochNumber: epoch.index,
     hash: event.extrinsic.extrinsic.hash.toString(),
     timestamp: event.block.timestamp,
-    amount: amount.toBigInt(),
-    fromAsset: fromLoanId.toString(),
-    toAsset: toLoanId.toString(),
-    principalAmount: amount.toBigInt(),
   }
 
-  const repaidAt = await AssetTransactionService.repaid({ ...txData, assetId: fromLoanId.toString() })
-  await repaidAt.save()
+  if (fromAsset.type === AssetType.Other && toAsset.type === AssetType.OffchainCash) {
+    //Track repayment
+    await fromAsset.activate()
+    await fromAsset.repay(amount)
+    await fromAsset.updateIpfsAssetName()
+    await fromAsset.save()
 
-  const borrowedAt = await AssetTransactionService.borrowed({ ...txData, assetId: toLoanId.toString() })
-  await borrowedAt.save()
+    // principal repayment transaction
+    const principalRepayment = await AssetTransactionService.repaid({
+      ...txData,
+      assetId: fromLoanId.toString(10),
+      amount: amount,
+      fromAssetId: toLoanId.toString(10),
+    })
+    await principalRepayment.save()
+
+    // cash deposit transaction
+    const cashDeposit = await AssetTransactionService.cashDeposit({
+      ...txData,
+      assetId: toLoanId.toString(10),
+      amount: amount,
+      toAssetId: fromLoanId.toString(10),
+    })
+    await cashDeposit.save()
+  }
+
+  if (fromAsset.type === AssetType.OffchainCash && toAsset.type === AssetType.Other) {
+    //Track borrowed / financed amount
+    await toAsset.activate()
+    await toAsset.borrow(amount)
+    await toAsset.updateIpfsAssetName()
+    await toAsset.save()
+
+    // purchase transaction
+    const purchaseTransaction = await AssetTransactionService.borrowed({
+      ...txData,
+      assetId: toLoanId.toString(10),
+      amount: amount,
+      fromAssetId: fromLoanId.toString(10),
+    })
+    await purchaseTransaction.save()
+
+    // cash withdrawal transaction
+    const cashWithdrawal = await AssetTransactionService.cashWithdrawal({
+      ...txData,
+      assetId: fromLoanId.toString(10),
+      amount: amount,
+      toAssetId: fromLoanId.toString(10),
+    })
+    await cashWithdrawal.save()
+  }
 }

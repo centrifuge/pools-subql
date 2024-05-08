@@ -53,6 +53,10 @@ export class AssetService extends Asset {
     return asset
   }
 
+  static initOnchainCash(poolId: string, timestamp: Date) {
+    return this.init(poolId, '0', AssetType.OnchainCash, AssetValuationMethod.Cash, undefined, undefined, timestamp)
+  }
+
   static async getById(poolId: string, assetId: string) {
     const asset = (await this.get(`${poolId}-${assetId}`)) as AssetService
     return asset
