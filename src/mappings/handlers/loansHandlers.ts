@@ -133,6 +133,8 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Pr
   })
   await at.save()
 
+  //TODO: handle borrow
+
   // Update pool info
   await pool.increaseBorrowings(amount)
   await pool.save()
