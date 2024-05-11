@@ -108,40 +108,57 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Pr
 
   const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toHex())
 
-  // Update loan amount
-  const asset = await AssetService.getById(poolId.toString(), loanId.toString())
-  await asset.activate()
-  await asset.borrow(amount)
-  await asset.updateItemMetadata()
-  await asset.updateIpfsAssetName().catch((err) => logger.error(`IPFS Request failed ${err}`))
-  await asset.save()
-
   const epoch = await EpochService.getById(pool.id, pool.currentEpoch)
   if (!epoch) throw new Error('Epoch not found!')
 
-  const at = await AssetTransactionService.borrowed({
-    poolId: poolId.toString(),
-    assetId: loanId.toString(),
-    address: account.id,
-    epochNumber: epoch.index,
-    hash: event.extrinsic.extrinsic.hash.toString(),
-    timestamp: event.block.timestamp,
-    amount: amount,
-    principalAmount: amount,
-    quantity: borrowAmount.isExternal ? borrowAmount.asExternal.quantity.toBigInt() : null,
-    settlementPrice: borrowAmount.isExternal ? borrowAmount.asExternal.settlementPrice.toBigInt() : null,
-  })
-  await at.save()
+  // Update loan amount
+  const asset = await AssetService.getById(poolId.toString(), loanId.toString())
+  await asset.activate()
 
-  //TODO: handle borrow
+  if (asset.type === AssetType.OffchainCash) {
+    const ct = await AssetTransactionService.cashTransfer({
+      poolId: poolId.toString(),
+      assetId: loanId.toString(),
+      address: account.id,
+      epochNumber: epoch.index,
+      hash: event.extrinsic.extrinsic.hash.toString(),
+      timestamp: event.block.timestamp,
+      amount: amount,
+      principalAmount: amount,
+      quantity: borrowAmount.isExternal ? borrowAmount.asExternal.quantity.toBigInt() : null,
+      settlementPrice: borrowAmount.isExternal ? borrowAmount.asExternal.settlementPrice.toBigInt() : null,
+      fromAssetId: '0',
+    })
+    await ct.save()
+  } else {
+    await asset.borrow(amount)
 
-  // Update pool info
-  await pool.increaseBorrowings(amount)
-  await pool.save()
+    const at = await AssetTransactionService.borrowed({
+      poolId: poolId.toString(),
+      assetId: loanId.toString(),
+      address: account.id,
+      epochNumber: epoch.index,
+      hash: event.extrinsic.extrinsic.hash.toString(),
+      timestamp: event.block.timestamp,
+      amount: amount,
+      principalAmount: amount,
+      quantity: borrowAmount.isExternal ? borrowAmount.asExternal.quantity.toBigInt() : null,
+      settlementPrice: borrowAmount.isExternal ? borrowAmount.asExternal.settlementPrice.toBigInt() : null,
+    })
+    await at.save()
 
-  // Update epoch info
-  await epoch.increaseBorrowings(amount)
-  await epoch.save()
+    // Update pool info
+    await pool.increaseBorrowings(amount)
+    await pool.save()
+
+    // Update epoch info
+    await epoch.increaseBorrowings(amount)
+    await epoch.save()
+  }
+
+  await asset.updateItemMetadata()
+  await asset.updateIpfsAssetName().catch((err) => logger.error(`IPFS Request failed ${err}`))
+  await asset.save()
 }
 
 export const handleLoanRepaid = errorHandler(_handleLoanRepaid)
@@ -154,43 +171,62 @@ async function _handleLoanRepaid(event: SubstrateEvent<LoanRepaidEvent>) {
   const principalAmount = AssetService.extractPrincipalAmount(principal)
   const amount = principalAmount + interest.toBigInt() + unscheduled.toBigInt()
 
-  if (amount === BigInt(0)) return
-
   logger.info(`Loan repaid event for pool: ${poolId.toString()} amount: ${amount.toString()}`)
 
   const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toHex())
 
-  const asset = await AssetService.getById(poolId.toString(), loanId.toString())
-  await asset.repay(amount)
-  await asset.updateItemMetadata()
-  await asset.save()
-
   const epoch = await EpochService.getById(pool.id, pool.currentEpoch)
   if (!epoch) throw new Error('Epoch not found!')
 
-  const at = await AssetTransactionService.repaid({
-    poolId: poolId.toString(),
-    assetId: loanId.toString(),
-    address: account.id,
-    epochNumber: epoch.index,
-    hash: event.extrinsic.extrinsic.hash.toString(),
-    timestamp: event.block.timestamp,
-    amount: amount,
-    principalAmount: principalAmount,
-    interestAmount: interest.toBigInt(),
-    unscheduledAmount: unscheduled.toBigInt(),
-    quantity: principal.isExternal ? principal.asExternal.quantity.toBigInt() : null,
-    settlementPrice: principal.isExternal ? principal.asExternal.settlementPrice.toBigInt() : null,
-  })
-  await at.save()
+  const asset = await AssetService.getById(poolId.toString(), loanId.toString())
 
-  // Update pool info
-  await pool.increaseRepayments(principalAmount, interest.toBigInt(), unscheduled.toBigInt())
-  await pool.save()
+  if (asset.type === AssetType.OffchainCash) {
+    const ct = await AssetTransactionService.cashTransfer({
+      poolId: poolId.toString(),
+      assetId: loanId.toString(),
+      address: account.id,
+      epochNumber: epoch.index,
+      hash: event.extrinsic.extrinsic.hash.toString(),
+      timestamp: event.block.timestamp,
+      amount: amount,
+      principalAmount: principalAmount,
+      interestAmount: interest.toBigInt(),
+      unscheduledAmount: unscheduled.toBigInt(),
+      quantity: principal.isExternal ? principal.asExternal.quantity.toBigInt() : null,
+      settlementPrice: principal.isExternal ? principal.asExternal.settlementPrice.toBigInt() : null,
+      toAssetId: '0',
+    })
+    await ct.save()
+  } else {
+    await asset.repay(amount)
 
-  // Update epoch info
-  await epoch.increaseRepayments(amount)
-  await epoch.save()
+    const at = await AssetTransactionService.repaid({
+      poolId: poolId.toString(),
+      assetId: loanId.toString(),
+      address: account.id,
+      epochNumber: epoch.index,
+      hash: event.extrinsic.extrinsic.hash.toString(),
+      timestamp: event.block.timestamp,
+      amount: amount,
+      principalAmount: principalAmount,
+      interestAmount: interest.toBigInt(),
+      unscheduledAmount: unscheduled.toBigInt(),
+      quantity: principal.isExternal ? principal.asExternal.quantity.toBigInt() : null,
+      settlementPrice: principal.isExternal ? principal.asExternal.settlementPrice.toBigInt() : null,
+    })
+    await at.save()
+
+    // Update pool info
+    await pool.increaseRepayments(principalAmount, interest.toBigInt(), unscheduled.toBigInt())
+    await pool.save()
+
+    // Update epoch info
+    await epoch.increaseRepayments(amount)
+    await epoch.save()
+  }
+
+  await asset.updateItemMetadata()
+  await asset.save()
 }
 
 export const handleLoanWrittenOff = errorHandler(_handleLoanWrittenOff)
