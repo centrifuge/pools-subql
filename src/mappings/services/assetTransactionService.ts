@@ -37,8 +37,8 @@ export class AssetTransactionService extends AssetTransaction {
     tx.unscheduledAmount = data.unscheduledAmount ?? null
     tx.quantity = data.quantity ?? null
     tx.settlementPrice = data.settlementPrice ?? null
-    tx.fromAssetId = `${data.poolId}-${data.fromAssetId}` ?? null
-    tx.toAssetId = `${data.poolId}-${data.toAssetId}` ?? null
+    tx.fromAssetId = data.fromAssetId ? `${data.poolId}-${data.fromAssetId}` : null
+    tx.toAssetId = data.toAssetId ? `${data.poolId}-${data.toAssetId}` : null
 
     return tx
   }

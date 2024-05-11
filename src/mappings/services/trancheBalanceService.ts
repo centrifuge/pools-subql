@@ -33,29 +33,53 @@ export class TrancheBalanceService extends TrancheBalance {
   }
 
   public investOrder(currencyAmount: bigint) {
+    logger.info(
+      `Processing invest order for trancheBalance: ${this.id}-${this.poolId}-${this.trancheId}` +
+        ` pendingInvestCurrency: ${currencyAmount}`
+    )
     this.pendingInvestCurrency = currencyAmount
   }
 
   public redeemOrder(tokenAmount: bigint) {
+    logger.info(
+      `Processing redeem order for trancheBalance: ${this.id}-${this.poolId}-${this.trancheId}` +
+        ` pendingRedeemTrancheTokens: ${tokenAmount}`
+    )
     this.pendingRedeemTrancheTokens = tokenAmount
   }
 
   public investExecute(currencyAmount: bigint, tokenAmount: bigint) {
+    logger.info(
+      `Processing invest execution for trancheBalance: ${this.id}-${this.poolId}-${this.trancheId}` +
+        ` currencyAmount: ${currencyAmount} tokenAmount: ${tokenAmount}`
+    )
     this.pendingInvestCurrency -= currencyAmount
     this.claimableTrancheTokens += tokenAmount
   }
 
   public redeemExecute(tokenAmount: bigint, currencyAmount: bigint) {
+    logger.info(
+      `Processing redeem execution for trancheBalance: ${this.id}-${this.poolId}-${this.trancheId}` +
+        ` tokenAmount: ${tokenAmount} currencyAmount: ${currencyAmount}`
+    )
     this.pendingRedeemTrancheTokens -= tokenAmount
     this.claimableCurrency += currencyAmount
   }
 
   public investCollect(tokenAmount: bigint) {
+    logger.info(
+      `Processing invest collection for trancheBalance: ${this.id}-${this.poolId}-${this.trancheId}` +
+        ` tokenAmount: ${tokenAmount}`
+    )
     this.claimableTrancheTokens -= tokenAmount
     this.sumClaimedTrancheTokens += tokenAmount
   }
 
   public redeemCollect(currencyAmount: bigint) {
+    logger.info(
+      `Processing redeem collection for trancheBalance: ${this.id}-${this.poolId}-${this.trancheId}` +
+        ` curreAmount: ${currencyAmount}`
+    )
     this.claimableCurrency -= currencyAmount
     this.sumClaimedCurrency += currencyAmount
   }
