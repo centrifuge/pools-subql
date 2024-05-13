@@ -132,6 +132,7 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Pr
     const ct = await AssetTransactionService.cashTransfer({
       ...assetTransactionBaseData,
       fromAssetId: ONCHAIN_CASH_ASSET_ID,
+      toAssetId: loanId.toString(),
     })
     await ct.save()
   } else {
@@ -191,6 +192,7 @@ async function _handleLoanRepaid(event: SubstrateEvent<LoanRepaidEvent>) {
   if (asset.isOffchainCash()) {
     const ct = await AssetTransactionService.cashTransfer({
       ...assetTransactionBaseData,
+      fromAssetId: loanId.toString(),
       toAssetId: ONCHAIN_CASH_ASSET_ID,
     })
     await ct.save()
