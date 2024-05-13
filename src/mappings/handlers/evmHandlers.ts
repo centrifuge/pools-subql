@@ -19,6 +19,7 @@ const ethApi = api as unknown as Provider
 export const handleEvmDeployTranche = errorHandler(_handleEvmDeployTranche)
 async function _handleEvmDeployTranche(event: DeployTrancheLog): Promise<void> {
   const [_poolId, _trancheId, tokenAddress] = event.args
+  const poolManagerAddress = event.address
 
   const chainId = await getNodeEvmChainId() //(await networkPromise).chainId.toString(10)
   const blockchain = await BlockchainService.getOrInit(chainId)
@@ -27,14 +28,15 @@ async function _handleEvmDeployTranche(event: DeployTrancheLog): Promise<void> {
   const trancheId = _trancheId.substring(0, 34)
 
   logger.info(
-    `Adding DynamicSource for tranche ${poolId}-${trancheId} token: ${tokenAddress} block: ${event.blockNumber}`
+    `Attaching DynamicSource for tranche ${poolId}-${trancheId} token: ${tokenAddress}` +
+      ` block: ${event.blockNumber} poolManager: ${poolManagerAddress}`
   )
 
   const pool = await PoolService.getOrSeed(poolId)
   const tranche = await TrancheService.getOrSeed(pool.id, trancheId)
 
   const currency = await CurrencyService.getOrInitEvm(blockchain.id, tokenAddress)
-  const poolManager = PoolManagerAbi__factory.connect(event.address, ethApi)
+  const poolManager = PoolManagerAbi__factory.connect(poolManagerAddress, ethApi)
   const escrowAddress = await poolManager.escrow()
 
   const investmentManagerAddress = await poolManager.investmentManager()
