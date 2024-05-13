@@ -169,6 +169,10 @@ export class AssetService extends Asset {
   public isOffchainCash() {
     return this.type === AssetType.OffchainCash
   }
+
+  public isNonCash() {
+    return this.type === AssetType.Other
+  }
 }
 
 interface AssetSpecs {

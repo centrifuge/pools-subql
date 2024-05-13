@@ -225,6 +225,11 @@ export class PoolService extends Pool {
     this.sumUnscheduledRepaidAmount += unscheduledRepaidAmount
   }
 
+  public increaseRepayments1024(repaidAmount: bigint) {
+    this.sumRepaidAmountByPeriod += repaidAmount
+    this.sumRepaidAmount += repaidAmount
+  }
+
   public increaseInvestments(currencyAmount: bigint) {
     this.sumInvestedAmountByPeriod += currencyAmount
   }

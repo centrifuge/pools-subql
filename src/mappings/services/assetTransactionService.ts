@@ -78,24 +78,6 @@ export class AssetTransactionService extends AssetTransaction {
     return tx
   }
 
-  static cashDeposit(data: AssetTransactionData) {
-    logger.info(
-      `Asset transaction of type cash deposit for address ${data.address} in pool ${data.poolId} ` +
-        `for loan ${data.assetId} amount: ${data.amount}`
-    )
-    const tx = this.init(data, AssetTransactionType.CASH_DEPOSIT)
-    return tx
-  }
-
-  static cashWithdrawal(data: AssetTransactionData) {
-    logger.info(
-      `Asset transaction of type cash withdrawal for address ${data.address} in pool ${data.poolId} ` +
-        `for loan ${data.assetId} amount: ${data.amount}`
-    )
-    const tx = this.init(data, AssetTransactionType.CASH_WITHDRAWAL)
-    return tx
-  }
-
   static cashTransfer(data: AssetTransactionData) {
     logger.info(
       `Asset transaction of type cash transfer for address ${data.address} in pool ${data.poolId} ` +
