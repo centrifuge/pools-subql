@@ -10,7 +10,7 @@ import {
 } from '../../helpers/types'
 import { errorHandler, missingPool } from '../../helpers/errorHandler'
 import { PoolService } from '../services/poolService'
-import { AssetService } from '../services/assetService'
+import { AssetService, ONCHAIN_CASH_ASSET_ID } from '../services/assetService'
 import { AssetTransactionData, AssetTransactionService } from '../services/assetTransactionService'
 import { AccountService } from '../services/accountService'
 import { EpochService } from '../services/epochService'
@@ -115,36 +115,29 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Pr
   const asset = await AssetService.getById(poolId.toString(), loanId.toString())
   await asset.activate()
 
-  if (asset.type === AssetType.OffchainCash) {
+  const assetTransactionBaseData = {
+    poolId: poolId.toString(),
+    assetId: loanId.toString(),
+    address: account.id,
+    epochNumber: epoch.index,
+    hash: event.extrinsic.extrinsic.hash.toString(),
+    timestamp: event.block.timestamp,
+    amount: amount,
+    principalAmount: amount,
+    quantity: borrowAmount.isExternal ? borrowAmount.asExternal.quantity.toBigInt() : null,
+    settlementPrice: borrowAmount.isExternal ? borrowAmount.asExternal.settlementPrice.toBigInt() : null,
+  }
+
+  if (asset.isOffchainCash()) {
     const ct = await AssetTransactionService.cashTransfer({
-      poolId: poolId.toString(),
-      assetId: loanId.toString(),
-      address: account.id,
-      epochNumber: epoch.index,
-      hash: event.extrinsic.extrinsic.hash.toString(),
-      timestamp: event.block.timestamp,
-      amount: amount,
-      principalAmount: amount,
-      quantity: borrowAmount.isExternal ? borrowAmount.asExternal.quantity.toBigInt() : null,
-      settlementPrice: borrowAmount.isExternal ? borrowAmount.asExternal.settlementPrice.toBigInt() : null,
-      fromAssetId: '0',
+      ...assetTransactionBaseData,
+      fromAssetId: ONCHAIN_CASH_ASSET_ID,
     })
     await ct.save()
   } else {
     await asset.borrow(amount)
 
-    const at = await AssetTransactionService.borrowed({
-      poolId: poolId.toString(),
-      assetId: loanId.toString(),
-      address: account.id,
-      epochNumber: epoch.index,
-      hash: event.extrinsic.extrinsic.hash.toString(),
-      timestamp: event.block.timestamp,
-      amount: amount,
-      principalAmount: amount,
-      quantity: borrowAmount.isExternal ? borrowAmount.asExternal.quantity.toBigInt() : null,
-      settlementPrice: borrowAmount.isExternal ? borrowAmount.asExternal.settlementPrice.toBigInt() : null,
-    })
+    const at = await AssetTransactionService.borrowed(assetTransactionBaseData)
     await at.save()
 
     // Update pool info
@@ -180,40 +173,31 @@ async function _handleLoanRepaid(event: SubstrateEvent<LoanRepaidEvent>) {
 
   const asset = await AssetService.getById(poolId.toString(), loanId.toString())
 
-  if (asset.type === AssetType.OffchainCash) {
+  const assetTransactionBaseData = {
+    poolId: poolId.toString(),
+    assetId: loanId.toString(),
+    address: account.id,
+    epochNumber: epoch.index,
+    hash: event.extrinsic.extrinsic.hash.toString(),
+    timestamp: event.block.timestamp,
+    amount: amount,
+    principalAmount: principalAmount,
+    interestAmount: interest.toBigInt(),
+    unscheduledAmount: unscheduled.toBigInt(),
+    quantity: principal.isExternal ? principal.asExternal.quantity.toBigInt() : null,
+    settlementPrice: principal.isExternal ? principal.asExternal.settlementPrice.toBigInt() : null,
+  }
+
+  if (asset.isOffchainCash()) {
     const ct = await AssetTransactionService.cashTransfer({
-      poolId: poolId.toString(),
-      assetId: loanId.toString(),
-      address: account.id,
-      epochNumber: epoch.index,
-      hash: event.extrinsic.extrinsic.hash.toString(),
-      timestamp: event.block.timestamp,
-      amount: amount,
-      principalAmount: principalAmount,
-      interestAmount: interest.toBigInt(),
-      unscheduledAmount: unscheduled.toBigInt(),
-      quantity: principal.isExternal ? principal.asExternal.quantity.toBigInt() : null,
-      settlementPrice: principal.isExternal ? principal.asExternal.settlementPrice.toBigInt() : null,
-      toAssetId: '0',
+      ...assetTransactionBaseData,
+      toAssetId: ONCHAIN_CASH_ASSET_ID,
     })
     await ct.save()
   } else {
     await asset.repay(amount)
 
-    const at = await AssetTransactionService.repaid({
-      poolId: poolId.toString(),
-      assetId: loanId.toString(),
-      address: account.id,
-      epochNumber: epoch.index,
-      hash: event.extrinsic.extrinsic.hash.toString(),
-      timestamp: event.block.timestamp,
-      amount: amount,
-      principalAmount: principalAmount,
-      interestAmount: interest.toBigInt(),
-      unscheduledAmount: unscheduled.toBigInt(),
-      quantity: principal.isExternal ? principal.asExternal.quantity.toBigInt() : null,
-      settlementPrice: principal.isExternal ? principal.asExternal.settlementPrice.toBigInt() : null,
-    })
+    const at = await AssetTransactionService.repaid(assetTransactionBaseData)
     await at.save()
 
     // Update pool info

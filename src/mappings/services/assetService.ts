@@ -6,6 +6,7 @@ import { Asset, AssetType, AssetValuationMethod, AssetStatus } from '../../types
 import { ActiveLoanData } from './poolService'
 import { cid, readIpfs } from '../../helpers/ipfsFetch'
 
+export const ONCHAIN_CASH_ASSET_ID = '0'
 export class AssetService extends Asset {
   static init(
     poolId: string,
@@ -54,7 +55,15 @@ export class AssetService extends Asset {
   }
 
   static initOnchainCash(poolId: string, timestamp: Date) {
-    return this.init(poolId, '0', AssetType.OnchainCash, AssetValuationMethod.Cash, undefined, undefined, timestamp)
+    return this.init(
+      poolId,
+      ONCHAIN_CASH_ASSET_ID,
+      AssetType.OnchainCash,
+      AssetValuationMethod.Cash,
+      undefined,
+      undefined,
+      timestamp
+    )
   }
 
   static async getById(poolId: string, assetId: string) {
@@ -155,6 +164,10 @@ export class AssetService extends Asset {
     if (!this.metadata) return logger.warn('No IPFS metadata')
     const metadata = await readIpfs<AssetIpfsMetadata>(this.metadata.match(cid)[0])
     return metadata?.name ?? null
+  }
+
+  public isOffchainCash() {
+    return this.type === AssetType.OffchainCash
   }
 }
 
