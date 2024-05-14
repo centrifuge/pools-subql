@@ -13,8 +13,8 @@ export interface AssetTransactionData {
   readonly settlementPrice?: bigint
   readonly timestamp: Date
   readonly assetId: string
-  readonly fromAsset?: string
-  readonly toAsset?: string
+  readonly fromAssetId?: string
+  readonly toAssetId?: string
 }
 
 export class AssetTransactionService extends AssetTransaction {
@@ -37,6 +37,8 @@ export class AssetTransactionService extends AssetTransaction {
     tx.unscheduledAmount = data.unscheduledAmount ?? null
     tx.quantity = data.quantity ?? null
     tx.settlementPrice = data.settlementPrice ?? null
+    tx.fromAssetId = data.fromAssetId ? `${data.poolId}-${data.fromAssetId}` : null
+    tx.toAssetId = data.toAssetId ? `${data.poolId}-${data.toAssetId}` : null
 
     return tx
   }
@@ -73,6 +75,15 @@ export class AssetTransactionService extends AssetTransaction {
         `for loan ${data.assetId} amount: ${data.amount}`
     )
     const tx = this.init(data, AssetTransactionType.CLOSED)
+    return tx
+  }
+
+  static cashTransfer(data: AssetTransactionData) {
+    logger.info(
+      `Asset transaction of type cash transfer for address ${data.address} in pool ${data.poolId} ` +
+        `for loan ${data.assetId} amount: ${data.amount}`
+    )
+    const tx = this.init(data, AssetTransactionType.CASH_TRANSFER)
     return tx
   }
 }

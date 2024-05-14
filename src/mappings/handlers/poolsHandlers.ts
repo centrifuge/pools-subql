@@ -9,6 +9,7 @@ import { InvestorTransactionService } from '../services/investorTransactionServi
 import { CurrencyService, currencyFormatters } from '../services/currencyService'
 import { TrancheBalanceService } from '../services/trancheBalanceService'
 import { BlockchainService, LOCAL_CHAIN_ID } from '../services/blockchainService'
+import { AssetService } from '../services/assetService'
 
 export const handlePoolCreated = errorHandler(_handlePoolCreated)
 async function _handlePoolCreated(event: SubstrateEvent<PoolCreatedEvent>): Promise<void> {
@@ -66,6 +67,9 @@ async function _handlePoolCreated(event: SubstrateEvent<PoolCreatedEvent>): Prom
   const trancheIds = tranches.map((tranche) => tranche.trancheId)
   const epoch = await EpochService.init(pool.id, pool.currentEpoch, trancheIds, event.block.timestamp)
   await epoch.saveWithStates()
+
+  const onChainCashAsset = AssetService.initOnchainCash(pool.id, event.block.timestamp)
+  await onChainCashAsset.save()
 }
 
 export const handlePoolUpdated = errorHandler(_handlePoolUpdated)
