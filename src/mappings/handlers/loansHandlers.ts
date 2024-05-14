@@ -408,6 +408,7 @@ async function _handleLoanDebtTransferred1024(event: SubstrateEvent<LoanDebtTran
       ...txData,
       assetId: fromLoanId.toString(10),
       amount: amount,
+      fromAssetId: fromLoanId.toString(10),
       toAssetId: toLoanId.toString(10),
     })
     await principalRepayment.save()
