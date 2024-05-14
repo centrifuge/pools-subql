@@ -323,6 +323,7 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
       settlementPrice: _repaidAmount.principal.isExternal
         ? _repaidAmount.principal.asExternal.settlementPrice.toBigInt()
         : null,
+      fromAssetId: fromLoanId.toString(10),
       toAssetId: toLoanId.toString(10),
     })
     await principalRepayment.save()
