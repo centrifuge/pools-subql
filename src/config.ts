@@ -216,3 +216,15 @@ export const tinlakePools = [
     pile: [{ address: '0xdB07B21109117208a0317adfbed484C87c9c2aFf' }],
   },
 ]
+
+export const escrows = {
+  '1': '0xd595E1483c507E74E2E6A3dE8e7D08d8f6F74936', // Ethereum mainnet
+  '8453': '0xd595E1483c507E74E2E6A3dE8e7D08d8f6F74936', // Base mainnet
+  '11155111': '0x1AB6cD0c08120215E241a6108ae7458c995E1694', // Ethereum sepolia
+}
+
+export const userEscrows = {
+  '1': '0x9fc3A3bcEdc1CaB14EfC1B7ef45dFBDd3d17c9d7', // Ethereum mainnet
+  '8453': '0x9fc3A3bcEdc1CaB14EfC1B7ef45dFBDd3d17c9d7', // Base mainnet
+  '11155111': '0x80EFf9C87f48c50BF9c6c3998D26174410647621', // Ethereum sepolia
+}

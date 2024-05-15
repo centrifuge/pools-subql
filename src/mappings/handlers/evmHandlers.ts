@@ -9,16 +9,17 @@ import { InvestorTransactionData, InvestorTransactionService } from '../services
 import { CurrencyService } from '../services/currencyService'
 import { BlockchainService } from '../services/blockchainService'
 import { CurrencyBalanceService } from '../services/currencyBalanceService'
-import { InvestmentManagerAbi__factory, PoolManagerAbi__factory } from '../../types/contracts'
 import type { Provider } from '@ethersproject/providers'
 import { TrancheBalanceService } from '../services/trancheBalanceService'
+import { escrows, userEscrows } from '../../config'
 
-const ethApi = api as unknown as Provider
+const _ethApi = api as unknown as Provider
 //const networkPromise = typeof ethApi.getNetwork === 'function' ? ethApi.getNetwork() : null
 
 export const handleEvmDeployTranche = errorHandler(_handleEvmDeployTranche)
 async function _handleEvmDeployTranche(event: DeployTrancheLog): Promise<void> {
   const [_poolId, _trancheId, tokenAddress] = event.args
+  const poolManagerAddress = event.address
 
   const chainId = await getNodeEvmChainId() //(await networkPromise).chainId.toString(10)
   const blockchain = await BlockchainService.getOrInit(chainId)
@@ -27,19 +28,24 @@ async function _handleEvmDeployTranche(event: DeployTrancheLog): Promise<void> {
   const trancheId = _trancheId.substring(0, 34)
 
   logger.info(
-    `Adding DynamicSource for tranche ${poolId}-${trancheId} token: ${tokenAddress} block: ${event.blockNumber}`
+    `Attaching DynamicSource for tranche ${poolId}-${trancheId} token: ${tokenAddress}` +
+      ` block: ${event.blockNumber} poolManager: ${poolManagerAddress}`
   )
 
   const pool = await PoolService.getOrSeed(poolId)
   const tranche = await TrancheService.getOrSeed(pool.id, trancheId)
 
   const currency = await CurrencyService.getOrInitEvm(blockchain.id, tokenAddress)
-  const poolManager = PoolManagerAbi__factory.connect(event.address, ethApi)
-  const escrowAddress = await poolManager.escrow()
+  // TODO: fetch escrow from poolManager
+  //const poolManager = PoolManagerAbi__factory.connect(poolManagerAddress, ethApi)
+  //const escrowAddress = await poolManager.escrow()
+  const escrowAddress = escrows[chainId]
 
-  const investmentManagerAddress = await poolManager.investmentManager()
-  const investmentManager = InvestmentManagerAbi__factory.connect(investmentManagerAddress, ethApi)
-  const userEscrowAddress = await investmentManager.userEscrow()
+  // TODO: fetch escrow from investmentManager
+  //const investmentManagerAddress = await poolManager.investmentManager()
+  //const investmentManager = InvestmentManagerAbi__factory.connect(investmentManagerAddress, ethApi)
+  //const userEscrowAddress = await investmentManager.userEscrow()
+  const userEscrowAddress = userEscrows[chainId]
 
   await currency.initTrancheDetails(tranche.poolId, tranche.trancheId, tokenAddress, escrowAddress, userEscrowAddress)
   await currency.save()
