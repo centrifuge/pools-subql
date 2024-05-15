@@ -224,7 +224,7 @@ export const escrows = {
 }
 
 export const userEscrows = {
-  '1': '', // Ethereum mainnet
-  '8453': '', // Base mainnet
+  '1': '0x9fc3A3bcEdc1CaB14EfC1B7ef45dFBDd3d17c9d7', // Ethereum mainnet
+  '8453': '0x9fc3A3bcEdc1CaB14EfC1B7ef45dFBDd3d17c9d7', // Base mainnet
   '11155111': '', // Ethereum sepolia
 }
