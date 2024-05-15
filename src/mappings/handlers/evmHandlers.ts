@@ -9,11 +9,11 @@ import { InvestorTransactionData, InvestorTransactionService } from '../services
 import { CurrencyService } from '../services/currencyService'
 import { BlockchainService } from '../services/blockchainService'
 import { CurrencyBalanceService } from '../services/currencyBalanceService'
-import { InvestmentManagerAbi__factory, PoolManagerAbi__factory } from '../../types/contracts'
 import type { Provider } from '@ethersproject/providers'
 import { TrancheBalanceService } from '../services/trancheBalanceService'
+import { escrows, userEscrows } from '../../config'
 
-const ethApi = api as unknown as Provider
+const _ethApi = api as unknown as Provider
 //const networkPromise = typeof ethApi.getNetwork === 'function' ? ethApi.getNetwork() : null
 
 export const handleEvmDeployTranche = errorHandler(_handleEvmDeployTranche)
@@ -36,12 +36,16 @@ async function _handleEvmDeployTranche(event: DeployTrancheLog): Promise<void> {
   const tranche = await TrancheService.getOrSeed(pool.id, trancheId)
 
   const currency = await CurrencyService.getOrInitEvm(blockchain.id, tokenAddress)
-  const poolManager = PoolManagerAbi__factory.connect(poolManagerAddress, ethApi)
-  const escrowAddress = await poolManager.escrow()
+  // TODO: fetch escrow from poolManager
+  //const poolManager = PoolManagerAbi__factory.connect(poolManagerAddress, ethApi)
+  //const escrowAddress = await poolManager.escrow()
+  const escrowAddress = escrows[chainId]
 
-  const investmentManagerAddress = await poolManager.investmentManager()
-  const investmentManager = InvestmentManagerAbi__factory.connect(investmentManagerAddress, ethApi)
-  const userEscrowAddress = await investmentManager.userEscrow()
+  // TODO: fetch escrow from investmentManager
+  //const investmentManagerAddress = await poolManager.investmentManager()
+  //const investmentManager = InvestmentManagerAbi__factory.connect(investmentManagerAddress, ethApi)
+  //const userEscrowAddress = await investmentManager.userEscrow()
+  const userEscrowAddress = userEscrows[chainId]
 
   await currency.initTrancheDetails(tranche.poolId, tranche.trancheId, tokenAddress, escrowAddress, userEscrowAddress)
   await currency.save()
