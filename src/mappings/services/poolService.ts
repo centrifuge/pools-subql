@@ -381,7 +381,7 @@ export class PoolService extends Pool {
 
   public increaseCashAssetValue(amount: bigint) {
     logger.info(`Increasing cashAssetValue for pool ${this.id} by ${amount.toString(10)}`)
-    this.cashAssetValue = BigInt(0)
+    this.cashAssetValue += amount
   }
 }
 
