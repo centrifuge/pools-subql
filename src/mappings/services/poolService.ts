@@ -52,6 +52,7 @@ export class PoolService extends Pool {
 
     this.sumDebt = BigInt(0)
     this.value = BigInt(0)
+    this.cashAssetValue = BigInt(0)
 
     this.sumNumberOfActiveAssets = BigInt(0)
     this.sumDebtOverdue = BigInt(0)
@@ -371,6 +372,16 @@ export class PoolService extends Pool {
     logger.info(`Increasing paid fees for pool ${this.id} by ${paidAmount.toString(10)}`)
     this.sumPaidAmountByPeriod += paidAmount
     return this
+  }
+
+  public resetCashAssetValue() {
+    logger.info(`Resetting cashAssetValue for pool ${this.id}`)
+    this.cashAssetValue = BigInt(0)
+  }
+
+  public increaseCashAssetValue(amount: bigint) {
+    logger.info(`Increasing cashAssetValue for pool ${this.id} by ${amount.toString(10)}`)
+    this.cashAssetValue = BigInt(0)
   }
 }
 

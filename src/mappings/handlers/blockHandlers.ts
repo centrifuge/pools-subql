@@ -60,18 +60,18 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
         await tranche.computeYieldAnnualized('yield90DaysAnnualized', blockPeriodStart, daysAgo90)
         await tranche.save()
       }
-
+      // Asset operations
       const activeLoanData = await pool.getPortfolio()
+      pool.resetCashAssetValue()
       for (const loanId in activeLoanData) {
-        const loan = await AssetService.getById(pool.id, loanId)
-        await loan.updateActiveAssetData(activeLoanData[loanId])
-        await pool.increaseInterestAccrued(loan.interestAccruedByPeriod)
-        await loan.save()
-        if (loan.actualMaturityDate < block.timestamp) pool.increaseDebtOverdue(loan.outstandingDebt)
+        const asset = await AssetService.getById(pool.id, loanId)
+        await asset.updateActiveAssetData(activeLoanData[loanId])
+        await pool.increaseInterestAccrued(asset.interestAccruedByPeriod)
+        await asset.save()
+        if (asset.actualMaturityDate < block.timestamp) pool.increaseDebtOverdue(asset.outstandingDebt)
+        if (asset.isOffchainCash()) pool.increaseCashAssetValue(asset.presentValue)
       }
-
       await pool.updateNumberOfActiveAssets(BigInt(Object.keys(activeLoanData).length))
-
       //PoolFees Accruals
       const accruedFees = await pool.getAccruedFees()
       for (const accruals of accruedFees) {
@@ -88,7 +88,7 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
           blockNumber,
           amount: poolFee.sumAccruedAmountByPeriod,
           epochNumber: pool.currentEpoch,
-          hash: null,
+          hash: block.hash.toHex(),
           timestamp: block.timestamp,
         })
         await poolFeeTransaction.save()
