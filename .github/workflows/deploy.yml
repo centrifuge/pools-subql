@@ -5,6 +5,14 @@ on:
     branches:
       - main
       - release-v*
+    paths-ignore:
+      - '.release-please-manifest.json'
+      - '**.md'
+      - 'package.json'
+      - '.gitignore'
+      - 'LICENSE'
+      - '**.test.ts'
+      - '.github/**'
   workflow_dispatch:
 
 jobs:
