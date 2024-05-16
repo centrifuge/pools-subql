@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.1.0](https://github.com/centrifuge/pools-subql/compare/v1.0.0...v1.1.0) (2024-05-16)
+
+
+### Features
+
+* track cash transfers as asset transaction type ([#152](https://github.com/centrifuge/pools-subql/issues/152)) ([ec3949c](https://github.com/centrifuge/pools-subql/commit/ec3949cc6b6477464828da36423f3b85ed6d628d))
+
+
+### Bug Fixes
+
+* eth indexer fails to attach LP DynamicSource ([#154](https://github.com/centrifuge/pools-subql/issues/154)) ([5cab359](https://github.com/centrifuge/pools-subql/commit/5cab359c091f194f3a9004838c2b5876f254998b))
+* remove celo ([#141](https://github.com/centrifuge/pools-subql/issues/141)) ([2b55255](https://github.com/centrifuge/pools-subql/commit/2b55255d719858a334d57b0434075878a7b11eed))
+* transfer debt 2024 handler ([#149](https://github.com/centrifuge/pools-subql/issues/149)) ([0fc024a](https://github.com/centrifuge/pools-subql/commit/0fc024a4a99ce267603895888aaa9143a53dd664))
+
 ## 1.0.0 (2024-05-01)
 
 
