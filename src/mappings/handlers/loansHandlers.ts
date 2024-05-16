@@ -268,7 +268,8 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
   if (!pool) throw missingPool
 
   const repaidPrincipalAmount = AssetService.extractPrincipalAmount(_repaidAmount.principal)
-  const repaidInterestAmount = _repaidAmount.interest.toBigInt()
+  const repaidInterestAmount =
+    api.runtimeVersion.specVersion.toNumber() < 1029 ? BigInt(0) : _repaidAmount.interest.toBigInt()
   const repaidUnscheduledAmount = _repaidAmount.unscheduled.toBigInt()
   const repaidAmount = repaidPrincipalAmount + repaidInterestAmount + repaidUnscheduledAmount
 
