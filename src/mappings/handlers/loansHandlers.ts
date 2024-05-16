@@ -263,12 +263,13 @@ async function _handleLoanClosed(event: SubstrateEvent<LoanClosedEvent>) {
 
 export const handleLoanDebtTransferred = errorHandler(_handleLoanDebtTransferred)
 async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransferred>) {
+  const specVersion = api.runtimeVersion.specVersion.toNumber()
   const [poolId, fromLoanId, toLoanId, _repaidAmount, _borrowAmount] = event.event.data
   const pool = await PoolService.getById(poolId.toString())
   if (!pool) throw missingPool
 
   const repaidPrincipalAmount = AssetService.extractPrincipalAmount(_repaidAmount.principal)
-  const repaidInterestAmount = _repaidAmount.interest.toBigInt()
+  const repaidInterestAmount = specVersion < 1029 ? BigInt(0) : _repaidAmount.interest.toBigInt()
   const repaidUnscheduledAmount = _repaidAmount.unscheduled.toBigInt()
   const repaidAmount = repaidPrincipalAmount + repaidInterestAmount + repaidUnscheduledAmount
 
