@@ -68,6 +68,11 @@ type Pool @entity {
   sumInterestRepaidAmount: BigInt
   sumUnscheduledRepaidAmount: BigInt
   sumNumberOfAssets: BigInt
+  
+  sumPoolFeesChargedAmount: BigInt #Applies to Fixed ONLY 
+  sumPoolFeesAccruedAmount: BigInt #Applies toChargedUpTo ONLY 
+  sumPoolFeesPaidAmount: BigInt #Applies to All 
+  sumPoolfeesPendingAmount: BigInt #Applies to All 
 
   tranches: [Tranche] @derivedFrom(field: "pool")
 }
