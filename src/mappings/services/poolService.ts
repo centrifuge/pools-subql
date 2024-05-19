@@ -78,6 +78,10 @@ export class PoolService extends Pool {
     this.sumInterestRepaidAmount = BigInt(0)
     this.sumUnscheduledRepaidAmount = BigInt(0)
     this.sumNumberOfAssets = BigInt(0)
+    this.sumPoolFeesAccruedAmount = BigInt(0)
+    this.sumPoolFeesChargedAmount = BigInt(0)
+    this.sumPoolFeesPaidAmount = BigInt(0)
+    this.sumPoolfeesPendingAmount = BigInt(0)
 
     this.currencyId = currencyId
 
