@@ -72,7 +72,8 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
         if (asset.isOffchainCash()) pool.increaseCashAssetValue(asset.presentValue)
       }
       await pool.updateNumberOfActiveAssets(BigInt(Object.keys(activeLoanData).length))
-      //PoolFees Accruals
+
+      //PoolFees operations
       const accruedFees = await pool.getAccruedFees()
       for (const accruals of accruedFees) {
         const [feeId, pending, disbursement] = accruals
@@ -93,7 +94,8 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
         })
         await poolFeeTransaction.save()
       }
-
+      const sumPoolFeesPendingAmount = await PoolFeeService.computeSumPendingFees(pool.id)
+      await pool.updateSumPoolFeesPendingAmount(sumPoolFeesPendingAmount)
       await pool.save()
     }
 
