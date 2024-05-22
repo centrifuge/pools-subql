@@ -117,4 +117,10 @@ export class PoolFeeService extends PoolFee {
   public setName(name: string) {
     this.name = name
   }
+
+  static async computeSumPendingFees(poolId: string): Promise<bigint> {
+    logger.info(`Computing pendingFees for pool: ${poolId} `)
+    const poolFees = await this.getByPoolId(poolId)
+    return poolFees.reduce((sumPendingAmount, poolFee) => (sumPendingAmount + poolFee.pendingAmount), BigInt(0))
+  }
 }

@@ -66,9 +66,9 @@ export class PoolService extends Pool {
     this.sumInvestedAmountByPeriod = BigInt(0)
     this.sumRedeemedAmountByPeriod = BigInt(0)
     this.sumNumberOfAssetsByPeriod = BigInt(0)
-    this.sumChargedAmountByPeriod = BigInt(0)
-    this.sumAccruedAmountByPeriod = BigInt(0)
-    this.sumPaidAmountByPeriod = BigInt(0)
+    this.sumPoolFeesChargedAmountByPeriod = BigInt(0)
+    this.sumPoolFeesAccruedAmountByPeriod = BigInt(0)
+    this.sumPoolFeesPaidAmountByPeriod = BigInt(0)
     this.deltaPortfolioValuationByPeriod = BigInt(0)
     this.sumInterestAccruedByPeriod = BigInt(0)
 
@@ -78,6 +78,10 @@ export class PoolService extends Pool {
     this.sumInterestRepaidAmount = BigInt(0)
     this.sumUnscheduledRepaidAmount = BigInt(0)
     this.sumNumberOfAssets = BigInt(0)
+    this.sumPoolFeesAccruedAmount = BigInt(0)
+    this.sumPoolFeesChargedAmount = BigInt(0)
+    this.sumPoolFeesPaidAmount = BigInt(0)
+    this.sumPoolfeesPendingAmount = BigInt(0)
 
     this.currencyId = currencyId
 
@@ -352,25 +356,29 @@ export class PoolService extends Pool {
 
   public increaseChargedFees(chargedAmount: bigint) {
     logger.info(`Increasing charged fees for pool ${this.id} by ${chargedAmount.toString(10)}`)
-    this.sumChargedAmountByPeriod += chargedAmount
+    this.sumPoolFeesChargedAmountByPeriod += chargedAmount
+    this.sumPoolFeesChargedAmount += chargedAmount
     return this
   }
 
   public decreaseChargedFees(unchargedAmount: bigint) {
     logger.info(`Decreasing charged fees for pool ${this.id} by ${unchargedAmount.toString(10)}`)
-    this.sumChargedAmountByPeriod -= unchargedAmount
+    this.sumPoolFeesChargedAmountByPeriod -= unchargedAmount
+    this.sumPoolFeesChargedAmount -= unchargedAmount
     return this
   }
 
   public increaseAccruedFees(accruedAmount: bigint) {
     logger.info(`Increasing accrued fees for pool ${this.id} by ${accruedAmount.toString(10)}`)
-    this.sumAccruedAmountByPeriod += accruedAmount
+    this.sumPoolFeesAccruedAmountByPeriod += accruedAmount
+    this.sumPoolFeesAccruedAmount += accruedAmount
     return this
   }
 
   public increasePaidFees(paidAmount: bigint) {
     logger.info(`Increasing paid fees for pool ${this.id} by ${paidAmount.toString(10)}`)
-    this.sumPaidAmountByPeriod += paidAmount
+    this.sumPoolFeesPaidAmountByPeriod += paidAmount
+    this.sumPoolFeesPaidAmount += paidAmount
     return this
   }
 
@@ -382,6 +390,11 @@ export class PoolService extends Pool {
   public increaseCashAssetValue(amount: bigint) {
     logger.info(`Increasing cashAssetValue for pool ${this.id} by ${amount.toString(10)}`)
     this.cashAssetValue += amount
+  }
+
+  public updateSumPoolFeesPendingAmount(pendingAmount: bigint) {
+    logger.info(`Updating sumPoolfeesPendingAmount for pool ${this.id} to ${pendingAmount.toString(10)}`)
+    this.sumPoolfeesPendingAmount = pendingAmount
   }
 }
 

@@ -142,3 +142,5 @@ src/types
 **/project-*.yaml
 **/subquery-multichain.yaml
 *-cid
+
+.envrc
