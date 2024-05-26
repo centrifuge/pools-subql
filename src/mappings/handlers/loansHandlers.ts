@@ -136,7 +136,7 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Pr
     })
     await ct.save()
   } else {
-    await asset.borrow(amount)
+    await asset.borrow(amount, assetTransactionBaseData.quantity, assetTransactionBaseData.settlementPrice)
 
     const at = await AssetTransactionService.borrowed(assetTransactionBaseData)
     await at.save()
@@ -197,7 +197,8 @@ async function _handleLoanRepaid(event: SubstrateEvent<LoanRepaidEvent>) {
     })
     await ct.save()
   } else {
-    await asset.repay(amount)
+    // TODO: Clarify case for larger repayments
+    await asset.repay(amount, assetTransactionBaseData.quantity)
 
     const at = await AssetTransactionService.repaid(assetTransactionBaseData)
     await at.save()

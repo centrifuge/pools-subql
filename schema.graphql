@@ -123,6 +123,11 @@ type PoolSnapshot @entity {
   sumInterestRepaidAmount: BigInt
   sumUnscheduledRepaidAmount: BigInt
   sumNumberOfAssets: BigInt
+
+  sumPoolFeesChargedAmount: BigInt #Applies to Fixed ONLY 
+  sumPoolFeesAccruedAmount: BigInt #Applies toChargedUpTo ONLY 
+  sumPoolFeesPaidAmount: BigInt #Applies to All 
+  sumPoolfeesPendingAmount: BigInt #Applies to All 
 }
 
 type Tranche @entity {
@@ -406,6 +411,9 @@ type Asset @entity {
   writtenOffPercentageByPeriod: BigInt
   writtenOffAmountByPeriod: BigInt
   penaltyInterestRatePerSec: BigInt
+
+  holdingQuantity: BigInt
+  settlementPrice: BigInt
 }
 
 type AssetSnapshot @entity {

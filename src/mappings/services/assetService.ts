@@ -71,14 +71,24 @@ export class AssetService extends Asset {
     return asset
   }
 
-  public borrow(amount: bigint) {
+  public borrow(amount: bigint, quantity?: bigint, settlementPrice?: bigint) {
     logger.info(`Increasing borrowings for asset ${this.id} by ${amount}`)
     this.borrowedAmountByPeriod += amount
+    if (quantity) {
+      logger.info(`Increasing holdingQuantity by ${quantity} at settlementPrice ${settlementPrice}`)
+      if (!this.holdingQuantity) this.holdingQuantity = BigInt(0)
+      this.holdingQuantity += quantity
+      this.settlementPrice = settlementPrice
+    }
   }
 
-  public repay(amount: bigint) {
+  public repay(amount: bigint, quantity?: bigint) {
     logger.info(`Increasing repayments for asset ${this.id} by ${amount}`)
     this.repaidAmountByPeriod += amount
+    if (quantity) {
+      logger.info(`Decreasing holdingQuantity by ${quantity}`)
+      this.holdingQuantity -= quantity
+    }
   }
 
   public updateInterestRate(interestRatePerSec: bigint) {
