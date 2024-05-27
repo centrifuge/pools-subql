@@ -387,6 +387,7 @@ type Asset @entity {
   outstandingInterest: BigInt
   outstandingDebt: BigInt
   presentValue: BigInt
+  currentPrice: BigInt
   actualMaturityDate: Date
   timeToMaturity: Int
   actualOriginationDate: Date
@@ -429,6 +430,8 @@ type AssetSnapshot @entity {
   totalRepaidPrincipal: BigInt
   totalRepaidInterest: BigInt
   totalRepaidUnscheduled: BigInt
+  currentPrice: BigInt
+  outstandingQuantity: BigInt
 
   borrowedAmountByPeriod: BigInt
   repaidAmountByPeriod: BigInt

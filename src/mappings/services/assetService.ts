@@ -38,6 +38,7 @@ export class AssetService extends Asset {
     asset.outstandingInterest = BigInt(0)
     asset.outstandingDebt = BigInt(0)
     asset.presentValue = BigInt(0)
+    asset.currentPrice = BigInt(0)
     asset.writeOffPercentage = BigInt(0)
     asset.totalBorrowed = BigInt(0)
     asset.totalRepaid = BigInt(0)
