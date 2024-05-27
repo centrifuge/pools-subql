@@ -138,6 +138,10 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Pr
   } else {
     await asset.borrow(amount)
 
+    if (borrowAmount.isExternal) {
+      await asset.increaseQuantity(borrowAmount.asExternal.quantity.toBigInt())
+    }
+
     const at = await AssetTransactionService.borrowed(assetTransactionBaseData)
     await at.save()
 
@@ -198,6 +202,10 @@ async function _handleLoanRepaid(event: SubstrateEvent<LoanRepaidEvent>) {
     await ct.save()
   } else {
     await asset.repay(amount)
+
+    if (principal.isExternal) {
+      await asset.decreaseQuantity(principal.asExternal.quantity.toBigInt())
+    }
 
     const at = await AssetTransactionService.repaid(assetTransactionBaseData)
     await at.save()
@@ -303,6 +311,9 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
     //Track repayment
     await fromAsset.activate()
     await fromAsset.repay(repaidAmount)
+    if (_repaidAmount.principal.isExternal) {
+      await toAsset.decreaseQuantity(_repaidAmount.principal.asExternal.quantity.toBigInt())
+    }
     await fromAsset.updateIpfsAssetName()
     await fromAsset.save()
 
@@ -334,6 +345,9 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
     //Track borrowed / financed amount
     await toAsset.activate()
     await toAsset.borrow(borrowPrincipalAmount)
+    if (_borrowAmount.isExternal) {
+      await toAsset.increaseQuantity(_borrowAmount.asExternal.quantity.toBigInt())
+    }
     await toAsset.updateIpfsAssetName()
     await toAsset.save()
 
@@ -349,10 +363,8 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
       assetId: toLoanId.toString(10),
       amount: borrowPrincipalAmount,
       principalAmount: borrowPrincipalAmount,
-      quantity: _repaidAmount.principal.isExternal ? _repaidAmount.principal.asExternal.quantity.toBigInt() : null,
-      settlementPrice: _repaidAmount.principal.isExternal
-        ? _repaidAmount.principal.asExternal.settlementPrice.toBigInt()
-        : null,
+      quantity: _borrowAmount.isExternal ? _borrowAmount.asExternal.quantity.toBigInt() : null,
+      settlementPrice: _borrowAmount.isExternal ? _borrowAmount.asExternal.settlementPrice.toBigInt() : null,
       fromAssetId: fromLoanId.toString(10),
     })
     await purchaseTransaction.save()
