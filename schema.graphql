@@ -412,8 +412,7 @@ type Asset @entity {
   writtenOffAmountByPeriod: BigInt
   penaltyInterestRatePerSec: BigInt
 
-  holdingQuantity: BigInt
-  settlementPrice: BigInt
+  assetPositions: [AssetPosition] @derivedFrom(field: "asset")
 }
 
 type AssetSnapshot @entity {
@@ -446,6 +445,14 @@ type AssetSnapshot @entity {
   writtenOffPercentageByPeriod: BigInt
   writtenOffAmountByPeriod: BigInt
   penaltyInterestRatePerSec: BigInt
+}
+
+type AssetPosition @entity {
+  id: ID!
+  asset: Asset!
+
+  quantity: BigInt!
+  settlementPrice: BigInt!
 }
 
 type PureProxy @entity {
