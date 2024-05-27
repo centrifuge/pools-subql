@@ -431,7 +431,6 @@ type AssetSnapshot @entity {
   totalRepaidInterest: BigInt
   totalRepaidUnscheduled: BigInt
   currentPrice: BigInt
-  outstandingQuantity: BigInt
 
   borrowedAmountByPeriod: BigInt
   repaidAmountByPeriod: BigInt
