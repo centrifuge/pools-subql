@@ -304,6 +304,12 @@ type AssetTransaction @entity {
   toAsset: Asset
 }
 
+type OracleTransaction @entity {
+  id: ID! # extrinsic hash
+  timestamp: Date!
+  # key:
+}
+
 type Account @entity {
   id: ID!
   chain: Blockchain!
