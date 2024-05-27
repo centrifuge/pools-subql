@@ -183,6 +183,7 @@ interface AssetSpecs {
   lossGivenDefault?: bigint
   discountRate?: bigint
   maturityDate?: Date
+  currentPrice?: bigint
 }
 
 interface AssetIpfsMetadata {
