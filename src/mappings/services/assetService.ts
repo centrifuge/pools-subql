@@ -38,6 +38,8 @@ export class AssetService extends Asset {
     asset.outstandingInterest = BigInt(0)
     asset.outstandingDebt = BigInt(0)
     asset.presentValue = BigInt(0)
+    asset.outstandingQuantity = BigInt(0)
+    asset.currentPrice = BigInt(0)
     asset.writeOffPercentage = BigInt(0)
     asset.totalBorrowed = BigInt(0)
     asset.totalRepaid = BigInt(0)
@@ -79,6 +81,14 @@ export class AssetService extends Asset {
   public repay(amount: bigint) {
     logger.info(`Increasing repayments for asset ${this.id} by ${amount}`)
     this.repaidAmountByPeriod += amount
+  }
+
+  public increaseQuantity(increase: bigint) {
+    this.outstandingQuantity += increase
+  }
+
+  public decreaseQuantity(decrease: bigint) {
+    this.outstandingQuantity -= decrease
   }
 
   public updateInterestRate(interestRatePerSec: bigint) {
@@ -182,6 +192,7 @@ interface AssetSpecs {
   lossGivenDefault?: bigint
   discountRate?: bigint
   maturityDate?: Date
+  currentPrice?: bigint
 }
 
 interface AssetIpfsMetadata {

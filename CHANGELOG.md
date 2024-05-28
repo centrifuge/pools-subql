@@ -1,5 +1,23 @@
 # Changelog
 
+## [2.0.0](https://github.com/centrifuge/pools-subql/compare/v1.1.0...v2.0.0) (2024-05-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* renamed several poolFees aggregators properties under the pool entity
+
+### Features
+
+* add current price & track quantities ([#164](https://github.com/centrifuge/pools-subql/issues/164)) ([4f44f5e](https://github.com/centrifuge/pools-subql/commit/4f44f5ef2f3c9d477978cf0af8c4621cd2b3f61a))
+* improved naming of PoolFee accumulators in Pool entity ([#160](https://github.com/centrifuge/pools-subql/issues/160)) ([80a5608](https://github.com/centrifuge/pools-subql/commit/80a56087cb4885d2e9f05206c03728cd7382eb27))
+* track total cash asset value in PoolSnapshot ([#156](https://github.com/centrifuge/pools-subql/issues/156)) ([2c96e12](https://github.com/centrifuge/pools-subql/commit/2c96e1265a1852d35e331b8044747d2c89b4dd48)), closes [#143](https://github.com/centrifuge/pools-subql/issues/143)
+
+
+### Bug Fixes
+
+* interest amount for transfer debt ([#158](https://github.com/centrifuge/pools-subql/issues/158)) ([9aef6c3](https://github.com/centrifuge/pools-subql/commit/9aef6c36e379f4db4acb7bac602e03c0c2194589))
+
 ## [1.1.0](https://github.com/centrifuge/pools-subql/compare/v1.0.0...v1.1.0) (2024-05-16)
 
 
