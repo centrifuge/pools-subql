@@ -302,6 +302,7 @@ export class PoolService extends Pool {
         outstandingInterest: current[1].outstandingInterest.toBigInt(),
         outstandingDebt: current[1].outstandingPrincipal.toBigInt() + current[1].outstandingInterest.toBigInt(),
         presentValue: current[1].presentValue.toBigInt(),
+        currentPrice: current[1].currentPrice?.isSome ? current[1].currentPrice.unwrap().toBigInt() : BigInt(0),
         actualMaturityDate: new Date(current[1].activeLoan.schedule.maturity.asFixed.date.toNumber() * 1000),
         timeToMaturity: Math.round((maturityDate.valueOf() - Date.now().valueOf()) / 1000),
         actualOriginationDate: new Date(current[1].activeLoan.originationDate.toNumber() * 1000),
@@ -404,6 +405,7 @@ export interface ActiveLoanData {
     outstandingInterest: bigint
     outstandingDebt: bigint
     presentValue: bigint
+    currentPrice: bigint
     actualMaturityDate: Date
     timeToMaturity: number
     actualOriginationDate: Date
