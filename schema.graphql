@@ -61,6 +61,11 @@ type Pool @entity {
   sumPoolFeesAccruedAmountByPeriod: BigInt
   sumPoolFeesPaidAmountByPeriod: BigInt
 
+  sumPoolFeesChargedAmount: BigInt #Applies to Fixed ONLY 
+  sumPoolFeesAccruedAmount: BigInt #Applies toChargedUpTo ONLY 
+  sumPoolFeesPaidAmount: BigInt #Applies to All 
+  sumPoolfeesPendingAmount: BigInt #Applies to All 
+
   # Cumulated transaction data since pool creation
   sumBorrowedAmount: BigInt
   sumRepaidAmount: BigInt
@@ -69,11 +74,6 @@ type Pool @entity {
   sumUnscheduledRepaidAmount: BigInt
   sumNumberOfAssets: BigInt
   
-  sumPoolFeesChargedAmount: BigInt #Applies to Fixed ONLY 
-  sumPoolFeesAccruedAmount: BigInt #Applies toChargedUpTo ONLY 
-  sumPoolFeesPaidAmount: BigInt #Applies to All 
-  sumPoolfeesPendingAmount: BigInt #Applies to All 
-
   tranches: [Tranche] @derivedFrom(field: "pool")
 }
 
@@ -112,9 +112,14 @@ type PoolSnapshot @entity {
   deltaPortfolioValuationByPeriod: BigInt
   sumInterestAccruedByPeriod: BigInt
 
-  sumChargedAmountByPeriod: BigInt
-  sumAccruedAmountByPeriod: BigInt
-  sumPaidAmountByPeriod: BigInt
+  sumPoolFeesChargedAmountByPeriod: BigInt
+  sumPoolFeesAccruedAmountByPeriod: BigInt
+  sumPoolFeesPaidAmountByPeriod: BigInt
+
+  sumPoolFeesChargedAmount: BigInt #Applies to Fixed ONLY 
+  sumPoolFeesAccruedAmount: BigInt #Applies toChargedUpTo ONLY 
+  sumPoolFeesPaidAmount: BigInt #Applies to All 
+  sumPoolfeesPendingAmount: BigInt #Applies to All 
 
   # Cumulated transaction data since pool creation
   sumBorrowedAmount: BigInt
