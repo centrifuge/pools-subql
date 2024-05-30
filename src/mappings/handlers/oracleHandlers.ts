@@ -12,7 +12,7 @@ async function _handleOracleFed(event: SubstrateEvent<OracleFedEvent>) {
   const oracleTxData: OracleTransactionData = {
     hash: event.extrinsic.extrinsic.hash.toString(),
     timestamp: event.block.timestamp,
-    key: key.isin.toString(),
+    key: key.toString(),
     value: value.toBigInt(),
   }
 
