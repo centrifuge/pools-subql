@@ -161,7 +161,8 @@ dataSources:
           filter:
             module: poolFees
             method: Paid
-        - kind: substrate/EventHandler
+        - handler: handleOracleFed
+          kind: substrate/EventHandler
           filter:
             module: oracleFeed
             method: Fed
