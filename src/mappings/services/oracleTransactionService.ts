@@ -13,7 +13,7 @@ export class OracleTransactionService extends OracleTransaction {
       `${data.hash}-${data.timestamp.toString()}-${data.key.toString()}`,
       data.timestamp,
       data.key.toString(),
-      data.value.toBigInt()
+      data.value
     )
 
     tx.timestamp = data.timestamp ?? null
