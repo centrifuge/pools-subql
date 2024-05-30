@@ -307,7 +307,9 @@ type AssetTransaction @entity {
 type OracleTransaction @entity {
   id: ID! # extrinsic hash
   timestamp: Date!
-  # key:
+  feeder: Account! @index
+  key: String!
+  value: BigInt!
 }
 
 type Account @entity {
