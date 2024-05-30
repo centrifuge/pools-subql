@@ -15,5 +15,6 @@ async function _handleOracleFed(event: SubstrateEvent<OracleFedEvent>) {
     value: value.toBigInt(),
   }
 
-  OracleTransactionService.init(oracleTxData)
+  const oracleTx = OracleTransactionService.init(oracleTxData)
+  await oracleTx.save()
 }
