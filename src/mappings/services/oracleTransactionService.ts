@@ -10,7 +10,7 @@ export interface OracleTransactionData {
 export class OracleTransactionService extends OracleTransaction {
   static init = (data: OracleTransactionData) => {
     const tx = new this(
-      `${data.hash}-${data.timestamp.toString()}-${key.toString()}`,
+      `${data.hash}-${data.timestamp.toString()}-${data.key.toString()}`,
       data.timestamp,
       data.key.toString(),
       data.value.toBigInt()
