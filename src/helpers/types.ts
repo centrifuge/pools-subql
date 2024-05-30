@@ -405,6 +405,10 @@ export interface PoolFee extends Struct {
   amounts: PoolFeeAmounts
 }
 
+export interface OracleKey extends Enum {
+  isin: string
+}
+
 export type LoanAsset = ITuple<[collectionId: u64, itemId: u128]>
 export type LoanCreatedEvent = ITuple<[poolId: u64, loanId: u64, loanInfo: LoanInfoCreated]>
 export type LoanClosedEvent = ITuple<[poolId: u64, loanId: u64, collateralInfo: LoanAsset]>
@@ -453,6 +457,8 @@ export type PoolFeesChargedEvent = ITuple<[poolId: u64, feeId: u64, amount: u128
 export type PoolFeesUnchargedEvent = PoolFeesChargedEvent
 export type PoolFeesPaidEvent = ITuple<[poolId: u64, feeId: u64, amount: u128, destination: AccountId32]>
 export type PoolFeesList = Vec<PoolFeesOfBucket>
+
+export type OracleFedEvent = ITuple<[feeder: AccountId32, key: OracleKey, value: u128]>
 
 export type ExtendedRpc = typeof api.rpc & {
   pools: {
