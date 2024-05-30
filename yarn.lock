@@ -3161,10 +3161,10 @@
   optionalDependencies:
     sodium-native "^4.1.1"
 
-"@subql/cli@^4.3.0":
-  version "4.10.1"
-  resolved "https://registry.yarnpkg.com/@subql/cli/-/cli-4.10.1.tgz#57fe539d3bdaaf7e2dab4959d01317293034263a"
-  integrity sha512-1O3A2Ck/GSdH3EurABnh8Ewa5SwX7j/ciIfbuBK1Q8nWdf1xU+7maKTLhYJDT4GGx6ymhZrbokC2pXTGKk+Irg==
+"@subql/cli@^4.11.0":
+  version "4.11.0"
+  resolved "https://registry.yarnpkg.com/@subql/cli/-/cli-4.11.0.tgz#29fd34f5dca16d16a94a52188306cbcc301d7bd9"
+  integrity sha512-800oX7n/oLbtblrp9B1uAWDgqPFT0CAu32aPyWtyA5wpaqdhKdS5Hyk0vpHThl72fdqcN5e3Vdkvkaw4oCap9g==
   dependencies:
     "@oclif/core" "^2.15.0"
     "@subql/common" "3.6.0"

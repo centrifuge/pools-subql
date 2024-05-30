@@ -81,7 +81,7 @@ export class PoolService extends Pool {
     this.sumPoolFeesAccruedAmount = BigInt(0)
     this.sumPoolFeesChargedAmount = BigInt(0)
     this.sumPoolFeesPaidAmount = BigInt(0)
-    this.sumPoolfeesPendingAmount = BigInt(0)
+    this.sumPoolFeesPendingAmount = BigInt(0)
 
     this.currencyId = currencyId
 
@@ -394,8 +394,8 @@ export class PoolService extends Pool {
   }
 
   public updateSumPoolFeesPendingAmount(pendingAmount: bigint) {
-    logger.info(`Updating sumPoolfeesPendingAmount for pool ${this.id} to ${pendingAmount.toString(10)}`)
-    this.sumPoolfeesPendingAmount = pendingAmount
+    logger.info(`Updating sumPoolFeesPendingAmount for pool ${this.id} to ${pendingAmount.toString(10)}`)
+    this.sumPoolFeesPendingAmount = pendingAmount
   }
 }
 
