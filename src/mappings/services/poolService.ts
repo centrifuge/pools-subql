@@ -45,8 +45,11 @@ export class PoolService extends Pool {
 
     this.currentEpoch = 1
 
-    this.portfolioValuation = BigInt(0)
+    this.netAssetValue = BigInt(0)
     this.totalReserve = BigInt(0)
+    this.offchainCashValue = BigInt(0)
+    this.portfolioValuation = BigInt(0)
+
     this.availableReserve = BigInt(0)
     this.maxReserve = maxReserve
 
@@ -166,9 +169,9 @@ export class PoolService extends Pool {
     const specName = api.runtimeVersion.specName.toString()
     switch (specName) {
       case 'centrifuge-devel':
-        return specVersion < 1038 ? this.updatePortfolioValuationQuery() : this.updatePortfolioValuationCall()
+        return specVersion < 1038 ? this.updatePortfolioValuationQuery() : this.updateNAVCall()
       default:
-        return specVersion < 1025 ? this.updatePortfolioValuationQuery() : this.updatePortfolioValuationCall()
+        return specVersion < 1025 ? this.updatePortfolioValuationQuery() : this.updateNAVCall()
     }
   }
 
@@ -176,15 +179,21 @@ export class PoolService extends Pool {
     logger.info(`Updating portfolio valuation for pool: ${this.id} (state)`)
     const navResponse = await api.query.loans.portfolioValuation<NavDetails>(this.id)
     const newPortfolioValuation = navResponse.value.toBigInt()
+
     this.deltaPortfolioValuationByPeriod = newPortfolioValuation - this.portfolioValuation
     this.portfolioValuation = newPortfolioValuation
+
+    // The query was only used before either offchain cash assets or fees were introduced,
+    // so NAV == portfolioValuation + totalReserve
+    this.netAssetValue = newPortfolioValuation + this.totalReserve
+
     logger.info(
       `portfolio valuation: ${this.portfolioValuation.toString(10)} delta: ${this.deltaPortfolioValuationByPeriod}`
     )
     return this
   }
 
-  private async updatePortfolioValuationCall() {
+  private async updateNAVCall() {
     logger.info(`Updating portfolio valuation for pool: ${this.id} (runtime)`)
     const apiCall = api.call as ExtendedCall
     const navResponse = await apiCall.poolsApi.nav(this.id)
@@ -192,9 +201,13 @@ export class PoolService extends Pool {
       logger.warn('Empty pv response')
       return
     }
-    const newPortfolioValuation = navResponse.unwrap().total.toBigInt()
+    const newNAV = navResponse.unwrap().total.toBigInt()
+    const newPortfolioValuation = navResponse.unwrap().navAum.toBigInt() - this.offchainCashValue
+
     this.deltaPortfolioValuationByPeriod = newPortfolioValuation - this.portfolioValuation
     this.portfolioValuation = newPortfolioValuation
+    this.netAssetValue = newNAV
+
     logger.info(
       `portfolio valuation: ${this.portfolioValuation.toString(10)} delta: ${this.deltaPortfolioValuationByPeriod}`
     )

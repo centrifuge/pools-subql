@@ -45,13 +45,11 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
     const poolUpdateCalls: PoolMulticall[] = []
     for (const tinlakePool of tinlakePools) {
       if (block.number >= tinlakePool.startBlock) {
-        const pool = await PoolService.getOrSeed(tinlakePool.id, false,  blockchain.id)
+        const pool = await PoolService.getOrSeed(tinlakePool.id, false, blockchain.id)
 
         // initialize new pool
         if (!pool.isActive) {
           pool.name = tinlakePool.shortName
-          pool.totalReserve = BigInt(0)
-          pool.portfolioValuation = BigInt(0)
           pool.isActive = true
           pool.currencyId = currency.id
           await pool.save()
@@ -100,6 +98,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
             callResult.result
           )[0]
           pool.portfolioValuation = currentNAV.toBigInt()
+          pool.netAssetValue = pool.portfolioValuation + pool.totalReserve
           await pool.save()
           logger.info(`Updating pool ${tinlakePool?.id} with portfolioValuation: ${pool.portfolioValuation}`)
         }
@@ -109,12 +108,13 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
             callResult.result
           )[0]
           pool.totalReserve = totalBalance.toBigInt()
+          pool.netAssetValue = pool.portfolioValuation + pool.totalReserve
           await pool.save()
           logger.info(`Updating pool ${tinlakePool?.id} with totalReserve: ${pool.totalReserve}`)
         }
 
         // Update loans (only index if fully synced)
-        if (latestNavFeed && date.toDateString() === (new Date()).toDateString()) {
+        if (latestNavFeed && date.toDateString() === new Date().toDateString()) {
           await updateLoans(
             tinlakePool?.id as string,
             date,
@@ -127,7 +127,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
     }
 
     // Take snapshots
-    await evmStateSnapshotter<Pool,PoolSnapshot>(Pool, PoolSnapshot, block, 'isActive', true, 'poolId')
+    await evmStateSnapshotter<Pool, PoolSnapshot>(Pool, PoolSnapshot, block, 'isActive', true, 'poolId')
     //await evmStateSnapshotter<Asset,AssetSnapshot>('Asset', 'AssetSnapshot', block, 'isActive', true, 'assetId')
 
     //Update tracking of period and continue

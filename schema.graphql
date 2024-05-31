@@ -31,14 +31,16 @@ type Pool @entity {
   lastEpochClosed: Int
   lastEpochExecuted: Int
 
-  #States
-  portfolioValuation: BigInt
+  # NAV == totalReserve + offchainCashValue + portfolioValuation - sumPoolFeesPendingAmount
+  netAssetValue: BigInt # previously: portfolioValuation
   totalReserve: BigInt
+  offchainCashValue: BigInt # previously: cashAssetValue
+  portfolioValuation: BigInt
+
   availableReserve: BigInt
   maxReserve: BigInt
   sumDebt: BigInt
   value: BigInt
-  cashAssetValue: BigInt
 
   # Aggregated transaction data over the last period
   sumBorrowedAmountByPeriod: BigInt
