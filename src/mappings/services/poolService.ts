@@ -389,14 +389,14 @@ export class PoolService extends Pool {
     return this
   }
 
-  public resetCashAssetValue() {
-    logger.info(`Resetting cashAssetValue for pool ${this.id}`)
-    this.cashAssetValue = BigInt(0)
+  public resetOffchainCashValue() {
+    logger.info(`Resetting offchainCashValue for pool ${this.id}`)
+    this.offchainCashValue = BigInt(0)
   }
 
-  public increaseCashAssetValue(amount: bigint) {
-    logger.info(`Increasing cashAssetValue for pool ${this.id} by ${amount.toString(10)}`)
-    this.cashAssetValue += amount
+  public increaseOffchainCashValue(amount: bigint) {
+    logger.info(`Increasing offchainCashValue for pool ${this.id} by ${amount.toString(10)}`)
+    this.offchainCashValue += amount
   }
 
   public updateSumPoolFeesPendingAmount(pendingAmount: bigint) {

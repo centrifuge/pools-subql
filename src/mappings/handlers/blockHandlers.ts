@@ -61,14 +61,14 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
       }
       // Asset operations
       const activeLoanData = await pool.getPortfolio()
-      pool.resetCashAssetValue()
+      pool.resetOffchainCashValue()
       for (const loanId in activeLoanData) {
         const asset = await AssetService.getById(pool.id, loanId)
         await asset.updateActiveAssetData(activeLoanData[loanId])
         await pool.increaseInterestAccrued(asset.interestAccruedByPeriod)
         await asset.save()
         if (asset.actualMaturityDate < block.timestamp) pool.increaseDebtOverdue(asset.outstandingDebt)
-        if (asset.isOffchainCash()) pool.increaseCashAssetValue(asset.presentValue)
+        if (asset.isOffchainCash()) pool.increaseOffchainCashValue(asset.presentValue)
       }
       await pool.updateNumberOfActiveAssets(BigInt(Object.keys(activeLoanData).length))
 
