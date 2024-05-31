@@ -12,10 +12,17 @@ async function _handleOracleFed(event: SubstrateEvent<OracleFedEvent>) {
   const oracleTxData: OracleTransactionData = {
     hash: event.extrinsic.extrinsic.hash.toString(),
     timestamp: event.block.timestamp,
-    key: key.asIsin.toString(),
+    key: hex2a(key.asIsin.substring(2)),
     value: value.toBigInt(),
   }
 
   const oracleTx = OracleTransactionService.init(oracleTxData)
   await oracleTx.save()
+}
+
+const hex2a = (hexx: string) => {
+  const hex = hexx.toString()
+  let str = ''
+  for (let i = 0; i < hex.length; i += 2) str += String.fromCharCode(parseInt(hex.substring(i, 2), 16))
+  return str
 }
