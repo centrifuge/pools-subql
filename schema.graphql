@@ -31,15 +31,15 @@ type Pool @entity {
   lastEpochClosed: Int
   lastEpochExecuted: Int
 
-  #States
-  portfolioValuation: BigInt
+  # NAV == totalReserve + offchainCashValue + portfolioValuation - sumPoolFeesPendingAmount
+  netAssetValue: BigInt # previously: portfolioValuation
   totalReserve: BigInt
+  offchainCashValue: BigInt # previously: cashAssetValue
+  portfolioValuation: BigInt
+
   availableReserve: BigInt
   maxReserve: BigInt
-  sumDebt: BigInt
-  value: BigInt
-  cashAssetValue: BigInt
-
+  
   # Aggregated transaction data over the last period
   sumBorrowedAmountByPeriod: BigInt
   sumRepaidAmountByPeriod: BigInt
@@ -52,6 +52,7 @@ type Pool @entity {
   sumNumberOfAssetsByPeriod: BigInt
 
   sumNumberOfActiveAssets: BigInt
+  sumDebt: BigInt
   sumDebtOverdue: BigInt
   sumDebtWrittenOffByPeriod: BigInt
   deltaPortfolioValuationByPeriod: BigInt
@@ -87,14 +88,14 @@ type PoolSnapshot @entity {
   periodStart: Date! @index
 
   #States
-  portfolioValuation: BigInt
+  netAssetValue: BigInt # previously: portfolioValuation
   totalReserve: BigInt
+  offchainCashValue: BigInt # previously: cashAssetValue
+  portfolioValuation: BigInt
+  
   availableReserve: BigInt
   maxReserve: BigInt
-  sumDebt: BigInt
-  value: BigInt
-  cashAssetValue: BigInt
-
+  
   # Aggregated transaction data over the last period
   sumBorrowedAmountByPeriod: BigInt
   sumRepaidAmountByPeriod: BigInt
@@ -107,6 +108,7 @@ type PoolSnapshot @entity {
   sumNumberOfAssetsByPeriod: BigInt
 
   sumNumberOfActiveAssets: BigInt
+  sumDebt: BigInt
   sumDebtOverdue: BigInt
   sumDebtWrittenOffByPeriod: BigInt
   deltaPortfolioValuationByPeriod: BigInt

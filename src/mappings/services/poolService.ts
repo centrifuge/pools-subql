@@ -45,14 +45,15 @@ export class PoolService extends Pool {
 
     this.currentEpoch = 1
 
-    this.portfolioValuation = BigInt(0)
+    this.netAssetValue = BigInt(0)
     this.totalReserve = BigInt(0)
+    this.offchainCashValue = BigInt(0)
+    this.portfolioValuation = BigInt(0)
+
     this.availableReserve = BigInt(0)
     this.maxReserve = maxReserve
 
     this.sumDebt = BigInt(0)
-    this.value = BigInt(0)
-    this.cashAssetValue = BigInt(0)
 
     this.sumNumberOfActiveAssets = BigInt(0)
     this.sumDebtOverdue = BigInt(0)
@@ -161,30 +162,36 @@ export class PoolService extends Pool {
     return this
   }
 
-  public updatePortfolioValuation() {
+  public updateNAV() {
     const specVersion = api.runtimeVersion.specVersion.toNumber()
     const specName = api.runtimeVersion.specName.toString()
     switch (specName) {
       case 'centrifuge-devel':
-        return specVersion < 1038 ? this.updatePortfolioValuationQuery() : this.updatePortfolioValuationCall()
+        return specVersion < 1038 ? this.updateNAVQuery() : this.updateNAVCall()
       default:
-        return specVersion < 1025 ? this.updatePortfolioValuationQuery() : this.updatePortfolioValuationCall()
+        return specVersion < 1025 ? this.updateNAVQuery() : this.updateNAVCall()
     }
   }
 
-  private async updatePortfolioValuationQuery() {
+  private async updateNAVQuery() {
     logger.info(`Updating portfolio valuation for pool: ${this.id} (state)`)
     const navResponse = await api.query.loans.portfolioValuation<NavDetails>(this.id)
     const newPortfolioValuation = navResponse.value.toBigInt()
+
     this.deltaPortfolioValuationByPeriod = newPortfolioValuation - this.portfolioValuation
     this.portfolioValuation = newPortfolioValuation
+
+    // The query was only used before either offchain cash assets or fees were introduced,
+    // so NAV == portfolioValuation + totalReserve
+    this.netAssetValue = newPortfolioValuation + this.totalReserve
+
     logger.info(
       `portfolio valuation: ${this.portfolioValuation.toString(10)} delta: ${this.deltaPortfolioValuationByPeriod}`
     )
     return this
   }
 
-  private async updatePortfolioValuationCall() {
+  private async updateNAVCall() {
     logger.info(`Updating portfolio valuation for pool: ${this.id} (runtime)`)
     const apiCall = api.call as ExtendedCall
     const navResponse = await apiCall.poolsApi.nav(this.id)
@@ -192,9 +199,13 @@ export class PoolService extends Pool {
       logger.warn('Empty pv response')
       return
     }
-    const newPortfolioValuation = navResponse.unwrap().total.toBigInt()
+    const newNAV = navResponse.unwrap().total.toBigInt()
+    const newPortfolioValuation = navResponse.unwrap().navAum.toBigInt() - this.offchainCashValue
+
     this.deltaPortfolioValuationByPeriod = newPortfolioValuation - this.portfolioValuation
     this.portfolioValuation = newPortfolioValuation
+    this.netAssetValue = newNAV
+
     logger.info(
       `portfolio valuation: ${this.portfolioValuation.toString(10)} delta: ${this.deltaPortfolioValuationByPeriod}`
     )
@@ -250,11 +261,6 @@ export class PoolService extends Pool {
 
   public executeEpoch(epochId: number) {
     this.lastEpochExecuted = epochId
-  }
-
-  public computePoolValue() {
-    this.value = this.portfolioValuation + this.totalReserve
-    logger.info(`Updating pool.value: ${this.value}`)
   }
 
   public resetDebtOverdue() {
@@ -383,14 +389,14 @@ export class PoolService extends Pool {
     return this
   }
 
-  public resetCashAssetValue() {
-    logger.info(`Resetting cashAssetValue for pool ${this.id}`)
-    this.cashAssetValue = BigInt(0)
+  public resetOffchainCashValue() {
+    logger.info(`Resetting offchainCashValue for pool ${this.id}`)
+    this.offchainCashValue = BigInt(0)
   }
 
-  public increaseCashAssetValue(amount: bigint) {
-    logger.info(`Increasing cashAssetValue for pool ${this.id} by ${amount.toString(10)}`)
-    this.cashAssetValue += amount
+  public increaseOffchainCashValue(amount: bigint) {
+    logger.info(`Increasing offchainCashValue for pool ${this.id} by ${amount.toString(10)}`)
+    this.offchainCashValue += amount
   }
 
   public updateSumPoolFeesPendingAmount(pendingAmount: bigint) {
