@@ -93,12 +93,6 @@ type PoolSnapshot @entity {
   offchainCashValue: BigInt # previously: cashAssetValue
   portfolioValuation: BigInt
   
-  # NAV == totalReserve + offchainCashValue + portfolioValuation - sumPoolFeesPendingAmount
-  netAssetValue: BigInt # previously: portfolioValuation
-  totalReserve: BigInt
-  offchainCashValue: BigInt # previously: cashAssetValue
-  portfolioValuation: BigInt
-
   availableReserve: BigInt
   maxReserve: BigInt
   
