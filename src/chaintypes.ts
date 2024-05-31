@@ -109,6 +109,16 @@ const definitions: OverrideBundleDefinition = {
     PoolsApi: [
       {
         methods: {
+          tranche_token_prices: {
+            description: 'Retrieve prices for all tranches',
+            params: [
+              {
+                name: 'pool_id',
+                type: 'u64',
+              },
+            ],
+            type: 'Option<Vec<u128>>',
+          },
           nav: {
             description: 'Get active pool NAV',
             params: [

@@ -2,7 +2,7 @@ import { u128 } from '@polkadot/types'
 import { bnToBn, nToBigInt } from '@polkadot/util'
 import { paginatedGetter } from '../../helpers/paginatedGetter'
 import { WAD } from '../../config'
-import { ExtendedCall, ExtendedRpc, TrancheDetails } from '../../helpers/types'
+import { ExtendedCall, TrancheDetails } from '../../helpers/types'
 import { Tranche, TrancheSnapshot } from '../../types'
 
 const MAINNET_CHAINID = '0xb3db41421702df9a7fcac62b53ffeac85f7853cc4e689e0b93aeb3db18c09d82'
@@ -115,9 +115,18 @@ export class TrancheService extends Tranche {
   }
 
   public async updatePriceFromRpc(block?: number) {
-    logger.info(`Querying RPC price for tranche ${this.id}`)
+    logger.info(`Querying token price for tranche ${this.id}`)
     const poolId = this.poolId
-    const tokenPrices = await (api.rpc as ExtendedRpc).pools.trancheTokenPrices(poolId)
+
+    const apiCall = api.call as ExtendedCall
+    const priceResponse = await apiCall.poolsApi.trancheTokenPrices(poolId)
+    if (priceResponse.isEmpty) {
+      logger.warn('Empty prices response')
+      return
+    }
+    const tokenPrices = priceResponse.unwrap()
+    logger.info(`Token prices: ${tokenPrices.toString()}`)
+
     const trancheTokenPrice = tokenPrices[this.index].toBigInt()
     if (trancheTokenPrice <= BigInt(0)) throw new Error(`Zero or negative price returned for tranche: ${this.id}`)
     await this.updatePrice(trancheTokenPrice, block)
