@@ -54,8 +54,6 @@ export class PoolService extends Pool {
     this.maxReserve = maxReserve
 
     this.sumDebt = BigInt(0)
-    this.value = BigInt(0)
-    this.cashAssetValue = BigInt(0)
 
     this.sumNumberOfActiveAssets = BigInt(0)
     this.sumDebtOverdue = BigInt(0)
@@ -164,18 +162,18 @@ export class PoolService extends Pool {
     return this
   }
 
-  public updatePortfolioValuation() {
+  public updateNAV() {
     const specVersion = api.runtimeVersion.specVersion.toNumber()
     const specName = api.runtimeVersion.specName.toString()
     switch (specName) {
       case 'centrifuge-devel':
-        return specVersion < 1038 ? this.updatePortfolioValuationQuery() : this.updateNAVCall()
+        return specVersion < 1038 ? this.updateNAVQuery() : this.updateNAVCall()
       default:
-        return specVersion < 1025 ? this.updatePortfolioValuationQuery() : this.updateNAVCall()
+        return specVersion < 1025 ? this.updateNAVQuery() : this.updateNAVCall()
     }
   }
 
-  private async updatePortfolioValuationQuery() {
+  private async updateNAVQuery() {
     logger.info(`Updating portfolio valuation for pool: ${this.id} (state)`)
     const navResponse = await api.query.loans.portfolioValuation<NavDetails>(this.id)
     const newPortfolioValuation = navResponse.value.toBigInt()
@@ -263,11 +261,6 @@ export class PoolService extends Pool {
 
   public executeEpoch(epochId: number) {
     this.lastEpochExecuted = epochId
-  }
-
-  public computePoolValue() {
-    this.value = this.portfolioValuation + this.totalReserve
-    logger.info(`Updating pool.value: ${this.value}`)
   }
 
   public resetDebtOverdue() {

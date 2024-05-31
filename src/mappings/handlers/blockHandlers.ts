@@ -40,8 +40,7 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
     const pools = await PoolService.getCfgActivePools()
     for (const pool of pools) {
       await pool.updateState()
-      await pool.updatePortfolioValuation()
-      await pool.computePoolValue()
+      await pool.updateNAV()
       await pool.resetDebtOverdue()
 
       // Update tranche states
