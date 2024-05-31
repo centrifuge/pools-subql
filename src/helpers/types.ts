@@ -406,7 +406,9 @@ export interface PoolFee extends Struct {
 }
 
 export interface OracleKey extends Enum {
-  isin: string
+  readonly isIsin: boolean
+  readonly asIsin: string
+  readonly type: 'isin'
 }
 
 export type LoanAsset = ITuple<[collectionId: u64, itemId: u128]>
