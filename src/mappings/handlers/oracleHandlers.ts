@@ -6,7 +6,7 @@ import { OracleTransactionData, OracleTransactionService } from '../services/ora
 export const handleOracleFed = errorHandler(_handleOracleFed)
 async function _handleOracleFed(event: SubstrateEvent<OracleFedEvent>) {
   const [feeder, key, value] = event.event.data
-  const formattedKey = hex2a(key.asIsin.substring(2))
+  const formattedKey = hex2a(key.asIsin.substr(2))
   logger.info(`Oracle feed: ${feeder.toString()} key: ${formattedKey} value: ${value.toString()}`)
 
   const oracleTxData: OracleTransactionData = {
@@ -23,6 +23,6 @@ async function _handleOracleFed(event: SubstrateEvent<OracleFedEvent>) {
 const hex2a = (hexx: string) => {
   const hex = hexx.toString()
   let str = ''
-  for (let i = 0; i < hex.length; i += 2) str += String.fromCharCode(parseInt(hex.substring(i, 2), 16))
+  for (let i = 0; i < hex.length; i += 2) str += String.fromCharCode(parseInt(hex.substr(i, 2), 16))
   return str
 }
