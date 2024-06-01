@@ -176,14 +176,14 @@ export class PoolService extends Pool {
   private async updateNAVQuery() {
     logger.info(`Updating portfolio valuation for pool: ${this.id} (state)`)
     const navResponse = await api.query.loans.portfolioValuation<NavDetails>(this.id)
-    const newPortfolioValuation = navResponse.value.toBigInt()
+    const newPortfolioValuation = navResponse.value.toBigInt() - this.offchainCashValue
 
     this.deltaPortfolioValuationByPeriod = newPortfolioValuation - this.portfolioValuation
     this.portfolioValuation = newPortfolioValuation
 
     // The query was only used before either offchain cash assets or fees were introduced,
     // so NAV == portfolioValuation + totalReserve
-    this.netAssetValue = newPortfolioValuation + this.totalReserve
+    this.netAssetValue = newPortfolioValuation + this.offchainCashValue + this.totalReserve
 
     logger.info(
       `portfolio valuation: ${this.portfolioValuation.toString(10)} delta: ${this.deltaPortfolioValuationByPeriod}`
