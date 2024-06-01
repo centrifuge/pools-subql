@@ -40,7 +40,6 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
     const pools = await PoolService.getCfgActivePools()
     for (const pool of pools) {
       await pool.updateState()
-      await pool.updateNAV()
       await pool.resetDebtOverdue()
 
       // Update tranche states
@@ -71,6 +70,9 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
         if (asset.isOffchainCash()) pool.increaseOffchainCashValue(asset.presentValue)
       }
       await pool.updateNumberOfActiveAssets(BigInt(Object.keys(activeLoanData).length))
+
+      // NAV update requires updated offchain cash value
+      await pool.updateNAV()
 
       //PoolFees operations
       const accruedFees = await pool.getAccruedFees()
