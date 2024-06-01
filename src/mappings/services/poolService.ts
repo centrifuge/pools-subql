@@ -181,8 +181,8 @@ export class PoolService extends Pool {
     this.deltaPortfolioValuationByPeriod = newPortfolioValuation - this.portfolioValuation
     this.portfolioValuation = newPortfolioValuation
 
-    // The query was only used before either offchain cash assets or fees were introduced,
-    // so NAV == portfolioValuation + totalReserve
+    // The query was only used before fees were introduced,
+    // so NAV == portfolioValuation + offchainCashValue + totalReserve
     this.netAssetValue = newPortfolioValuation + this.offchainCashValue + this.totalReserve
 
     logger.info(
