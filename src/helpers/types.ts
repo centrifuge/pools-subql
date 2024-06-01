@@ -477,6 +477,7 @@ export type ExtendedCall = typeof api.call & {
   }
   poolsApi: {
     nav: AugmentedCall<'promise', (poolId: string) => Observable<Option<PoolNav>>>
+    trancheTokenPrices: AugmentedCall<'promise', (poolId: string) => Observable<Option<PoolNav>>>
   }
   poolFeesApi: {
     listFees: AugmentedCall<'promise', (poolId: string) => Observable<Option<PoolFeesList>>>
