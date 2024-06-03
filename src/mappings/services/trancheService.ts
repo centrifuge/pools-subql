@@ -75,36 +75,38 @@ export class TrancheService extends Tranche {
 
   public async updatePrice(price: bigint, block?: number) {
     const specVersion = api.runtimeVersion.specVersion.toNumber()
-
-    if (MAINNET_CHAINID === chainId && !!block && block < 4058350) {
-      // https://centrifuge.subscan.io/extrinsic/4058350-0?event=4058350-0
-      // fix decimal error in old blocks, the fix was enacted at block #4058350
-      this.tokenPrice = nToBigInt(bnToBn(price).div(bnToBn(1000000000)))
-      logger.info(`Updating price for tranche ${this.id} to: ${this.tokenPrice} (WITH CORRECTION FACTOR)`)
-    } else if (MAINNET_CHAINID === chainId && !!block && specVersion >= 1025 && specVersion < 1029) {
-      // fix token price not accounting for fees
-      logger.info(`Starting price update ${this.id} to: ${this.tokenPrice} (WITHOUT ACCRUED FEES FIX)`)
-      const apiCall = api.call as ExtendedCall
-      const navResponse = await apiCall.poolsApi.nav(this.poolId)
-      if (navResponse.isEmpty) {
-        logger.info(`Empty response: ${price}`)
-        this.tokenPrice = price
-        logger.info(`Updating price for tranche ${this.id} to: ${this.tokenPrice} (WITHOUT ACCRUED FEES FIX)`)
-        return this
-      }
-      const accruedFees = bnToBn(navResponse.unwrap().navFees.toBigInt())
-      logger.info(`Price ${price} / Accrued fees: ${accruedFees} / token supply: ${this.tokenSupply} at ${block}`)
-      logger.info(`Calculation 1: ${bnToBn(this.tokenSupply)}`)
-      logger.info(`Calculation 3: ${accruedFees.mul(WAD).div(bnToBn(this.tokenSupply))}`)
-      logger.info(`Calculation 4: ${bnToBn(price).sub(accruedFees.mul(WAD).div(bnToBn(this.tokenSupply)))}`)
-      logger.info(`Price ${price} / Accrued fees: ${accruedFees} / token supply: ${this.tokenSupply} at ${block}`)
-      logger.info(`Price ${price} / Accrued fees: ${accruedFees} / token supply: ${this.tokenSupply} at ${block}`)
-      this.tokenPrice = nToBigInt(bnToBn(price).sub(accruedFees.mul(WAD).div(bnToBn(this.tokenSupply))))
-      logger.info(`Updating price for tranche ${this.id} to: ${this.tokenPrice} (WITH ACCRUED FEES FIX)`)
-    } else {
-      this.tokenPrice = price
-      logger.info(`Updating price for tranche ${this.id} to: ${this.tokenPrice}`)
+    if (MAINNET_CHAINID === chainId && !!block) {
+      if (block < 4058350) return this.updatePriceFixDecimalError(price, block)
+      if (specVersion >= 1025 && specVersion < 1029) return await this.updatePriceFixForFees(price, block)
     }
+    logger.info(`Updating price for tranche ${this.id} to: ${this.tokenPrice}`)
+    this.tokenPrice = price
+    return this
+  }
+
+  private updatePriceFixDecimalError(price: bigint, block: number) {
+    // https://centrifuge.subscan.io/extrinsic/4058350-0?event=4058350-0
+    // fix decimal error in old blocks, the fix was enacted at block #4058350
+    logger.info(
+      `Updating price for tranche ${this.id} to: ${this.tokenPrice} (WITH CORRECTION FACTOR) at block ${block}`
+    )
+    this.tokenPrice = nToBigInt(bnToBn(price).div(bnToBn(1000000000)))
+    return this
+  }
+
+  private async updatePriceFixForFees(price: bigint, block: number) {
+    // fix token price not accounting for fees
+    const apiCall = api.call as ExtendedCall
+    const navResponse = await apiCall.poolsApi.nav(this.poolId)
+    if (navResponse.isEmpty) {
+      logger.warn(`No NAV response! Saving inaccurate price: ${price} `)
+      this.tokenPrice = price
+      return this
+    }
+    const accruedFees = bnToBn(navResponse.unwrap().navFees.toBigInt())
+    logger.info(`Price ${price} / Accrued fees: ${accruedFees} / token supply: ${this.tokenSupply} at ${block}`)
+    this.tokenPrice = nToBigInt(bnToBn(price).sub(accruedFees.div(bnToBn(this.tokenSupply)).mul(WAD)))
+    logger.info(`Updating price for tranche ${this.id} to: ${this.tokenPrice} (ACCOUNTING FOR ACCRUED FEES)`)
     return this
   }
 
