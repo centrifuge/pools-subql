@@ -83,7 +83,7 @@ export class TrancheService extends Tranche {
       // fix token price not accounting for fees
       logger.info(`Starting price update ${this.id} to: ${this.tokenPrice} (WITHOUT ACCRUED FEES FIX)`)
       const apiCall = api.call as ExtendedCall
-      const navResponse = await apiCall.poolsApi.nav(this.id)
+      const navResponse = await apiCall.poolsApi.nav(this.poolId)
       if (navResponse.isEmpty) {
         logger.info(`Empty response: ${price}`)
         this.tokenPrice = price
