@@ -77,7 +77,7 @@ export class TrancheService extends Tranche {
     const specVersion = api.runtimeVersion.specVersion.toNumber()
     if (MAINNET_CHAINID === chainId && !!block) {
       if (block < 4058350) return this.updatePriceFixDecimalError(price, block)
-      if (specVersion >= 1025 && specVersion < 1029) return await this.updatePriceFixForFees(price, block)
+      if (specVersion >= 1025 && specVersion < 1029) return await this.updatePriceFixForFees(price)
     }
     logger.info(`Updating price for tranche ${this.id} to: ${this.tokenPrice}`)
     this.tokenPrice = price
@@ -94,7 +94,7 @@ export class TrancheService extends Tranche {
     return this
   }
 
-  private async updatePriceFixForFees(price: bigint, block: number) {
+  private async updatePriceFixForFees(price: bigint) {
     // fix token price not accounting for fees
     const apiCall = api.call as ExtendedCall
     const navResponse = await apiCall.poolsApi.nav(this.poolId)
@@ -104,8 +104,7 @@ export class TrancheService extends Tranche {
       return this
     }
     const accruedFees = bnToBn(navResponse.unwrap().navFees.toBigInt())
-    logger.info(`Price ${price} / Accrued fees: ${accruedFees} / token supply: ${this.tokenSupply} at ${block}`)
-    this.tokenPrice = nToBigInt(bnToBn(price).sub(accruedFees.div(bnToBn(this.tokenSupply)).mul(WAD)))
+    this.tokenPrice = nToBigInt(bnToBn(price).sub(accruedFees.mul(WAD).div(bnToBn(this.tokenSupply))))
     logger.info(`Updating price for tranche ${this.id} to: ${this.tokenPrice} (ACCOUNTING FOR ACCRUED FEES)`)
     return this
   }
