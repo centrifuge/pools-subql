@@ -94,6 +94,12 @@ export class TrancheService extends Tranche {
       }
       const accruedFees = bnToBn(navResponse.unwrap().navFees.toBigInt())
       logger.info(`Price ${price} / Accrued fees: ${accruedFees} / token supply: ${this.tokenSupply} at ${block}`)
+      logger.info(`Calculation 1: ${bnToBn(this.tokenSupply)}`)
+      logger.info(`Calculation 2: ${accruedFees.div(bnToBn(this.tokenSupply))}`)
+      logger.info(`Calculation 3: ${accruedFees.div(bnToBn(this.tokenSupply)).mul(WAD)}`)
+      logger.info(`Calculation 4: ${bnToBn(price).sub(accruedFees.div(bnToBn(this.tokenSupply)).mul(WAD))}`)
+      logger.info(`Price ${price} / Accrued fees: ${accruedFees} / token supply: ${this.tokenSupply} at ${block}`)
+      logger.info(`Price ${price} / Accrued fees: ${accruedFees} / token supply: ${this.tokenSupply} at ${block}`)
       this.tokenPrice = nToBigInt(bnToBn(price).sub(accruedFees.div(bnToBn(this.tokenSupply)).mul(WAD)))
       logger.info(`Updating price for tranche ${this.id} to: ${this.tokenPrice} (WITH ACCRUED FEES FIX)`)
     } else {
