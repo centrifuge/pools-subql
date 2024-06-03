@@ -74,12 +74,14 @@ export class TrancheService extends Tranche {
   }
 
   public async updatePrice(price: bigint, block?: number) {
+    const specVersion = api.runtimeVersion.specVersion.toNumber()
+
     if (MAINNET_CHAINID === chainId && !!block && block < 4058350) {
       // https://centrifuge.subscan.io/extrinsic/4058350-0?event=4058350-0
       // fix decimal error in old blocks, the fix was enacted at block #4058350
       this.tokenPrice = nToBigInt(bnToBn(price).div(bnToBn(1000000000)))
       logger.info(`Updating price for tranche ${this.id} to: ${this.tokenPrice} (WITH CORRECTION FACTOR)`)
-    } else if (MAINNET_CHAINID === chainId && !!block && block < 5664672) {
+    } else if (MAINNET_CHAINID === chainId && !!block && specVersion >= 1025 && specVersion < 1029) {
       // fix token price not accounting for fees
       logger.info(`Starting price update ${this.id} to: ${this.tokenPrice} (WITHOUT ACCRUED FEES FIX)`)
       const apiCall = api.call as ExtendedCall
