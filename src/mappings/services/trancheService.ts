@@ -81,14 +81,18 @@ export class TrancheService extends Tranche {
       logger.info(`Updating price for tranche ${this.id} to: ${this.tokenPrice} (WITH CORRECTION FACTOR)`)
     } else if (MAINNET_CHAINID === chainId && !!block && block < 5664672) {
       // fix token price not accounting for fees
+      logger.info(`Starting price update ${this.id} to: ${this.tokenPrice} (WITHOUT ACCRUED FEES FIX)`)
       const apiCall = api.call as ExtendedCall
       const navResponse = await apiCall.poolsApi.nav(this.id)
       if (navResponse.isEmpty) {
+        logger.info(`Empty response: ${price}`)
         this.tokenPrice = price
         logger.info(`Updating price for tranche ${this.id} to: ${this.tokenPrice} (WITHOUT ACCRUED FEES FIX)`)
         return this
       }
       const accruedFees = bnToBn(navResponse.unwrap().navFees.toBigInt())
+      logger.info(`Accrued fees: ${accruedFees}`)
+      logger.info(`tkoen supply: ${this.tokenSupply}`)
       this.tokenPrice = nToBigInt(bnToBn(price).sub(accruedFees.div(bnToBn(this.tokenSupply))))
       logger.info(`Updating price for tranche ${this.id} to: ${this.tokenPrice} (WITH ACCRUED FEES FIX)`)
     } else {
