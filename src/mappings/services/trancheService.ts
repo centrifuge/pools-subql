@@ -104,7 +104,12 @@ export class TrancheService extends Tranche {
       return this
     }
     const accruedFees = bnToBn(navResponse.unwrap().navFees.toBigInt())
-    this.tokenPrice = nToBigInt(bnToBn(price).sub(accruedFees.mul(WAD).div(bnToBn(this.tokenSupply))))
+    if (!this.tokenSupply || this.tokenSupply === BigInt(0) ) {
+      logger.warn(`Token supply equal 0! Cannot perform division. Token price: ${price}`)
+      this.tokenPrice = price
+      return this
+    }
+    this.tokenPrice =  nToBigInt(bnToBn(price).sub(accruedFees.mul(WAD).div(bnToBn(this.tokenSupply))))
     logger.info(`Updating price for tranche ${this.id} to: ${this.tokenPrice} (ACCOUNTING FOR ACCRUED FEES)`)
     return this
   }
