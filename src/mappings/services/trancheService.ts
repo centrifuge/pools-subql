@@ -2,7 +2,7 @@ import { u128 } from '@polkadot/types'
 import { bnToBn, nToBigInt } from '@polkadot/util'
 import { paginatedGetter } from '../../helpers/paginatedGetter'
 import { WAD } from '../../config'
-import { ExtendedRpc, TrancheDetails } from '../../helpers/types'
+import { ExtendedCall, ExtendedRpc, TrancheDetails } from '../../helpers/types'
 import { Tranche, TrancheSnapshot } from '../../types'
 
 const MAINNET_CHAINID = '0xb3db41421702df9a7fcac62b53ffeac85f7853cc4e689e0b93aeb3db18c09d82'
@@ -53,15 +53,15 @@ export class TrancheService extends Tranche {
   }
 
   static async getByPoolId(poolId: string): Promise<TrancheService[]> {
-    const tranches = (await paginatedGetter<Tranche>(this, [['poolId', '=', poolId]]))
+    const tranches = await paginatedGetter<Tranche>(this, [['poolId', '=', poolId]])
     return tranches as TrancheService[]
   }
 
   static async getActivesByPoolId(poolId: string): Promise<TrancheService[]> {
-    const tranches = (await paginatedGetter<Tranche>(this, [
+    const tranches = await paginatedGetter<Tranche>(this, [
       ['poolId', '=', poolId],
       ['isActive', '=', true],
-    ]))
+    ])
     return tranches as TrancheService[]
   }
 
@@ -73,12 +73,24 @@ export class TrancheService extends Tranche {
     return this
   }
 
-  public updatePrice(price: bigint, block?: number) {
-    // https://centrifuge.subscan.io/extrinsic/4058350-0?event=4058350-0
-    // fix decimal error in old blocks, the fix was enacted at block #4058350
+  public async updatePrice(price: bigint, block?: number) {
     if (MAINNET_CHAINID === chainId && !!block && block < 4058350) {
+      // https://centrifuge.subscan.io/extrinsic/4058350-0?event=4058350-0
+      // fix decimal error in old blocks, the fix was enacted at block #4058350
       this.tokenPrice = nToBigInt(bnToBn(price).div(bnToBn(1000000000)))
       logger.info(`Updating price for tranche ${this.id} to: ${this.tokenPrice} (WITH CORRECTION FACTOR)`)
+    } else if (MAINNET_CHAINID === chainId && !!block && block < 5664672) {
+      // fix token price not accounting for fees
+      const apiCall = api.call as ExtendedCall
+      const navResponse = await apiCall.poolsApi.nav(this.id)
+      if (navResponse.isEmpty) {
+        this.tokenPrice = price
+        logger.info(`Updating price for tranche ${this.id} to: ${this.tokenPrice} (WITHOUT ACCRUED FEES FIX)`)
+        return this
+      }
+      const accruedFees = bnToBn(navResponse.unwrap().navFees.toBigInt())
+      this.tokenPrice = nToBigInt(bnToBn(price).sub(accruedFees.div(bnToBn(this.tokenSupply))))
+      logger.info(`Updating price for tranche ${this.id} to: ${this.tokenPrice} (WITH ACCRUED FEES FIX)`)
     } else {
       this.tokenPrice = price
       logger.info(`Updating price for tranche ${this.id} to: ${this.tokenPrice}`)
@@ -92,7 +104,7 @@ export class TrancheService extends Tranche {
     const tokenPrices = await (api.rpc as ExtendedRpc).pools.trancheTokenPrices(poolId)
     const trancheTokenPrice = tokenPrices[this.index].toBigInt()
     if (trancheTokenPrice <= BigInt(0)) throw new Error(`Zero or negative price returned for tranche: ${this.id}`)
-    this.updatePrice(trancheTokenPrice, block)
+    await this.updatePrice(trancheTokenPrice, block)
     return this
   }
 
