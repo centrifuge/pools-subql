@@ -1,5 +1,28 @@
 # Changelog
 
+## [2.1.0](https://github.com/centrifuge/pools-subql/compare/v2.0.0...v2.1.0) (2024-06-03)
+
+
+### Features
+
+* track oracle transactions ([#170](https://github.com/centrifuge/pools-subql/issues/170)) ([81b2736](https://github.com/centrifuge/pools-subql/commit/81b273673f67fd3a8f5df7e57e66a814f5a48b07))
+
+
+### Bug Fixes
+
+* align pool and pool snapshots ([#168](https://github.com/centrifuge/pools-subql/issues/168)) ([9674e54](https://github.com/centrifuge/pools-subql/commit/9674e5478edd27f56bdc08d21802fefb55f6fe0f))
+* cash value when using nav call ([#182](https://github.com/centrifuge/pools-subql/issues/182)) ([c8858e7](https://github.com/centrifuge/pools-subql/commit/c8858e74d1ace03fc81b7e3978ac5c2fad3e8b53))
+* handle 0 token supply in trancheToken price fix ([8874476](https://github.com/centrifuge/pools-subql/commit/88744762e09caf5b1f3e3f20923f123a3d443736))
+* ISIN parsing for oracle keys ([#177](https://github.com/centrifuge/pools-subql/issues/177)) ([ba03d80](https://github.com/centrifuge/pools-subql/commit/ba03d80aa2f5573f47a5f296c5ecacf8bebb669b))
+* move update NAV call ([#181](https://github.com/centrifuge/pools-subql/issues/181)) ([cffc3b3](https://github.com/centrifuge/pools-subql/commit/cffc3b3dfe7d92f26915b02087c280a73c186f62))
+* nav comment ([#183](https://github.com/centrifuge/pools-subql/issues/183)) ([f25864c](https://github.com/centrifuge/pools-subql/commit/f25864c10db072df579c491b67d3eb1aa3208154))
+* oracle handler definition ([#171](https://github.com/centrifuge/pools-subql/issues/171)) ([a8845d9](https://github.com/centrifuge/pools-subql/commit/a8845d9e64eb31f623d5439cae05331db9f9eee4))
+* oracle pallet name ([#172](https://github.com/centrifuge/pools-subql/issues/172)) ([c0889d5](https://github.com/centrifuge/pools-subql/commit/c0889d5c3b2239daeb2ee819517562e5d255996f))
+* remove dev query limit ([#166](https://github.com/centrifuge/pools-subql/issues/166)) ([040c8bc](https://github.com/centrifuge/pools-subql/commit/040c8bc3fc19544fc487f1bd453ba1006b26c85b))
+* store oracle transactions properly ([#173](https://github.com/centrifuge/pools-subql/issues/173)) ([c574188](https://github.com/centrifuge/pools-subql/commit/c5741884702ea96667386ecf21d04662c29f30cd))
+* update price to account for fees ([#184](https://github.com/centrifuge/pools-subql/issues/184)) ([c1e3fc8](https://github.com/centrifuge/pools-subql/commit/c1e3fc809f68adf85f13f3276efa90f791b18bcc))
+* upgrade cli, re-add query limit flag ([#169](https://github.com/centrifuge/pools-subql/issues/169)) ([15b78d1](https://github.com/centrifuge/pools-subql/commit/15b78d18c94f01188da22981199f2fc44e359b69))
+
 ## [2.0.0](https://github.com/centrifuge/pools-subql/compare/v1.1.0...v2.0.0) (2024-05-28)
 
 
