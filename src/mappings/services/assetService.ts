@@ -16,7 +16,8 @@ export class AssetService extends Asset {
     nftClassId: bigint | undefined,
     nftItemId: bigint | undefined,
     timestamp: Date,
-    blockchain = '0'
+    blockchain = '0',
+    name?: string
   ) {
     logger.info(`Initialising asset ${assetId} for pool ${poolId}`)
     const isActive = false
@@ -30,6 +31,8 @@ export class AssetService extends Asset {
       isActive,
       AssetStatus.CREATED
     )
+
+    asset.name = name
 
     asset.collateralNftClassId = nftClassId
     asset.collateralNftItemId = nftItemId
@@ -64,7 +67,8 @@ export class AssetService extends Asset {
       AssetValuationMethod.Cash,
       undefined,
       undefined,
-      timestamp
+      timestamp,
+      'Onchain reserve'
     )
   }
 
@@ -173,6 +177,7 @@ export class AssetService extends Asset {
     logger.info(`Fetching IPFS asset name for asset ${this.id} `)
     if (!this.metadata) return logger.warn('No IPFS metadata')
     const metadata = await readIpfs<AssetIpfsMetadata>(this.metadata.match(cid)[0])
+    this.name = metadata?.name
     return metadata?.name ?? null
   }
 
