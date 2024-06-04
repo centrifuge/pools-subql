@@ -1,4 +1,4 @@
-export COMPOSE_PROFILES=subql-eth
+export COMPOSE_PROFILES=subql-cfg
 export DB_USER=postgres
 export DB_PASS=postgres
 export DB_DATABASE=postgres
@@ -7,4 +7,4 @@ export DB_PORT=5432
 export SUBQL_DB_USER=$DB_USER
 export SUBQL_DB_PASS=$DB_PASS
 export CHAIN_ID="centrifuge"
-export ONFINALITY_API_KEY=#ENTER HERE
+export ONFINALITY_API_KEY="453c025d-7cc9-4648-bdfa-4447639cb8d6"
