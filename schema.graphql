@@ -207,6 +207,8 @@ type Epoch @entity {
   sumRepaidAmount: BigInt!
   sumInvestedAmount: BigInt!
   sumRedeemedAmount: BigInt!
+  
+  sumPoolFeesPaidAmount: BigInt
 
   epochStates: [EpochState] @derivedFrom(field: "epoch")
 
@@ -282,6 +284,9 @@ enum AssetTransactionType {
   REPAID
   CLOSED
   CASH_TRANSFER
+  DEPOSIT_FROM_INVESTMENTS
+  WITHDRAWAL_FOR_REDEMPTIONS
+  WITHDRAWAL_FOR_FEES
 }
 
 type AssetTransaction @entity {
@@ -290,7 +295,7 @@ type AssetTransaction @entity {
   pool: Pool! @index
   hash: String!
 
-  account: Account! @index
+  account: Account @index
   epochNumber: Int!
   epoch: Epoch! @index
   asset: Asset!
