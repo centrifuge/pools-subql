@@ -207,6 +207,8 @@ type Epoch @entity {
   sumRepaidAmount: BigInt!
   sumInvestedAmount: BigInt!
   sumRedeemedAmount: BigInt!
+  
+  sumPoolFeesPaidAmount: BigInt
 
   epochStates: [EpochState] @derivedFrom(field: "epoch")
 
@@ -293,7 +295,7 @@ type AssetTransaction @entity {
   pool: Pool! @index
   hash: String!
 
-  account: Account! @index
+  account: Account @index
   epochNumber: Int!
   epoch: Epoch! @index
   asset: Asset!

@@ -11,6 +11,7 @@ import {
 import { PoolFeeData, PoolFeeService } from '../services/poolFeeService'
 import { PoolService } from '../services/poolService'
 import { PoolFeeTransactionService } from '../services/poolFeeTransactionService'
+import { EpochService } from '../services/epochService'
 
 export const handleFeeProposed = errorHandler(_handleFeeProposed)
 async function _handleFeeProposed(event: SubstrateEvent<PoolFeesProposedEvent>): Promise<void> {
@@ -189,6 +190,11 @@ async function _handleFeePaid(event: SubstrateEvent<PoolFeesPaidEvent>): Promise
 
   await pool.increasePaidFees(poolFeeData.amount)
   await pool.save()
+
+  const epoch = await EpochService.getById(pool.id, pool.currentEpoch)
+  if (!poolFee) throw new Error(`Current epoch for pool ${pool.id} not found`)
+  await epoch.increasePaidFees(poolFeeData.amount)
+  await epoch.save()
 
   const poolFeeTransaction = PoolFeeTransactionService.pay(poolFeeData)
   await poolFeeTransaction.save()

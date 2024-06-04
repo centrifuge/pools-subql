@@ -35,6 +35,8 @@ export class EpochService extends Epoch {
       BigInt(0)
     )
 
+    epoch.sumPoolFeesPaidAmount = BigInt(0)
+
     epoch.states = trancheIds.map(
       (trancheId) =>
         new EpochState(`${poolId}-${epochNr}-${trancheId}`, epoch.id, trancheId, BigInt(0), BigInt(0), BigInt(0))
@@ -146,5 +148,11 @@ export class EpochService extends Epoch {
   public increaseRepayments(amount: bigint) {
     logger.info(`Increasing repayments for epoch ${this.id} of ${amount}`)
     this.sumRepaidAmount += amount
+  }
+
+  public increasePaidFees(paidAmount: bigint) {
+    logger.info(`Increasing paid fees for epoch ${this.id} by ${paidAmount.toString(10)}`)
+    this.sumPoolFeesPaidAmount += paidAmount
+    return this
   }
 }
