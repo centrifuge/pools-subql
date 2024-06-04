@@ -282,6 +282,9 @@ enum AssetTransactionType {
   REPAID
   CLOSED
   CASH_TRANSFER
+  DEPOSIT_FROM_INVESTMENTS
+  WITHDRAWAL_FOR_REDEMPTIONS
+  WITHDRAWAL_FOR_FEES
 }
 
 type AssetTransaction @entity {
