@@ -68,6 +68,7 @@ export class AssetService extends Asset {
       undefined,
       undefined,
       timestamp,
+      '0',
       'Onchain reserve'
     )
   }
