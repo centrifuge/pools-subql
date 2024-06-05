@@ -425,7 +425,7 @@ async function _handleLoanDebtTransferred1024(event: SubstrateEvent<LoanDebtTran
       fromAssetId: fromLoanId.toString(10),
       toAssetId: toLoanId.toString(10),
       settlementPrice: fromAsset.currentPrice,
-      quantity: nToBigInt(bnToBn(amount).div(bnToBn(fromAsset.currentPrice))),
+      quantity: nToBigInt(bnToBn(amount).mul(WAD).div(bnToBn(fromAsset.currentPrice))),
     })
     await principalRepayment.save()
   }
