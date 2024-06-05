@@ -3161,7 +3161,7 @@
   optionalDependencies:
     sodium-native "^4.1.1"
 
-"@subql/cli@^4.11.0":
+"@subql/cli@latest":
   version "4.12.0"
   resolved "https://registry.yarnpkg.com/@subql/cli/-/cli-4.12.0.tgz#a9445bec6804b875382618fe42ae124f86586bcb"
   integrity sha512-QOgBWRXa5A+oKz12Nhz8Kvk+2YYtamlUiiWIO0hcFPv3K1XbYFkOzJ5L/TBAa5rFdhKr4fnm6BExuQsZNPsjNw==
@@ -3325,7 +3325,7 @@
     semver "^7.5.2"
     update-notifier "5.1.0"
 
-"@subql/testing@^2.1.1":
+"@subql/testing@latest":
   version "2.1.1"
   resolved "https://registry.yarnpkg.com/@subql/testing/-/testing-2.1.1.tgz#22db8677f8d75b41196a57b35a09501bab3d6231"
   integrity sha512-s2/hAb4VHYLq/x6tgb7ZcrL1l2ILV/GnO/fhpWJirQ90JPtNGx1ln5sMmy484sAUZOXISvrnTFkKKACxxox5aQ==
@@ -3347,17 +3347,10 @@
     "@concordium/node-sdk" "9.4.0"
     "@subql/types-core" "^0.7.0"
 
-"@subql/types-core@0.7.0", "@subql/types-core@^0.7.0":
+"@subql/types-core@0.7.0", "@subql/types-core@^0.7.0", "@subql/types-core@latest":
   version "0.7.0"
   resolved "https://registry.yarnpkg.com/@subql/types-core/-/types-core-0.7.0.tgz#f32602d13e3b226c89391f125122d61f3beeb096"
   integrity sha512-/Is7bqy9x769N3BnRLUQJPx1q4QQZqYt9VwqYJguOEKmPLMFjChlr988hIDwvRCxN6SmemzZvFFnKH0Vmj7gEw==
-  dependencies:
-    package-json-type "^1.0.3"
-
-"@subql/types-core@^0.6.0":
-  version "0.6.0"
-  resolved "https://registry.yarnpkg.com/@subql/types-core/-/types-core-0.6.0.tgz#93d42110116dfde1199fa23726e6cc2efda8ebee"
-  integrity sha512-32dMTzOhU0hj3ByMeFyZOvoOvoYh5WtA3AVEd+gO1U9aTdkhYG1djeal3Hma/dYp1nThTpjSEeOllDrPip699Q==
   dependencies:
     package-json-type "^1.0.3"
 
@@ -3406,7 +3399,7 @@
     "@subql/types-core" "^0.7.0"
     stellar-sdk "^11.2.2"
 
-"@subql/types@3.6.0", "@subql/types@^3.5.0":
+"@subql/types@3.6.0", "@subql/types@latest":
   version "3.6.0"
   resolved "https://registry.yarnpkg.com/@subql/types/-/types-3.6.0.tgz#165180fd866ab5a2f94918ef61138b80ab703315"
   integrity sha512-KIayGfnqMoN6VhIwVEiV62NdvN/d3tE7MdIsssA+r2kK18wEhi9Vvh2VgrUdVgv37HAKO1aoo/aiYJu2R04ezw==
@@ -7086,10 +7079,10 @@ ipfs-http-client@^52.0.3:
     stream-to-it "^0.2.2"
     uint8arrays "^3.0.0"
 
-ipfs-unixfs@^6.0.3:
-  version "6.0.9"
-  resolved "https://registry.yarnpkg.com/ipfs-unixfs/-/ipfs-unixfs-6.0.9.tgz#f6613b8e081d83faa43ed96e016a694c615a9374"
-  integrity sha512-0DQ7p0/9dRB6XCb0mVCTli33GzIzSVx5udpJuVM47tGcD+W+Bl4LsnoLswd3ggNnNEakMv1FdoFITiEnchXDqQ==
+ipfs-unixfs@6.0.6, ipfs-unixfs@^6.0.3:
+  version "6.0.6"
+  resolved "https://registry.yarnpkg.com/ipfs-unixfs/-/ipfs-unixfs-6.0.6.tgz#c44881c1bcd6a474c665e67108cbf31e54c63eec"
+  integrity sha512-gTkjYKXuHnqIf6EFfS+ESaYEl3I3aaQQ0UX8MhpNzreMLEuMnuqpoI/uLLllTZa31WRplKixabbpRTSmTYRNwA==
   dependencies:
     err-code "^3.0.1"
     protobufjs "^6.10.2"

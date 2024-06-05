@@ -482,3 +482,5 @@ export type ExtendedCall = typeof api.call & {
     listFees: AugmentedCall<'promise', (poolId: string) => Observable<Option<PoolFeesList>>>
   }
 }
+
+export type ApiQueryLoansActiveLoans = Vec<ITuple<[u64, LoanInfoActive]>>

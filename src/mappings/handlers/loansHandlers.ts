@@ -406,8 +406,8 @@ async function _handleLoanDebtTransferred1024(event: SubstrateEvent<LoanDebtTran
   if (fromAsset.isNonCash() && toAsset.isOffchainCash()) {
     //Track repayment
     await fromAsset.activate()
+    await fromAsset.updateExternalAssetPricingFromState()
     await fromAsset.repay(amount)
-    await fromAsset.updateIpfsAssetName()
     await fromAsset.save()
 
     await pool.increaseRepayments1024(amount)
@@ -423,6 +423,8 @@ async function _handleLoanDebtTransferred1024(event: SubstrateEvent<LoanDebtTran
       amount: amount,
       fromAssetId: fromLoanId.toString(10),
       toAssetId: toLoanId.toString(10),
+      settlementPrice: fromAsset.currentPrice,
+      quantity: fromAsset.outstandingQuantity,
     })
     await principalRepayment.save()
   }
@@ -430,6 +432,7 @@ async function _handleLoanDebtTransferred1024(event: SubstrateEvent<LoanDebtTran
   if (fromAsset.isOffchainCash() && toAsset.isNonCash()) {
     //Track borrowed / financed amount
     await toAsset.activate()
+    await toAsset.updateExternalAssetPricingFromState()
     await toAsset.borrow(amount)
     await toAsset.updateIpfsAssetName()
     await toAsset.save()
@@ -448,6 +451,8 @@ async function _handleLoanDebtTransferred1024(event: SubstrateEvent<LoanDebtTran
       principalAmount: amount,
       fromAssetId: fromLoanId.toString(10),
       toAssetId: toLoanId.toString(10),
+      settlementPrice: toAsset.currentPrice,
+      quantity: toAsset.outstandingQuantity,
     })
     await purchaseTransaction.save()
   }
