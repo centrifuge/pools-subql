@@ -16,6 +16,7 @@ import { AccountService } from '../services/accountService'
 import { EpochService } from '../services/epochService'
 import { AssetType, AssetValuationMethod } from '../../types'
 import { bnToBn, nToBigInt } from '@polkadot/util'
+import { WAD } from '../../config'
 
 export const handleLoanCreated = errorHandler(_handleLoanCreated)
 async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedEvent>) {
