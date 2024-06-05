@@ -15,6 +15,7 @@ import { AssetTransactionData, AssetTransactionService } from '../services/asset
 import { AccountService } from '../services/accountService'
 import { EpochService } from '../services/epochService'
 import { AssetType, AssetValuationMethod } from '../../types'
+import { bnToBn, nToBigInt } from '@polkadot/util'
 
 export const handleLoanCreated = errorHandler(_handleLoanCreated)
 async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedEvent>) {
@@ -424,7 +425,7 @@ async function _handleLoanDebtTransferred1024(event: SubstrateEvent<LoanDebtTran
       fromAssetId: fromLoanId.toString(10),
       toAssetId: toLoanId.toString(10),
       settlementPrice: fromAsset.currentPrice,
-      quantity: fromAsset.outstandingQuantity,
+      quantity: nToBigInt(bnToBn(amount).div(bnToBn(fromAsset.currentPrice))),
     })
     await principalRepayment.save()
   }
@@ -452,7 +453,7 @@ async function _handleLoanDebtTransferred1024(event: SubstrateEvent<LoanDebtTran
       fromAssetId: fromLoanId.toString(10),
       toAssetId: toLoanId.toString(10),
       settlementPrice: toAsset.currentPrice,
-      quantity: toAsset.outstandingQuantity,
+      quantity: nToBigInt(bnToBn(amount).div(bnToBn(toAsset.currentPrice))) ,
     })
     await purchaseTransaction.save()
   }
