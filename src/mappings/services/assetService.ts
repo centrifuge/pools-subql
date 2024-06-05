@@ -178,7 +178,9 @@ export class AssetService extends Asset {
     logger.info(`Fetching IPFS asset name for asset ${this.id} `)
     if (!this.metadata) return logger.warn('No IPFS metadata')
     const metadata = await readIpfs<AssetIpfsMetadata>(this.metadata.match(cid)[0])
-    this.name = metadata?.name
+    if (metadata?.name) {
+      this.name = metadata.name
+    }
     return metadata?.name ?? null
   }
 
