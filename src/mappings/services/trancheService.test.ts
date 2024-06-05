@@ -7,6 +7,9 @@ api.query['ormlTokens'] = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as any
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+api['runtimeVersion'] = { specVersion: { toNumber: ()=> 1029 } } as any
+
 api.rpc['pools'] = {
   trancheTokenPrices: jest.fn(() => [
     { toBigInt: () => BigInt('2000000000000000000') },
