@@ -15,6 +15,8 @@ import { AssetTransactionData, AssetTransactionService } from '../services/asset
 import { AccountService } from '../services/accountService'
 import { EpochService } from '../services/epochService'
 import { AssetType, AssetValuationMethod } from '../../types'
+import { bnToBn, nToBigInt } from '@polkadot/util'
+import { WAD } from '../../config'
 
 export const handleLoanCreated = errorHandler(_handleLoanCreated)
 async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedEvent>) {
@@ -406,8 +408,8 @@ async function _handleLoanDebtTransferred1024(event: SubstrateEvent<LoanDebtTran
   if (fromAsset.isNonCash() && toAsset.isOffchainCash()) {
     //Track repayment
     await fromAsset.activate()
+    await fromAsset.updateExternalAssetPricingFromState()
     await fromAsset.repay(amount)
-    await fromAsset.updateIpfsAssetName()
     await fromAsset.save()
 
     await pool.increaseRepayments1024(amount)
@@ -423,6 +425,8 @@ async function _handleLoanDebtTransferred1024(event: SubstrateEvent<LoanDebtTran
       amount: amount,
       fromAssetId: fromLoanId.toString(10),
       toAssetId: toLoanId.toString(10),
+      settlementPrice: fromAsset.currentPrice,
+      quantity: nToBigInt(bnToBn(amount).mul(WAD).div(bnToBn(fromAsset.currentPrice))),
     })
     await principalRepayment.save()
   }
@@ -430,6 +434,7 @@ async function _handleLoanDebtTransferred1024(event: SubstrateEvent<LoanDebtTran
   if (fromAsset.isOffchainCash() && toAsset.isNonCash()) {
     //Track borrowed / financed amount
     await toAsset.activate()
+    await toAsset.updateExternalAssetPricingFromState()
     await toAsset.borrow(amount)
     await toAsset.updateIpfsAssetName()
     await toAsset.save()
@@ -448,6 +453,8 @@ async function _handleLoanDebtTransferred1024(event: SubstrateEvent<LoanDebtTran
       principalAmount: amount,
       fromAssetId: fromLoanId.toString(10),
       toAssetId: toLoanId.toString(10),
+      settlementPrice: toAsset.currentPrice,
+      quantity: nToBigInt(bnToBn(amount).mul(WAD).div(bnToBn(toAsset.currentPrice))) ,
     })
     await purchaseTransaction.save()
   }

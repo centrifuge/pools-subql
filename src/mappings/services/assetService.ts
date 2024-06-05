@@ -1,7 +1,7 @@
 import { Option } from '@polkadot/types'
 import { bnToBn, nToBigInt } from '@polkadot/util'
 import { WAD } from '../../config'
-import { LoanPricingAmount, NftItemMetadata } from '../../helpers/types'
+import { ApiQueryLoansActiveLoans, LoanPricingAmount, NftItemMetadata } from '../../helpers/types'
 import { Asset, AssetType, AssetValuationMethod, AssetStatus } from '../../types'
 import { ActiveLoanData } from './poolService'
 import { cid, readIpfs } from '../../helpers/ipfsFetch'
@@ -190,6 +190,22 @@ export class AssetService extends Asset {
 
   public isNonCash() {
     return this.type === AssetType.Other
+  }
+
+  public async updateExternalAssetPricingFromState() {
+    logger.info(`Executing state call loans.activeLoans to update asset ${this.id} pricing information`)
+    const loansCall = await api.query.loans.activeLoans<ApiQueryLoansActiveLoans>(this.poolId)
+    const assetTuple = loansCall.find((tuple) => tuple[0].toString(10) === this.id.split('-')[1])
+    if (!assetTuple) throw new Error(`Asset ${this.id} not found in pool active loans!`)
+    const loanData = assetTuple[1]
+    if (loanData.pricing.isInternal) throw new Error(`Asset ${this.id} is not of type External!`)
+    const { outstandingQuantity, latestSettlementPrice } = loanData.pricing.asExternal
+    this.outstandingQuantity = outstandingQuantity.toBigInt()
+    this.currentPrice = latestSettlementPrice.toBigInt()
+    logger.info(
+      `Updated outstandingQuantity: ${outstandingQuantity.toString(10)} ` +
+        `currentPrice: ${latestSettlementPrice.toString(10)} for asset ${this.id}`
+    )
   }
 }
 
