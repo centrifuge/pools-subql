@@ -9,7 +9,8 @@ import { InvestorTransactionService } from '../services/investorTransactionServi
 import { CurrencyService, currencyFormatters } from '../services/currencyService'
 import { TrancheBalanceService } from '../services/trancheBalanceService'
 import { BlockchainService, LOCAL_CHAIN_ID } from '../services/blockchainService'
-import { AssetService } from '../services/assetService'
+import { AssetService, ONCHAIN_CASH_ASSET_ID } from '../services/assetService'
+import { AssetTransactionData, AssetTransactionService } from '../services/assetTransactionService'
 
 export const handlePoolCreated = errorHandler(_handlePoolCreated)
 async function _handlePoolCreated(event: SubstrateEvent<PoolCreatedEvent>): Promise<void> {
@@ -112,9 +113,7 @@ async function _handlePoolUpdated(event: SubstrateEvent<PoolUpdatedEvent>): Prom
 export const handleMetadataSet = errorHandler(_handleMetadataSet)
 async function _handleMetadataSet(event: SubstrateEvent<PoolMetadataSetEvent>) {
   const [poolId, metadata] = event.event.data
-  logger.info(
-    `Pool metadata set for pool ${poolId.toString(10)}`
-  )
+  logger.info(`Pool metadata set for pool ${poolId.toString(10)}`)
   const pool = await PoolService.getById(poolId.toString())
   if (!pool) throw missingPool
   await pool.updateMetadata(metadata.toUtf8())
@@ -159,7 +158,7 @@ async function _handleEpochExecuted(event: SubstrateEvent<EpochClosedExecutedEve
   )
 
   const pool = await PoolService.getById(poolId.toString())
-  if (pool === undefined) throw missingPool
+  if (!pool) throw missingPool
 
   const epoch = await EpochService.getById(poolId.toString(), epochId.toNumber())
 
@@ -251,4 +250,38 @@ async function _handleEpochExecuted(event: SubstrateEvent<EpochClosedExecutedEve
     }
   }
   await nextEpoch.saveWithStates()
+
+  // Track investments and redemptions for onchain cash
+  const onChainCashAsset = await AssetService.getById(pool.id, ONCHAIN_CASH_ASSET_ID)
+  if (!onChainCashAsset) throw new Error(`OnChain Asset not found for ${pool.id}`)
+  const txData: Omit<AssetTransactionData, 'amount'> = {
+    poolId: pool.id,
+    epochNumber: epoch.index,
+    hash: event.extrinsic.extrinsic.hash.toString(),
+    timestamp: event.block.timestamp,
+    assetId: ONCHAIN_CASH_ASSET_ID,
+  }
+  const assetTransactionSaves: Array<Promise<void>> = []
+  if (epoch.sumInvestedAmount > BigInt(0)) {
+    const deposit = AssetTransactionService.depositFromInvestments({ ...txData, amount: epoch.sumInvestedAmount })
+    assetTransactionSaves.push(deposit.save())
+  }
+
+  if (epoch.sumRedeemedAmount > BigInt(0)) {
+    const withdrawalRedemptions = await AssetTransactionService.withdrawalForRedemptions({
+      ...txData,
+      amount: epoch.sumRedeemedAmount,
+    })
+    assetTransactionSaves.push(withdrawalRedemptions.save())
+  }
+
+  if (epoch.sumPoolFeesPaidAmount > BigInt(0)) {
+    const withdrawalFees = await AssetTransactionService.withdrawalForFees({
+      ...txData,
+      amount: epoch.sumPoolFeesPaidAmount,
+    })
+    assetTransactionSaves.push(withdrawalFees.save())
+  }
+
+  await Promise.all(assetTransactionSaves)
 }
