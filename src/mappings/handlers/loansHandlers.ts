@@ -17,6 +17,7 @@ import { EpochService } from '../services/epochService'
 import { AssetType, AssetValuationMethod } from '../../types'
 import { bnToBn, nToBigInt } from '@polkadot/util'
 import { WAD } from '../../config'
+import { AssetPositionService } from '../services/assetPositionService'
 
 export const handleLoanCreated = errorHandler(_handleLoanCreated)
 async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedEvent>) {
@@ -142,6 +143,13 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Pr
 
     if (borrowAmount.isExternal) {
       await asset.increaseQuantity(borrowAmount.asExternal.quantity.toBigInt())
+      await AssetPositionService.buy(
+        asset.id,
+        assetTransactionBaseData.hash,
+        assetTransactionBaseData.timestamp,
+        assetTransactionBaseData.quantity,
+        assetTransactionBaseData.settlementPrice
+      )
     }
 
     const at = await AssetTransactionService.borrowed(assetTransactionBaseData)
@@ -205,11 +213,14 @@ async function _handleLoanRepaid(event: SubstrateEvent<LoanRepaidEvent>) {
   } else {
     await asset.repay(amount)
 
+    let realizedProfit: bigint
     if (principal.isExternal) {
-      await asset.decreaseQuantity(principal.asExternal.quantity.toBigInt())
+      const { quantity, settlementPrice } = principal.asExternal
+      await asset.decreaseQuantity(quantity.toBigInt())
+      realizedProfit = await AssetPositionService.sell(asset.id, quantity.toBigInt(), settlementPrice.toBigInt())
     }
 
-    const at = await AssetTransactionService.repaid(assetTransactionBaseData)
+    const at = await AssetTransactionService.repaid({ ...assetTransactionBaseData, realizedProfit })
     await at.save()
 
     // Update pool info
@@ -313,8 +324,11 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
     //Track repayment
     await fromAsset.activate()
     await fromAsset.repay(repaidAmount)
+    let realizedProfit: bigint
     if (_repaidAmount.principal.isExternal) {
-      await toAsset.decreaseQuantity(_repaidAmount.principal.asExternal.quantity.toBigInt())
+      const { quantity, settlementPrice } = _repaidAmount.principal.asExternal
+      await fromAsset.decreaseQuantity(quantity.toBigInt())
+      realizedProfit = await AssetPositionService.sell(fromAsset.id, quantity.toBigInt(), settlementPrice.toBigInt())
     }
     await fromAsset.updateIpfsAssetName()
     await fromAsset.save()
@@ -339,6 +353,7 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
         : null,
       fromAssetId: fromLoanId.toString(10),
       toAssetId: toLoanId.toString(10),
+      realizedProfit,
     })
     await principalRepayment.save()
   }
@@ -348,7 +363,15 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
     await toAsset.activate()
     await toAsset.borrow(borrowPrincipalAmount)
     if (_borrowAmount.isExternal) {
-      await toAsset.increaseQuantity(_borrowAmount.asExternal.quantity.toBigInt())
+      const { quantity, settlementPrice } = _borrowAmount.asExternal
+      await toAsset.increaseQuantity(quantity.toBigInt())
+      await AssetPositionService.buy(
+        toAsset.id,
+        txData.hash,
+        txData.timestamp,
+        quantity.toBigInt(),
+        settlementPrice.toBigInt()
+      )
     }
     await toAsset.updateIpfsAssetName()
     await toAsset.save()
@@ -418,6 +441,9 @@ async function _handleLoanDebtTransferred1024(event: SubstrateEvent<LoanDebtTran
     await epoch.increaseRepayments(amount)
     await epoch.save()
 
+    const quantity = nToBigInt(bnToBn(amount).mul(WAD).div(bnToBn(fromAsset.currentPrice)))
+    const realizedProfit = await AssetPositionService.sell(toAsset.id, quantity, toAsset.currentPrice)
+
     // principal repayment transaction
     const principalRepayment = await AssetTransactionService.repaid({
       ...txData,
@@ -427,6 +453,7 @@ async function _handleLoanDebtTransferred1024(event: SubstrateEvent<LoanDebtTran
       toAssetId: toLoanId.toString(10),
       settlementPrice: fromAsset.currentPrice,
       quantity: nToBigInt(bnToBn(amount).mul(WAD).div(bnToBn(fromAsset.currentPrice))),
+      realizedProfit,
     })
     await principalRepayment.save()
   }
@@ -445,6 +472,9 @@ async function _handleLoanDebtTransferred1024(event: SubstrateEvent<LoanDebtTran
     await epoch.increaseBorrowings(amount)
     await epoch.save()
 
+    const quantity = nToBigInt(bnToBn(amount).mul(WAD).div(bnToBn(toAsset.currentPrice)))
+    await AssetPositionService.buy(toAsset.id, txData.hash, txData.timestamp, quantity, toAsset.currentPrice)
+
     // purchase transaction
     const purchaseTransaction = await AssetTransactionService.borrowed({
       ...txData,
@@ -454,7 +484,7 @@ async function _handleLoanDebtTransferred1024(event: SubstrateEvent<LoanDebtTran
       fromAssetId: fromLoanId.toString(10),
       toAssetId: toLoanId.toString(10),
       settlementPrice: toAsset.currentPrice,
-      quantity: nToBigInt(bnToBn(amount).mul(WAD).div(bnToBn(toAsset.currentPrice))) ,
+      quantity: quantity,
     })
     await purchaseTransaction.save()
   }

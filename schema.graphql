@@ -314,6 +314,8 @@ type AssetTransaction @entity {
   # only applies to debt transfers
   fromAsset: Asset
   toAsset: Asset
+
+  realizedProfit: BigInt
 }
 
 type OracleTransaction @entity {
@@ -429,6 +431,8 @@ type Asset @entity {
   writtenOffPercentageByPeriod: BigInt
   writtenOffAmountByPeriod: BigInt
   penaltyInterestRatePerSec: BigInt
+
+  positions: [AssetPosition] @derivedFrom(field: "asset")
 }
 
 type AssetSnapshot @entity {
@@ -463,6 +467,14 @@ type AssetSnapshot @entity {
   writtenOffPercentageByPeriod: BigInt
   writtenOffAmountByPeriod: BigInt
   penaltyInterestRatePerSec: BigInt
+}
+
+type AssetPosition @entity {
+  id: ID!
+  asset: Asset! @index
+  timestamp: Date!
+  holdingQuantity: BigInt!
+  purchasePrice: BigInt!
 }
 
 type PureProxy @entity {
