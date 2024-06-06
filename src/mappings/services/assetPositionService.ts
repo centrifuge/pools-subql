@@ -21,7 +21,7 @@ export class AssetPositionService extends AssetPosition {
     }
   }
 
-  static async sell(assetId: string, sellingQuantity: bigint, sellingPrice: bigint) {
+  static async sellFifo(assetId: string, sellingQuantity: bigint, sellingPrice: bigint) {
     logger.info(
       `Selling positions for ${assetId} ` +
         `sellingQuantity: ${sellingQuantity.toString(10)} sellingPrice: ${sellingPrice.toString(10)}`
