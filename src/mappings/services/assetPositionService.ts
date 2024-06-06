@@ -1,19 +1,31 @@
 import { AssetPosition } from '../../types/models/AssetPosition'
-import { RAY } from '../../config'
-import { nToBigInt, bnToBn } from '@polkadot/util'
+import { WAD } from '../../config'
+import { nToBigInt, bnToBn, BN } from '@polkadot/util'
 
 export class AssetPositionService extends AssetPosition {
   static init(assetId: string, hash: string, timestamp: Date, quantity: bigint, price: bigint) {
-    logger.info(`Initialising new assetPosition with Id ${chainId}`)
     const id = `${assetId}-${hash}`
+    logger.info(
+      `Initialising new assetPosition with Id ${id} ` +
+        `holdingQuantity: ${quantity.toString(10)} price: ${price.toString(10)}`
+    )
     return new this(id, assetId, timestamp, quantity, price)
   }
 
   static buy(assetId: string, hash: string, timestamp: Date, quantity: bigint, price: bigint) {
-    return this.init(assetId, hash, timestamp, quantity, price).save()
+    if (quantity > BigInt(0)) {
+      return this.init(assetId, hash, timestamp, quantity, price).save()
+    } else {
+      logger.warn(`Skipping asset position ${assetId}-${hash} as quantity is 0`)
+      return Promise.resolve()
+    }
   }
 
   static async sell(assetId: string, sellingQuantity: bigint, sellingPrice: bigint) {
+    logger.info(
+      `Selling positions for ${assetId} ` +
+        `sellingQuantity: ${sellingQuantity.toString(10)} sellingPrice: ${sellingPrice.toString(10)}`
+    )
     const positions = await this.getByAssetId(assetId)
     positions.sort((a, b) => b.timestamp.valueOf() - a.timestamp.valueOf())
 
@@ -35,10 +47,12 @@ export class AssetPositionService extends AssetPosition {
       }
     }
 
-    const profitFromSale = nToBigInt(bnToBn(sellingPrice).mul(bnToBn(sellingQuantity)).div(RAY))
-    const costOfBuy = sellPositions.reduce<bigint>(
-      (totalCost, line) => totalCost + nToBigInt(bnToBn(line[0].purchasePrice).mul(bnToBn(line[1]).div(RAY))),
-      BigInt(0)
+    const profitFromSale = nToBigInt(bnToBn(sellingPrice).mul(bnToBn(sellingQuantity)).div(WAD))
+    const costOfBuy = nToBigInt(
+      sellPositions.reduce<BN>(
+        (totalCost, line) => totalCost.add(bnToBn(line[0].purchasePrice).mul(bnToBn(line[1]).div(WAD))),
+        new BN(0)
+      )
     )
 
     const dbUpdates = sellPositions.map((line) =>
