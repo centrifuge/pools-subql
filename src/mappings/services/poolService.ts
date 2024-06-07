@@ -72,6 +72,7 @@ export class PoolService extends Pool {
     this.sumPoolFeesPaidAmountByPeriod = BigInt(0)
     this.deltaPortfolioValuationByPeriod = BigInt(0)
     this.sumInterestAccruedByPeriod = BigInt(0)
+    this.sumRealizedProfitFifoByPeriod = BigInt(0)
 
     this.sumBorrowedAmount = BigInt(0)
     this.sumRepaidAmount = BigInt(0)
@@ -402,6 +403,11 @@ export class PoolService extends Pool {
   public updateSumPoolFeesPendingAmount(pendingAmount: bigint) {
     logger.info(`Updating sumPoolFeesPendingAmount for pool ${this.id} to ${pendingAmount.toString(10)}`)
     this.sumPoolFeesPendingAmount = pendingAmount
+  }
+
+  public increaseRealizedProfitFifo(amount: bigint) {
+    logger.info(`Increasing umRealizedProfitFifoByPeriod for pool ${this.id} by ${amount.toString(10)}`)
+    this.sumRealizedProfitFifoByPeriod += amount
   }
 }
 

@@ -222,6 +222,7 @@ async function _handleLoanRepaid(event: SubstrateEvent<LoanRepaidEvent>) {
         quantity.toBigInt(),
         settlementPrice.toBigInt()
       )
+      await pool.increaseRealizedProfitFifo(realizedProfitFifo)
     }
 
     const at = await AssetTransactionService.repaid({ ...assetTransactionBaseData, realizedProfitFifo })
@@ -337,6 +338,7 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
         quantity.toBigInt(),
         settlementPrice.toBigInt()
       )
+      await pool.increaseRealizedProfitFifo(realizedProfitFifo)
     }
     await fromAsset.updateIpfsAssetName()
     await fromAsset.save()
@@ -443,14 +445,15 @@ async function _handleLoanDebtTransferred1024(event: SubstrateEvent<LoanDebtTran
     await fromAsset.repay(amount)
     await fromAsset.save()
 
+    const quantity = nToBigInt(bnToBn(amount).mul(WAD).div(bnToBn(fromAsset.currentPrice)))
+    const realizedProfitFifo = await AssetPositionService.sellFifo(toAsset.id, quantity, toAsset.currentPrice)
+
+    await pool.increaseRealizedProfitFifo(realizedProfitFifo)
     await pool.increaseRepayments1024(amount)
     await pool.save()
 
     await epoch.increaseRepayments(amount)
     await epoch.save()
-
-    const quantity = nToBigInt(bnToBn(amount).mul(WAD).div(bnToBn(fromAsset.currentPrice)))
-    const realizedProfitFifo = await AssetPositionService.sellFifo(toAsset.id, quantity, toAsset.currentPrice)
 
     // principal repayment transaction
     const principalRepayment = await AssetTransactionService.repaid({
