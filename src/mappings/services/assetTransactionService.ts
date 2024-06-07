@@ -15,7 +15,7 @@ export interface AssetTransactionData {
   readonly assetId: string
   readonly fromAssetId?: string
   readonly toAssetId?: string
-  readonly realizedProfit?: bigint
+  readonly realizedProfitFifo?: bigint
 }
 
 export class AssetTransactionService extends AssetTransaction {
@@ -39,7 +39,7 @@ export class AssetTransactionService extends AssetTransaction {
     tx.settlementPrice = data.settlementPrice ?? null
     tx.fromAssetId = data.fromAssetId ? `${data.poolId}-${data.fromAssetId}` : null
     tx.toAssetId = data.toAssetId ? `${data.poolId}-${data.toAssetId}` : null
-    tx.realizedProfit = data.realizedProfit ?? null
+    tx.realizedProfitFifo = data.realizedProfitFifo ?? null
     return tx
   }
 

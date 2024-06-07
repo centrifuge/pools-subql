@@ -213,14 +213,18 @@ async function _handleLoanRepaid(event: SubstrateEvent<LoanRepaidEvent>) {
   } else {
     await asset.repay(amount)
 
-    let realizedProfit: bigint
+    let realizedProfitFifo: bigint
     if (principal.isExternal) {
       const { quantity, settlementPrice } = principal.asExternal
       await asset.decreaseQuantity(quantity.toBigInt())
-      realizedProfit = await AssetPositionService.sellFifo(asset.id, quantity.toBigInt(), settlementPrice.toBigInt())
+      realizedProfitFifo = await AssetPositionService.sellFifo(
+        asset.id,
+        quantity.toBigInt(),
+        settlementPrice.toBigInt()
+      )
     }
 
-    const at = await AssetTransactionService.repaid({ ...assetTransactionBaseData, realizedProfit })
+    const at = await AssetTransactionService.repaid({ ...assetTransactionBaseData, realizedProfitFifo })
     await at.save()
 
     // Update pool info
@@ -324,11 +328,11 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
     //Track repayment
     await fromAsset.activate()
     await fromAsset.repay(repaidAmount)
-    let realizedProfit: bigint
+    let realizedProfitFifo: bigint
     if (_repaidAmount.principal.isExternal) {
       const { quantity, settlementPrice } = _repaidAmount.principal.asExternal
       await fromAsset.decreaseQuantity(quantity.toBigInt())
-      realizedProfit = await AssetPositionService.sellFifo(
+      realizedProfitFifo = await AssetPositionService.sellFifo(
         fromAsset.id,
         quantity.toBigInt(),
         settlementPrice.toBigInt()
@@ -357,7 +361,7 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
         : null,
       fromAssetId: fromLoanId.toString(10),
       toAssetId: toLoanId.toString(10),
-      realizedProfit,
+      realizedProfitFifo,
     })
     await principalRepayment.save()
   }
@@ -446,7 +450,7 @@ async function _handleLoanDebtTransferred1024(event: SubstrateEvent<LoanDebtTran
     await epoch.save()
 
     const quantity = nToBigInt(bnToBn(amount).mul(WAD).div(bnToBn(fromAsset.currentPrice)))
-    const realizedProfit = await AssetPositionService.sellFifo(toAsset.id, quantity, toAsset.currentPrice)
+    const realizedProfitFifo = await AssetPositionService.sellFifo(toAsset.id, quantity, toAsset.currentPrice)
 
     // principal repayment transaction
     const principalRepayment = await AssetTransactionService.repaid({
@@ -457,7 +461,7 @@ async function _handleLoanDebtTransferred1024(event: SubstrateEvent<LoanDebtTran
       toAssetId: toLoanId.toString(10),
       settlementPrice: fromAsset.currentPrice,
       quantity: nToBigInt(bnToBn(amount).mul(WAD).div(bnToBn(fromAsset.currentPrice))),
-      realizedProfit,
+      realizedProfitFifo,
     })
     await principalRepayment.save()
   }
