@@ -114,22 +114,17 @@ export class TrancheService extends Tranche {
     return this
   }
 
-  public async updatePriceFromRpc(block?: number) {
-    logger.info(`Querying token price for tranche ${this.id}`)
-    const poolId = this.poolId
+  public async updatePriceFromRuntime(block?: number) {
+    logger.info(`Querying token price for tranche ${this.id} from runtime`)
+    const { poolId } = this
 
     const apiCall = api.call as ExtendedCall
-    const priceResponse = await apiCall.poolsApi.trancheTokenPrices(poolId)
-    if (priceResponse.isEmpty) {
-      logger.warn('Empty prices response')
-      return
-    }
-    const tokenPrices = priceResponse.unwrap()
-    logger.info(`Token prices: ${tokenPrices.toString()}`)
-
-    const trancheTokenPrice = tokenPrices[this.index].toBigInt()
-    if (trancheTokenPrice <= BigInt(0)) throw new Error(`Zero or negative price returned for tranche: ${this.id}`)
-    await this.updatePrice(trancheTokenPrice, block)
+    const tokenPricesReq = await apiCall.poolsApi.trancheTokenPrices(poolId)
+    if (tokenPricesReq.isNone) return this
+    const tokenPrice = tokenPricesReq.unwrap()[this.index].toBigInt()
+    logger.info(`Token price: ${tokenPrice.toString()}`)
+    if (tokenPrice <= BigInt(0)) throw new Error(`Zero or negative price returned for tranche: ${this.id}`)
+    this.updatePrice(tokenPrice, block)
     return this
   }
 

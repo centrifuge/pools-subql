@@ -119,6 +119,20 @@ const definitions: OverrideBundleDefinition = {
             ],
             type: 'Option<Vec<u128>>',
           },
+          tranche_token_price: {
+            description: 'Retrieve prices for one tranche',
+            params: [
+              {
+                name: 'pool_id',
+                type: 'u64',
+              },
+              {
+                name: 'tranche_id',
+                type: '[u8;16]',
+              },
+            ],
+            type: 'Option<u128>',
+          },
           nav: {
             description: 'Get active pool NAV',
             params: [

@@ -1,14 +1,6 @@
 import { Option, u128, Vec } from '@polkadot/types'
 import { paginatedGetter } from '../../helpers/paginatedGetter'
-import {
-  ExtendedCall,
-  ExtendedRpc,
-  NavDetails,
-  PoolDetails,
-  PoolFeesList,
-  PoolMetadata,
-  TrancheDetails,
-} from '../../helpers/types'
+import { ExtendedCall, NavDetails, PoolDetails, PoolFeesList, PoolMetadata, TrancheDetails } from '../../helpers/types'
 import { Pool } from '../../types'
 import { cid, readIpfs } from '../../helpers/ipfsFetch'
 
@@ -326,11 +318,12 @@ export class PoolService extends Pool {
   }
 
   public async getTrancheTokenPrices() {
-    logger.info(`Querying RPC tranche token prices for pool ${this.id}`)
+    logger.info(`Querying Runtime tranche token prices for pool ${this.id}`)
     const poolId = this.id
     let tokenPrices: Vec<u128>
     try {
-      tokenPrices = await (api.rpc as ExtendedRpc).pools.trancheTokenPrices(poolId)
+      const apiRes = await (api.call as ExtendedCall).poolsApi.trancheTokenPrices(poolId)
+      tokenPrices = apiRes.isSome ? apiRes.unwrap() : undefined
     } catch (err) {
       logger.error(`Unable to fetch tranche token prices for pool: ${this.id}: ${err}`)
       tokenPrices = undefined
