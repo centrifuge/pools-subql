@@ -315,7 +315,7 @@ type AssetTransaction @entity {
   fromAsset: Asset
   toAsset: Asset
 
-  realizedProfit: BigInt
+  realizedProfitFifo: BigInt
 }
 
 type OracleTransaction @entity {
