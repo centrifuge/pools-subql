@@ -1,5 +1,5 @@
 import { errorLogger } from '../../helpers/errorHandler'
-import { ExtendedRpc } from '../../helpers/types'
+import { ExtendedCall } from '../../helpers/types'
 import { TrancheService } from './trancheService'
 
 api.query['ormlTokens'] = {
@@ -10,11 +10,12 @@ api.query['ormlTokens'] = {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 api['runtimeVersion'] = { specVersion: { toNumber: ()=> 1029 } } as any
 
-api.rpc['pools'] = {
-  trancheTokenPrices: jest.fn(() => [
-    { toBigInt: () => BigInt('2000000000000000000') },
-    { toBigInt: () => BigInt('0') },
-  ]),
+api.call['poolsApi'] = {
+  trancheTokenPrices: jest.fn(() => ({
+    isSome: true,
+    isNone: false,
+    unwrap: () => [{ toBigInt: () => BigInt('2000000000000000000') }, { toBigInt: () => BigInt('0') }],
+  })),
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as any
 
@@ -43,7 +44,7 @@ const trancheData = [trancheDataResidual, trancheDataNonResidual] as any
 
 const tranches = trancheIds.map((trancheId, i) => {
   const tranche = TrancheService.seed(poolId, trancheId)
-  return tranche.init(i, trancheData[Number(i !== 0)])
+  return tranche.init(i, trancheData[i])
 })
 
 describe('Given a new tranche, when initialised', () => {
@@ -73,15 +74,15 @@ describe('Given a new tranche, when initialised', () => {
 })
 
 describe('Given an existing tranche,', () => {
-  test('when the rpc price is updated, then the value is fetched and set correctly', async () => {
-    await tranches[0].updatePriceFromRpc(4058351).catch(errorLogger)
-    expect((api.rpc as ExtendedRpc).pools.trancheTokenPrices).toHaveBeenCalled()
+  test('when the runtime price is updated, then the value is fetched and set correctly', async () => {
+    await tranches[0].updatePriceFromRuntime(4058351).catch(errorLogger)
+    expect((api.call as ExtendedCall).poolsApi.trancheTokenPrices).toHaveBeenCalled()
     expect(tranches[0].tokenPrice).toBe(BigInt('2000000000000000000'))
   })
 
-  test('when a 0 rpc price is delivered, then the value is skipped and logged', async () => {
-    await tranches[1].updatePriceFromRpc(4058352).catch(errorLogger)
-    expect((api.rpc as ExtendedRpc).pools.trancheTokenPrices).toHaveBeenCalled()
+  test('when a 0 runtime price is delivered, then the value is skipped and logged', async () => {
+    await tranches[1].updatePriceFromRuntime(4058352).catch(errorLogger)
+    expect((api.call as ExtendedCall).poolsApi.trancheTokenPrices).toHaveBeenCalled()
     expect(logger.error).toHaveBeenCalled()
     expect(tranches[1].tokenPrice).toBe(BigInt('1000000000000000000'))
   })

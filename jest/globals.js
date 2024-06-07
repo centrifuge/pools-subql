@@ -18,5 +18,6 @@ global['logger'] = {
   trace: jest.fn(),
 }
 
-global['api'] = { query: {}, rpc: {} }
+global['api'] = { query: {}, rpc: {}, call:{} }
+
 global['chainId'] = '0xb3db41421702df9a7fcac62b53ffeac85f7853cc4e689e0b93aeb3db18c09d82'

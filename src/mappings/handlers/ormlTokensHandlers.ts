@@ -48,7 +48,7 @@ async function _handleTokenTransfer(event: SubstrateEvent<TokensTransferEvent>):
     )
 
     // Update tranche price
-    await tranche.updatePriceFromRpc(event.block.block.header.number.toNumber())
+    await tranche.updatePriceFromRuntime(event.block.block.header.number.toNumber())
     await tranche.save()
 
     const orderData = {
