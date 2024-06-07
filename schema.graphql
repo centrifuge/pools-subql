@@ -67,6 +67,8 @@ type Pool @entity {
   sumPoolFeesPaidAmount: BigInt #Applies to All 
   sumPoolFeesPendingAmount: BigInt #Applies to All 
 
+  sumRealizedProfitFifoByPeriod: BigInt
+
   # Cumulated transaction data since pool creation
   sumBorrowedAmount: BigInt
   sumRepaidAmount: BigInt
@@ -122,6 +124,8 @@ type PoolSnapshot @entity {
   sumPoolFeesAccruedAmount: BigInt #Applies toChargedUpTo ONLY 
   sumPoolFeesPaidAmount: BigInt #Applies to All 
   sumPoolFeesPendingAmount: BigInt #Applies to All 
+
+  sumRealizedProfitFifoByPeriod: BigInt
 
   # Cumulated transaction data since pool creation
   sumBorrowedAmount: BigInt
@@ -314,6 +318,8 @@ type AssetTransaction @entity {
   # only applies to debt transfers
   fromAsset: Asset
   toAsset: Asset
+
+  realizedProfitFifo: BigInt
 }
 
 type OracleTransaction @entity {
@@ -429,6 +435,8 @@ type Asset @entity {
   writtenOffPercentageByPeriod: BigInt
   writtenOffAmountByPeriod: BigInt
   penaltyInterestRatePerSec: BigInt
+
+  positions: [AssetPosition] @derivedFrom(field: "asset")
 }
 
 type AssetSnapshot @entity {
@@ -463,6 +471,14 @@ type AssetSnapshot @entity {
   writtenOffPercentageByPeriod: BigInt
   writtenOffAmountByPeriod: BigInt
   penaltyInterestRatePerSec: BigInt
+}
+
+type AssetPosition @entity {
+  id: ID!
+  asset: Asset! @index
+  timestamp: Date!
+  holdingQuantity: BigInt!
+  purchasePrice: BigInt!
 }
 
 type PureProxy @entity {
