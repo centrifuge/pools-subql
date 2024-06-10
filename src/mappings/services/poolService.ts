@@ -68,6 +68,7 @@ export class PoolService extends Pool {
     this.sumRealizedProfitFifoByPeriod = BigInt(0)
     this.sumUnrealizedProfitAtMarketPrice = BigInt(0)
     this.sumUnrealizedProfitAtNotional = BigInt(0)
+    this.sumUnrealizedProfitByPeriod = BigInt(0)
 
     this.sumBorrowedAmount = BigInt(0)
     this.sumRepaidAmount = BigInt(0)
