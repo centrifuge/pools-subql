@@ -81,4 +81,16 @@ export class AssetPositionService extends AssetPosition {
     )
     return profitFromSale - costOfBuy
   }
+
+  static async computeUnrealizedProfitByPeriod(assetId: string, sellingPrice: bigint, purchasePrice: bigint) {
+    if (!sellingPrice || sellingPrice <= BigInt(0)) return BigInt(0)
+    if (!purchasePrice || purchasePrice <= BigInt(0)) return BigInt(0)
+    logger.info(`Computing unrealizedProfit at price ${sellingPrice} for asset ${assetId}`)
+    const sellingPositions = await this.getByAssetId(assetId)
+    const sellingQuantity = sellingPositions.reduce<bigint>(
+      (result, position) => result + position.holdingQuantity,
+      BigInt(0)
+    )
+    return nToBigInt(bnToBn(sellingPrice).sub(bnToBn(purchasePrice)).mul(bnToBn(sellingQuantity)).div(WAD))
+  }
 }

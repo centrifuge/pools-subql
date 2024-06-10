@@ -133,7 +133,9 @@ export class AssetService extends Asset {
   public async updateActiveAssetData(activeAssetData: ActiveLoanData[keyof ActiveLoanData]) {
     const oldOutstaidingInterest = this.outstandingInterest
     const oldTotalRepaidInterest = this.totalRepaidInterest
+
     Object.assign(this, activeAssetData)
+
     const deltaRepaidInterestAmount = this.totalRepaid - oldTotalRepaidInterest
     this.interestAccruedByPeriod = this.outstandingInterest - oldOutstaidingInterest + deltaRepaidInterestAmount
     logger.info(`Updated outstanding debt for asset: ${this.id} to ${this.outstandingDebt.toString()}`)
@@ -212,12 +214,13 @@ export class AssetService extends Asset {
     )
   }
 
-  public updateUnrealizedProfit(atMarketPrice: bigint, atNotional: bigint) {
+  public updateUnrealizedProfit(atMarketPrice: bigint, atNotional: bigint, byPeriod: bigint) {
     logger.info(
       `Updating unrealizedProfit for asset ${this.id} atMarketPrice: ${atMarketPrice} atNotional: ${atNotional}`
     )
     this.unrealizedProfitAtMarketPrice = atMarketPrice
     this.unrealizedProfitAtNotional = atNotional
+    this.unrealizedProfitByPeriod = byPeriod
   }
 }
 

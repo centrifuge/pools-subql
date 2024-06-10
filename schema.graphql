@@ -443,6 +443,7 @@ type Asset @entity {
 
   unrealizedProfitAtMarketPrice: BigInt
   unrealizedProfitAtNotional: BigInt
+  unrealizedProfitByPeriod: BigInt
 
   positions: [AssetPosition] @derivedFrom(field: "asset")
 }
