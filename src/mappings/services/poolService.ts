@@ -64,7 +64,10 @@ export class PoolService extends Pool {
     this.sumPoolFeesPaidAmountByPeriod = BigInt(0)
     this.deltaPortfolioValuationByPeriod = BigInt(0)
     this.sumInterestAccruedByPeriod = BigInt(0)
+
     this.sumRealizedProfitFifoByPeriod = BigInt(0)
+    this.sumUnrealizedProfitAtMarketPrice = BigInt(0)
+    this.sumUnrealizedProfitAtNotional = BigInt(0)
 
     this.sumBorrowedAmount = BigInt(0)
     this.sumRepaidAmount = BigInt(0)
@@ -401,6 +404,18 @@ export class PoolService extends Pool {
   public increaseRealizedProfitFifo(amount: bigint) {
     logger.info(`Increasing umRealizedProfitFifoByPeriod for pool ${this.id} by ${amount.toString(10)}`)
     this.sumRealizedProfitFifoByPeriod += amount
+  }
+
+  public resetUnrealizedProfit() {
+    logger.info(`Resetting unrealizedProfit for pool ${this.id}`)
+    this.sumUnrealizedProfitAtMarketPrice = BigInt(0)
+    this.sumUnrealizedProfitAtNotional = BigInt(0)
+  }
+
+  public increaseUnrealizedProfit(atMarket: bigint, atNotional: bigint) {
+    logger.info(`Increasing unrealizedProfit for pool ${this.id} atMarket: ${atMarket} notional: ${atNotional}`)
+    this.sumUnrealizedProfitAtMarketPrice += atMarket
+    this.sumUnrealizedProfitAtNotional += atNotional
   }
 }
 

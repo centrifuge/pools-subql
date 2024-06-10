@@ -18,6 +18,7 @@ import {
   Tranche,
   TrancheSnapshot,
 } from '../../types/models'
+import { AssetPositionService } from '../services/assetPositionService'
 
 const timekeeper = TimekeeperService.init()
 
@@ -61,11 +62,18 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
       // Asset operations
       const activeLoanData = await pool.getPortfolio()
       pool.resetOffchainCashValue()
+      pool.resetUnrealizedProfit()
       for (const loanId in activeLoanData) {
         const asset = await AssetService.getById(pool.id, loanId)
         await asset.updateActiveAssetData(activeLoanData[loanId])
-        await pool.increaseInterestAccrued(asset.interestAccruedByPeriod)
+        await asset.updateUnrealizedProfit(
+          await AssetPositionService.computeUnrealizedProfitAtPrice(asset.id, asset.currentPrice),
+          await AssetPositionService.computeUnrealizedProfitAtPrice(asset.id, asset.notional)
+        )
         await asset.save()
+        await pool.increaseInterestAccrued(asset.interestAccruedByPeriod)
+        if (asset.isNonCash())
+          pool.increaseUnrealizedProfit(asset.unrealizedProfitAtMarketPrice, asset.unrealizedProfitAtNotional)
         if (asset.actualMaturityDate < block.timestamp) pool.increaseDebtOverdue(asset.outstandingDebt)
         if (asset.isOffchainCash()) pool.increaseOffchainCashValue(asset.presentValue)
       }
