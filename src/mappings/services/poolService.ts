@@ -410,12 +410,14 @@ export class PoolService extends Pool {
     logger.info(`Resetting unrealizedProfit for pool ${this.id}`)
     this.sumUnrealizedProfitAtMarketPrice = BigInt(0)
     this.sumUnrealizedProfitAtNotional = BigInt(0)
+    this.sumUnrealizedProfitByPeriod = BigInt(0)
   }
 
-  public increaseUnrealizedProfit(atMarket: bigint, atNotional: bigint) {
+  public increaseUnrealizedProfit(atMarket: bigint, atNotional: bigint, byPeriod) {
     logger.info(`Increasing unrealizedProfit for pool ${this.id} atMarket: ${atMarket} notional: ${atNotional}`)
     this.sumUnrealizedProfitAtMarketPrice += atMarket
     this.sumUnrealizedProfitAtNotional += atNotional
+    this.sumUnrealizedProfitByPeriod += byPeriod
   }
 }
 

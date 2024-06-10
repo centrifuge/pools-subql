@@ -75,7 +75,11 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
         await asset.save()
         await pool.increaseInterestAccrued(asset.interestAccruedByPeriod)
         if (asset.isNonCash())
-          pool.increaseUnrealizedProfit(asset.unrealizedProfitAtMarketPrice, asset.unrealizedProfitAtNotional)
+          pool.increaseUnrealizedProfit(
+            asset.unrealizedProfitAtMarketPrice,
+            asset.unrealizedProfitAtNotional,
+            asset.unrealizedProfitByPeriod
+          )
         if (asset.actualMaturityDate < block.timestamp) pool.increaseDebtOverdue(asset.outstandingDebt)
         if (asset.isOffchainCash()) pool.increaseOffchainCashValue(asset.presentValue)
       }
