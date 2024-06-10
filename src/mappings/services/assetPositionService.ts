@@ -26,6 +26,7 @@ export class AssetPositionService extends AssetPosition {
       `Selling positions for ${assetId} ` +
         `sellingQuantity: ${sellingQuantity.toString(10)} sellingPrice: ${sellingPrice.toString(10)}`
     )
+    if (sellingQuantity <= BigInt(0)) return BigInt(0)
     const positions = await this.getByAssetId(assetId)
     positions.sort((a, b) => b.timestamp.valueOf() - a.timestamp.valueOf())
 
@@ -60,6 +61,24 @@ export class AssetPositionService extends AssetPosition {
     )
 
     await Promise.all(dbUpdates)
+    return profitFromSale - costOfBuy
+  }
+
+  static async computeUnrealizedProfitAtPrice(assetId: string, sellingPrice: bigint) {
+    if (!sellingPrice || sellingPrice <= BigInt(0)) return BigInt(0)
+    logger.info(`Computing unrealizedProfit at price ${sellingPrice} for asset ${assetId}`)
+    const sellingPositions = await this.getByAssetId(assetId)
+    const sellingQuantity = sellingPositions.reduce<bigint>(
+      (result, position) => result + position.holdingQuantity,
+      BigInt(0)
+    )
+    const profitFromSale = nToBigInt(bnToBn(sellingPrice).mul(bnToBn(sellingQuantity)).div(WAD))
+    const costOfBuy = nToBigInt(
+      sellingPositions.reduce<BN>(
+        (totalCost, line) => totalCost.add(bnToBn(line.purchasePrice).mul(bnToBn(line.holdingQuantity).div(WAD))),
+        new BN(0)
+      )
+    )
     return profitFromSale - costOfBuy
   }
 }

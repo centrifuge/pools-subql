@@ -43,6 +43,7 @@ export class AssetService extends Asset {
     asset.presentValue = BigInt(0)
     asset.outstandingQuantity = BigInt(0)
     asset.currentPrice = BigInt(0)
+    asset.notional = BigInt(0)
     asset.writeOffPercentage = BigInt(0)
     asset.totalBorrowed = BigInt(0)
     asset.totalRepaid = BigInt(0)
@@ -55,6 +56,9 @@ export class AssetService extends Asset {
     asset.writtenOffPercentageByPeriod = BigInt(0)
     asset.writtenOffAmountByPeriod = BigInt(0)
     asset.interestAccruedByPeriod = BigInt(0)
+
+    asset.unrealizedProfitAtMarketPrice = BigInt(0)
+    asset.unrealizedProfitAtNotional = BigInt(0)
 
     return asset
   }
@@ -207,6 +211,14 @@ export class AssetService extends Asset {
         `currentPrice: ${latestSettlementPrice.toString(10)} for asset ${this.id}`
     )
   }
+
+  public updateUnrealizedProfit(atMarketPrice: bigint, atNotional: bigint) {
+    logger.info(
+      `Updating unrealizedProfit for asset ${this.id} atMarketPrice: ${atMarketPrice} atNotional: ${atNotional}`
+    )
+    this.unrealizedProfitAtMarketPrice = atMarketPrice
+    this.unrealizedProfitAtNotional = atNotional
+  }
 }
 
 interface AssetSpecs {
@@ -217,6 +229,7 @@ interface AssetSpecs {
   discountRate?: bigint
   maturityDate?: Date
   currentPrice?: bigint
+  notional?: bigint
 }
 
 interface AssetIpfsMetadata {

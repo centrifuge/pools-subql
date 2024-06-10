@@ -31,6 +31,7 @@ async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedEvent>) {
 
   const isInternal = loanInfo.pricing.isInternal
   const internalLoanPricing = isInternal ? loanInfo.pricing.asInternal : null
+  const externalLoanPricing = !isInternal ? loanInfo.pricing.asExternal : null
 
   const assetType: AssetType =
     isInternal && internalLoanPricing.valuationMethod.isCash ? AssetType.OffchainCash : AssetType.Other
@@ -71,6 +72,7 @@ async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedEvent>) {
     maturityDate: loanInfo.schedule.maturity.isFixed
       ? new Date(loanInfo.schedule.maturity.asFixed.date.toNumber() * 1000)
       : null,
+    notional: !isInternal ? externalLoanPricing.notional.toBigInt() : null,
   }
 
   await asset.updateAssetSpecs(assetSpecs)

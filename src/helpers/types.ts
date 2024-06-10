@@ -270,6 +270,8 @@ export interface LoanPricing extends Enum {
   asExternal: {
     priceId: CfgOracleKey
     maxBorrowAmount: LoanExternalPricingMaxBorrowAmount
+    notional: u128,
+    maxPriceVariation: u128
   }
 }
 
