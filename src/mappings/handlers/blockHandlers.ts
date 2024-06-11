@@ -19,7 +19,6 @@ import {
   TrancheSnapshot,
 } from '../../types/models'
 import { AssetPositionService } from '../services/assetPositionService'
-import { bnToBn } from '@polkadot/util'
 
 const timekeeper = TimekeeperService.init()
 
@@ -66,24 +65,11 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
       pool.resetUnrealizedProfit()
       for (const loanId in activeLoanData) {
         const asset = await AssetService.getById(pool.id, loanId)
-        const previousUnrealizedProfitByPeriod = bnToBn(asset.unrealizedProfitByPeriod)
         await asset.updateActiveAssetData(activeLoanData[loanId])
 
-        const unrealizedProfitAtMarketPrice = await AssetPositionService.computeUnrealizedProfitAtPrice(
-          asset.id,
-          asset.currentPrice
-        )
-        const unrealizedProfitAtNotional = await AssetPositionService.computeUnrealizedProfitAtPrice(
-          asset.id,
-          asset.notional
-        )
-        logger.info(`byPeriod for ${asset.id} = ${unrealizedProfitAtMarketPrice} - ${previousUnrealizedProfitByPeriod}`)
-        const unrealizedProfitByPeriod = unrealizedProfitAtMarketPrice - previousUnrealizedProfitByPeriod
-        logger.info(`byPeriod for ${asset.id} = ${unrealizedProfitByPeriod}`)
         await asset.updateUnrealizedProfit(
-          unrealizedProfitAtMarketPrice,
-          unrealizedProfitAtNotional,
-          unrealizedProfitByPeriod
+          await AssetPositionService.computeUnrealizedProfitAtPrice(asset.id, asset.currentPrice),
+          await AssetPositionService.computeUnrealizedProfitAtPrice(asset.id, asset.notional)
         )
         await asset.save()
         await pool.increaseInterestAccrued(asset.interestAccruedByPeriod)
