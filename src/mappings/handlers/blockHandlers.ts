@@ -19,6 +19,7 @@ import {
   TrancheSnapshot,
 } from '../../types/models'
 import { AssetPositionService } from '../services/assetPositionService'
+import { bnToBn } from '@polkadot/util'
 
 const timekeeper = TimekeeperService.init()
 
