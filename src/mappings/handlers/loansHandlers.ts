@@ -145,7 +145,9 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Pr
     await asset.borrow(amount)
 
     if (borrowAmount.isExternal) {
-      if (specVersion < 1100) await asset.updateCurrentPrice(borrowAmount.asExternal.settlementPrice.toBigInt())
+      // Prices were based on the settlement prices only until spec version 1025
+      if (specVersion < 1025) await asset.updateCurrentPrice(borrowAmount.asExternal.settlementPrice.toBigInt())
+
       await asset.increaseQuantity(borrowAmount.asExternal.quantity.toBigInt())
       await AssetPositionService.buy(
         asset.id,
@@ -221,7 +223,9 @@ async function _handleLoanRepaid(event: SubstrateEvent<LoanRepaidEvent>) {
     let realizedProfitFifo: bigint
     if (principal.isExternal) {
       const { quantity, settlementPrice } = principal.asExternal
-      if (specVersion < 1100) await asset.updateCurrentPrice(settlementPrice.toBigInt())
+
+      // Prices were based on the settlement prices only until spec version 1025
+      if (specVersion < 1025) await asset.updateCurrentPrice(settlementPrice.toBigInt())
 
       await asset.decreaseQuantity(quantity.toBigInt())
       realizedProfitFifo = await AssetPositionService.sellFifo(
@@ -340,7 +344,10 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
     let realizedProfitFifo: bigint
     if (_repaidAmount.principal.isExternal) {
       const { quantity, settlementPrice } = _repaidAmount.principal.asExternal
-      if (specVersion < 1100) await fromAsset.updateCurrentPrice(settlementPrice.toBigInt())
+
+      // Prices were based on the settlement prices only until spec version 1025
+      if (specVersion < 1025) await fromAsset.updateCurrentPrice(settlementPrice.toBigInt())
+
       await fromAsset.decreaseQuantity(quantity.toBigInt())
       realizedProfitFifo = await AssetPositionService.sellFifo(
         fromAsset.id,
@@ -383,7 +390,10 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
     await toAsset.borrow(borrowPrincipalAmount)
     if (_borrowAmount.isExternal) {
       const { quantity, settlementPrice } = _borrowAmount.asExternal
-      if (specVersion < 1100) await toAsset.updateCurrentPrice(settlementPrice.toBigInt())
+
+      // Prices were based on the settlement prices only until spec version 1025
+      if (specVersion < 1025) await toAsset.updateCurrentPrice(settlementPrice.toBigInt())
+
       await toAsset.increaseQuantity(quantity.toBigInt())
       await AssetPositionService.buy(
         toAsset.id,
