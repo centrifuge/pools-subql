@@ -140,12 +140,11 @@ export class AssetService extends Asset {
     const oldOutstaidingInterest = this.outstandingInterest
     const oldTotalRepaidInterest = this.totalRepaidInterest
 
-    // Set all asset values that are non-null
+    // Current price was always 0 until spec version 1025
     const specVersion = api.runtimeVersion.specVersion.toNumber()
-    if (specVersion < 1025) {
-      logger.info(`Not updating currentPrice for ${this.id} to ${activeAssetData.currentPrice}`)
-      delete activeAssetData.currentPrice
-    }
+    if (specVersion < 1025) delete activeAssetData.currentPrice
+
+    // Set all active asset values
     Object.assign(this, activeAssetData)
 
     const deltaRepaidInterestAmount = this.totalRepaid - oldTotalRepaidInterest

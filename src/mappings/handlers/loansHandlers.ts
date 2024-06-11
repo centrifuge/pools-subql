@@ -146,10 +146,7 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Pr
 
     if (borrowAmount.isExternal) {
       // Prices were based on the settlement prices only until spec version 1025
-      if (specVersion < 1025) {
-        await asset.updateCurrentPrice(borrowAmount.asExternal.settlementPrice.toBigInt())
-        await asset.save()
-      }
+      if (specVersion < 1025) await asset.updateCurrentPrice(borrowAmount.asExternal.settlementPrice.toBigInt())
 
       await asset.increaseQuantity(borrowAmount.asExternal.quantity.toBigInt())
       await AssetPositionService.buy(
@@ -228,10 +225,7 @@ async function _handleLoanRepaid(event: SubstrateEvent<LoanRepaidEvent>) {
       const { quantity, settlementPrice } = principal.asExternal
 
       // Prices were based on the settlement prices only until spec version 1025
-      if (specVersion < 1025) {
-        await asset.updateCurrentPrice(settlementPrice.toBigInt())
-        await asset.save()
-      }
+      if (specVersion < 1025) await asset.updateCurrentPrice(settlementPrice.toBigInt())
 
       await asset.decreaseQuantity(quantity.toBigInt())
       realizedProfitFifo = await AssetPositionService.sellFifo(
@@ -352,10 +346,7 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
       const { quantity, settlementPrice } = _repaidAmount.principal.asExternal
 
       // Prices were based on the settlement prices only until spec version 1025
-      if (specVersion < 1025) {
-        await fromAsset.updateCurrentPrice(settlementPrice.toBigInt())
-        await fromAsset.save()
-      }
+      if (specVersion < 1025) await fromAsset.updateCurrentPrice(settlementPrice.toBigInt())
 
       await fromAsset.decreaseQuantity(quantity.toBigInt())
       realizedProfitFifo = await AssetPositionService.sellFifo(
@@ -401,10 +392,7 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
       const { quantity, settlementPrice } = _borrowAmount.asExternal
 
       // Prices were based on the settlement prices only until spec version 1025
-      if (specVersion < 1025) {
-        await toAsset.updateCurrentPrice(settlementPrice.toBigInt())
-        await toAsset.save()
-      }
+      if (specVersion < 1025) await toAsset.updateCurrentPrice(settlementPrice.toBigInt())
 
       await toAsset.increaseQuantity(quantity.toBigInt())
       await AssetPositionService.buy(
