@@ -218,7 +218,7 @@ export class AssetService extends Asset {
     if (loanData.pricing.isInternal) throw new Error(`Asset ${this.id} is not of type External!`)
     const { outstandingQuantity, latestSettlementPrice } = loanData.pricing.asExternal
     this.outstandingQuantity = outstandingQuantity.toBigInt()
-    this.currentPrice = latestSettlementPrice.toBigInt()
+    this.updateCurrentPrice(latestSettlementPrice.toBigInt())
     logger.info(
       `Updated outstandingQuantity: ${outstandingQuantity.toString(10)} ` +
         `currentPrice: ${latestSettlementPrice.toString(10)} for asset ${this.id}`

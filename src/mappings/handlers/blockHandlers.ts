@@ -65,12 +65,22 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
       pool.resetUnrealizedProfit()
       for (const loanId in activeLoanData) {
         const asset = await AssetService.getById(pool.id, loanId)
-        const previousPrice = asset.currentPrice
+        const previousUnrealizedProfitAtMarketPrice = asset.unrealizedProfitAtMarketPrice
         await asset.updateActiveAssetData(activeLoanData[loanId])
+
+        const unrealizedProfitAtMarketPrice = await AssetPositionService.computeUnrealizedProfitAtPrice(
+          asset.id,
+          asset.currentPrice
+        )
+        const unrealizedProfitAtNotional = await AssetPositionService.computeUnrealizedProfitAtPrice(
+          asset.id,
+          asset.notional
+        )
+        const unrealizedProfitByPeriod = unrealizedProfitAtMarketPrice - previousUnrealizedProfitAtMarketPrice
         await asset.updateUnrealizedProfit(
-          await AssetPositionService.computeUnrealizedProfitAtPrice(asset.id, asset.currentPrice),
-          await AssetPositionService.computeUnrealizedProfitAtPrice(asset.id, asset.notional),
-          await AssetPositionService.computeUnrealizedProfitByPeriod(asset.id, asset.currentPrice, previousPrice)
+          unrealizedProfitAtMarketPrice,
+          unrealizedProfitAtNotional,
+          unrealizedProfitByPeriod
         )
         await asset.save()
         await pool.increaseInterestAccrued(asset.interestAccruedByPeriod)
