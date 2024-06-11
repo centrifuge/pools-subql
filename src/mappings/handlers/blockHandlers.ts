@@ -65,7 +65,7 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
       pool.resetUnrealizedProfit()
       for (const loanId in activeLoanData) {
         const asset = await AssetService.getById(pool.id, loanId)
-        const previousUnrealizedProfitAtMarketPrice = asset.unrealizedProfitAtMarketPrice
+        const previousUnrealizedProfitByPeriod = asset.unrealizedProfitByPeriod
         await asset.updateActiveAssetData(activeLoanData[loanId])
 
         const unrealizedProfitAtMarketPrice = await AssetPositionService.computeUnrealizedProfitAtPrice(
@@ -76,7 +76,7 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
           asset.id,
           asset.notional
         )
-        const unrealizedProfitByPeriod = unrealizedProfitAtMarketPrice - previousUnrealizedProfitAtMarketPrice
+        const unrealizedProfitByPeriod = unrealizedProfitAtMarketPrice - previousUnrealizedProfitByPeriod
         await asset.updateUnrealizedProfit(
           unrealizedProfitAtMarketPrice,
           unrealizedProfitAtNotional,
