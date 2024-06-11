@@ -144,6 +144,7 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Pr
     await asset.borrow(amount)
 
     if (borrowAmount.isExternal) {
+      await asset.updateCurrentPrice(borrowAmount.asExternal.settlementPrice.toBigInt())
       await asset.increaseQuantity(borrowAmount.asExternal.quantity.toBigInt())
       await AssetPositionService.buy(
         asset.id,
@@ -218,6 +219,8 @@ async function _handleLoanRepaid(event: SubstrateEvent<LoanRepaidEvent>) {
     let realizedProfitFifo: bigint
     if (principal.isExternal) {
       const { quantity, settlementPrice } = principal.asExternal
+      await asset.updateCurrentPrice(settlementPrice.toBigInt())
+
       await asset.decreaseQuantity(quantity.toBigInt())
       realizedProfitFifo = await AssetPositionService.sellFifo(
         asset.id,
@@ -334,6 +337,7 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
     let realizedProfitFifo: bigint
     if (_repaidAmount.principal.isExternal) {
       const { quantity, settlementPrice } = _repaidAmount.principal.asExternal
+      await fromAsset.updateCurrentPrice(settlementPrice.toBigInt())
       await fromAsset.decreaseQuantity(quantity.toBigInt())
       realizedProfitFifo = await AssetPositionService.sellFifo(
         fromAsset.id,
@@ -376,6 +380,7 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
     await toAsset.borrow(borrowPrincipalAmount)
     if (_borrowAmount.isExternal) {
       const { quantity, settlementPrice } = _borrowAmount.asExternal
+      await toAsset.updateCurrentPrice(settlementPrice.toBigInt())
       await toAsset.increaseQuantity(quantity.toBigInt())
       await AssetPositionService.buy(
         toAsset.id,

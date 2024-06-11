@@ -119,6 +119,11 @@ export class AssetService extends Asset {
     Object.assign(this, decodedAssetSpecs)
   }
 
+  public updateCurrentPrice(currentPrice: bigint) {
+    logger.info(`Updating current price for asset ${this.id} to ${currentPrice}`)
+    this.currentPrice = currentPrice
+  }
+
   public activate() {
     logger.info(`Activating asset ${this.id}`)
     this.isActive = true
