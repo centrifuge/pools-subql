@@ -140,7 +140,9 @@ export class AssetService extends Asset {
     const oldOutstaidingInterest = this.outstandingInterest
     const oldTotalRepaidInterest = this.totalRepaidInterest
 
-    Object.assign(this, activeAssetData)
+    // Set all asset values that are non-null
+    const filteredAssetData = Object.fromEntries(Object.entries(activeAssetData).filter(([_, v]) => v != null))
+    Object.assign(this, filteredAssetData)
 
     const deltaRepaidInterestAmount = this.totalRepaid - oldTotalRepaidInterest
     this.interestAccruedByPeriod = this.outstandingInterest - oldOutstaidingInterest + deltaRepaidInterestAmount
