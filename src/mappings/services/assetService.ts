@@ -226,9 +226,7 @@ export class AssetService extends Asset {
   }
 
   public updateUnrealizedProfit(atMarketPrice: bigint, atNotional: bigint, byPeriod: bigint) {
-    logger.info(
-      `Updating unrealizedProfit for asset ${this.id} atMarketPrice: ${atMarketPrice} atNotional: ${atNotional}`
-    )
+    logger.info(`Updating unrealizedProfit for asset ${this.id}: ${atMarketPrice}, ${atNotional}, ${byPeriod}`)
     this.unrealizedProfitAtMarketPrice = atMarketPrice
     this.unrealizedProfitAtNotional = atNotional
     this.unrealizedProfitByPeriod = byPeriod
