@@ -141,6 +141,7 @@ export class AssetService extends Asset {
     const oldTotalRepaidInterest = this.totalRepaidInterest
 
     // Set all asset values that are non-null
+    logger.info(`Setting updated price for ${this.id} to ${activeAssetData.currentPrice}`)
     const filteredAssetData = Object.fromEntries(Object.entries(activeAssetData).filter(([_, v]) => v != null))
     Object.assign(this, filteredAssetData)
 
