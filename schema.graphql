@@ -485,6 +485,7 @@ type AssetSnapshot @entity {
 
   unrealizedProfitAtMarketPrice: BigInt
   unrealizedProfitAtNotional: BigInt
+  unrealizedProfitByPeriod: BigInt
 }
 
 type AssetPosition @entity {
