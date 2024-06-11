@@ -76,7 +76,7 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
           asset.id,
           asset.notional
         )
-        logger.info(`byPeriod for ${this.id} = ${unrealizedProfitAtMarketPrice} - ${previousUnrealizedProfitByPeriod}`)
+        logger.info(`byPeriod for ${asset.id} = ${unrealizedProfitAtMarketPrice} - ${previousUnrealizedProfitByPeriod}`)
         const unrealizedProfitByPeriod = unrealizedProfitAtMarketPrice - previousUnrealizedProfitByPeriod
         await asset.updateUnrealizedProfit(
           unrealizedProfitAtMarketPrice,
