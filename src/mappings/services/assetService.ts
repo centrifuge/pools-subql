@@ -237,7 +237,7 @@ export class AssetService extends Asset {
               .mul(bnToBn(this.currentPrice).sub(bnToBn(this.periodPrice)))
               .div(WAD)
           )
-        : 0
+        : BigInt(0)
 
     this.periodPrice = this.currentPrice
   }
