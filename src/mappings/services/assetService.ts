@@ -2,12 +2,14 @@ import { Option } from '@polkadot/types'
 import { bnToBn, nToBigInt } from '@polkadot/util'
 import { WAD } from '../../config'
 import { ApiQueryLoansActiveLoans, LoanPricingAmount, NftItemMetadata } from '../../helpers/types'
-import { Asset, AssetType, AssetValuationMethod, AssetStatus } from '../../types'
+import { Asset, AssetType, AssetValuationMethod, AssetStatus, AssetSnapshot } from '../../types'
 import { ActiveLoanData } from './poolService'
 import { cid, readIpfs } from '../../helpers/ipfsFetch'
 
 export const ONCHAIN_CASH_ASSET_ID = '0'
 export class AssetService extends Asset {
+  snapshot?: AssetSnapshot
+
   static init(
     poolId: string,
     assetId: string,
@@ -138,9 +140,6 @@ export class AssetService extends Asset {
   }
 
   public async updateActiveAssetData(activeAssetData: ActiveLoanData[keyof ActiveLoanData]) {
-    const oldOutstaidingInterest = this.outstandingInterest
-    const oldTotalRepaidInterest = this.totalRepaidInterest
-
     // Current price was always 0 until spec version 1025
     const specVersion = api.runtimeVersion.specVersion.toNumber()
     if (specVersion < 1025) delete activeAssetData.currentPrice
@@ -148,9 +147,12 @@ export class AssetService extends Asset {
     // Set all active asset values
     Object.assign(this, activeAssetData)
 
-    const deltaRepaidInterestAmount = this.totalRepaid - oldTotalRepaidInterest
-    this.interestAccruedByPeriod = this.outstandingInterest - oldOutstaidingInterest + deltaRepaidInterestAmount
+    if(this.snapshot) {
+    const deltaRepaidInterestAmount = this.totalRepaid - this.snapshot.totalRepaidInterest
+    this.interestAccruedByPeriod =
+      this.outstandingInterest - this.snapshot.outstandingInterest + deltaRepaidInterestAmount
     logger.info(`Updated outstanding debt for asset: ${this.id} to ${this.outstandingDebt.toString()}`)
+    }
   }
 
   public async updateItemMetadata() {
@@ -226,27 +228,33 @@ export class AssetService extends Asset {
     )
   }
 
-  public updateUnrealizedProfit(atMarketPrice: bigint, atNotional: bigint, previousQuantity: bigint) {
-    logger.info(`Updating unrealizedProfit for asset ${this.id}: ${atMarketPrice}, ${atNotional}`)
-
+  public updateUnrealizedProfit(atMarketPrice: bigint, atNotional: bigint) {
+    logger.info(
+      `Updating unrealizedProfit for asset ${this.id} with atMarketPrice: ${atMarketPrice}, atNotional: ${atNotional}`
+    )
     this.unrealizedProfitAtMarketPrice = atMarketPrice
     this.unrealizedProfitAtNotional = atNotional
-
-    if (previousQuantity > 0 && this.periodPrice > 0) {
-      logger.info(`byPeriod: ${this.outstandingQuantity} x (${this.currentPrice} - ${this.periodPrice})`)
+    if (!!this.snapshot && this.snapshot.outstandingQuantity > 0 && this.snapshot.currentPrice > 0) {
+      logger.info(`byPeriod: ${this.outstandingQuantity} x (${this.currentPrice} - ${this.snapshot.currentPrice})`)
+      this.unrealizedProfitByPeriod = nToBigInt(
+        bnToBn(this.outstandingQuantity)
+          .mul(bnToBn(this.currentPrice - this.snapshot.currentPrice))
+          .div(WAD)
+      )
+      logger.info(`byPeriod: ${this.unrealizedProfitByPeriod}`)
     }
+  }
 
-    this.unrealizedProfitByPeriod =
-      previousQuantity > 0 && this.periodPrice > 0
-        ? nToBigInt(
-            bnToBn(this.outstandingQuantity)
-              .mul(bnToBn(this.currentPrice).sub(bnToBn(this.periodPrice)))
-              .div(WAD)
-          )
-        : BigInt(0)
-    logger.info(`byPeriod: ${this.unrealizedProfitByPeriod}`)
-
-    this.periodPrice = this.currentPrice
+  public async loadSnapshot(periodStart: Date) {
+    const snapshots = await AssetSnapshot.getByFields([
+      ['assetId', '=', this.id],
+      ['periodStart', '=', periodStart],
+    ])
+    if (snapshots.length !== 1) {
+      logger.warn(`Unable to load snapshot for asset ${this.id} for period ${periodStart.toISOString()}`)
+      return
+    }
+    this.snapshot = snapshots.pop()
   }
 }
 
