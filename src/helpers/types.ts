@@ -222,7 +222,7 @@ export interface LoanInternalActivePricing extends Struct {
 
 export interface LoanExternalActivePricing extends Struct {
   info: {
-    priceId: CfgOracleKey
+    priceId: OracleKey
     maxBorrowAmount: LoanExternalPricingMaxBorrowAmount
     notional: u128
     maxPriceVariation: u128
@@ -234,11 +234,6 @@ export interface LoanExternalActivePricing extends Struct {
     penalty: u128
   }
   latestSettlementPrice: u128
-}
-
-export interface CfgOracleKey extends Enum {
-  isIsin: boolean
-  asIsin: U8aFixed
 }
 
 export interface LoanExternalPricingMaxBorrowAmount extends Enum {
@@ -268,7 +263,7 @@ export interface LoanPricing extends Enum {
     maxBorrowAmount: LoanInternalPricingMaxBorrowAmount
   }
   asExternal: {
-    priceId: CfgOracleKey
+    priceId: OracleKey
     maxBorrowAmount: LoanExternalPricingMaxBorrowAmount
     notional: u128,
     maxPriceVariation: u128
@@ -408,9 +403,30 @@ export interface PoolFee extends Struct {
 }
 
 export interface OracleKey extends Enum {
-  readonly isIsin: boolean
-  readonly asIsin: string
-  readonly type: 'isin'
+  readonly isIsin: boolean;
+    readonly asIsin: U8aFixed;
+    readonly isConversionRatio: boolean;
+    readonly asConversionRatio: ITuple<[TokensCurrencyId, TokensCurrencyId]>;
+    readonly isPoolLoanId: boolean;
+    readonly asPoolLoanId: ITuple<[u64, u64]>;
+    readonly type: 'Isin' | 'ConversionRatio' | 'PoolLoanId';
+}
+
+interface DevelopmentRuntimeOriginCaller extends Enum {
+  readonly isSystem: boolean;
+  readonly asSystem: unknown//FrameSupportDispatchRawOrigin;
+  readonly isVoid: boolean;
+  readonly isCouncil: boolean;
+  readonly asCouncil: unknown //PalletCollectiveRawOrigin;
+  readonly isLiquidityPoolsGateway: boolean;
+  readonly asLiquidityPoolsGateway: unknown //PalletLiquidityPoolsGatewayOriginGatewayOrigin;
+  readonly isPolkadotXcm: boolean;
+  readonly asPolkadotXcm: unknown//PalletXcmOrigin;
+  readonly isCumulusXcm: boolean;
+  readonly asCumulusXcm: unknown //CumulusPalletXcmOrigin;
+  readonly isEthereum: boolean;
+  readonly asEthereum: unknown //PalletEthereumRawOrigin;
+  readonly type: 'System' | 'Void' | 'Council' | 'LiquidityPoolsGateway' | 'PolkadotXcm' | 'CumulusXcm' | 'Ethereum';
 }
 
 export type LoanAsset = ITuple<[collectionId: u64, itemId: u128]>
@@ -462,7 +478,7 @@ export type PoolFeesUnchargedEvent = PoolFeesChargedEvent
 export type PoolFeesPaidEvent = ITuple<[poolId: u64, feeId: u64, amount: u128, destination: AccountId32]>
 export type PoolFeesList = Vec<PoolFeesOfBucket>
 
-export type OracleFedEvent = ITuple<[feeder: AccountId32, key: OracleKey, value: u128]>
+export type OracleFedEvent = ITuple<[feeder: DevelopmentRuntimeOriginCaller, key: OracleKey, value: u128]>
 
 export type ExtendedRpc = typeof api.rpc & {
   pools: {
