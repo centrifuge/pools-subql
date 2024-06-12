@@ -420,6 +420,7 @@ type Asset @entity {
   outstandingDebt: BigInt
   presentValue: BigInt
   currentPrice: BigInt
+  periodPrice: BigInt # not updated on settlements
   outstandingQuantity: BigInt
   notional: BigInt
   
