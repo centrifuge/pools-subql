@@ -76,10 +76,8 @@ async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedEvent>) {
   }
 
   await asset.updateAssetSpecs(assetSpecs)
-  await asset.updateIpfsAssetName().catch((err) => {
-    logger.error(`IPFS Request failed ${err}`)
-    return Promise.resolve()
-  })
+  await asset.updateItemMetadata()
+  await asset.updateIpfsAssetName()
   await asset.save()
 
   const epoch = await EpochService.getById(pool.id, pool.currentEpoch)
@@ -169,9 +167,6 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Pr
     await epoch.increaseBorrowings(amount)
     await epoch.save()
   }
-
-  await asset.updateItemMetadata()
-  await asset.updateIpfsAssetName().catch((err) => logger.error(`IPFS Request failed ${err}`))
   await asset.save()
 }
 
@@ -248,7 +243,6 @@ async function _handleLoanRepaid(event: SubstrateEvent<LoanRepaidEvent>) {
     await epoch.save()
   }
 
-  await asset.updateItemMetadata()
   await asset.save()
 }
 
@@ -259,7 +253,6 @@ async function _handleLoanWrittenOff(event: SubstrateEvent<LoanWrittenOffEvent>)
   const { percentage, penalty } = status
   const loan = await AssetService.getById(poolId.toString(), loanId.toString())
   await loan.writeOff(percentage.toBigInt(), penalty.toBigInt())
-  await loan.updateItemMetadata()
   await loan.save()
 
   const pool = await PoolService.getById(poolId.toString())
@@ -281,7 +274,6 @@ async function _handleLoanClosed(event: SubstrateEvent<LoanClosedEvent>) {
 
   const loan = await AssetService.getById(poolId.toString(), loanId.toString())
   await loan.close()
-  await loan.updateItemMetadata()
   await loan.save()
 
   const epoch = await EpochService.getById(pool.id, pool.currentEpoch)
@@ -356,7 +348,6 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
       )
       await pool.increaseRealizedProfitFifo(realizedProfitFifo)
     }
-    await fromAsset.updateIpfsAssetName()
     await fromAsset.save()
 
     await pool.increaseRepayments(repaidPrincipalAmount, repaidInterestAmount, repaidUnscheduledAmount)
@@ -403,7 +394,6 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
         settlementPrice.toBigInt()
       )
     }
-    await toAsset.updateIpfsAssetName()
     await toAsset.save()
 
     await pool.increaseBorrowings(borrowPrincipalAmount)
@@ -494,7 +484,6 @@ async function _handleLoanDebtTransferred1024(event: SubstrateEvent<LoanDebtTran
     await toAsset.activate()
     await toAsset.updateExternalAssetPricingFromState()
     await toAsset.borrow(amount)
-    await toAsset.updateIpfsAssetName()
     await toAsset.save()
 
     await pool.increaseBorrowings(amount)

@@ -18,8 +18,7 @@ export class AssetService extends Asset {
     nftClassId: bigint | undefined,
     nftItemId: bigint | undefined,
     timestamp: Date,
-    blockchain = '0',
-    name?: string
+    blockchain = '0'
   ) {
     logger.info(`Initialising asset ${assetId} for pool ${poolId}`)
     const isActive = false
@@ -33,8 +32,6 @@ export class AssetService extends Asset {
       isActive,
       AssetStatus.CREATED
     )
-
-    asset.name = name
 
     asset.collateralNftClassId = nftClassId
     asset.collateralNftItemId = nftItemId
@@ -67,7 +64,7 @@ export class AssetService extends Asset {
   }
 
   static initOnchainCash(poolId: string, timestamp: Date) {
-    return this.init(
+    const asset = this.init(
       poolId,
       ONCHAIN_CASH_ASSET_ID,
       AssetType.OnchainCash,
@@ -75,9 +72,10 @@ export class AssetService extends Asset {
       undefined,
       undefined,
       timestamp,
-      '0',
-      'Onchain reserve'
+      '0'
     )
+    asset.name = 'Onchain reserve'
+    return asset
   }
 
   static async getById(poolId: string, assetId: string) {
@@ -174,7 +172,6 @@ export class AssetService extends Asset {
 
     const payload = itemMetadata.unwrap()
     this.metadata = payload.data.toUtf8()
-
     return this
   }
 
@@ -193,14 +190,21 @@ export class AssetService extends Asset {
     return principal
   }
 
-  public async updateIpfsAssetName(): Promise<string | null> {
+  public async updateIpfsAssetName(): Promise<void> {
     logger.info(`Fetching IPFS asset name for asset ${this.id} `)
-    if (!this.metadata) return logger.warn('No IPFS metadata')
-    const metadata = await readIpfs<AssetIpfsMetadata>(this.metadata.match(cid)[0])
-    if (metadata?.name) {
-      this.name = metadata.name
+    if (!this.metadata){
+      logger.warn(`No metadata field set for asset ${this.id}`)
+      return
     }
-    return metadata?.name ?? null
+    const metadata: AssetIpfsMetadata = await readIpfs<AssetIpfsMetadata>(this.metadata.match(cid)[0]).catch((err) => {
+      logger.error(`Request for metadata failed: ${err}`)
+      return undefined
+    })
+    if(!metadata) {
+      logger.error(`No http response from IPFS for asset id ${this.id} CID: ${this.metadata}`)
+      return
+    }
+    this.name = metadata.name
   }
 
   public isOffchainCash() {
