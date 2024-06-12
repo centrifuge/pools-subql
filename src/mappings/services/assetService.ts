@@ -232,7 +232,7 @@ export class AssetService extends Asset {
     this.unrealizedProfitAtNotional = atNotional
 
     if (previousQuantity > 0) {
-      logger.info(`byPeriod: ${this.outstandingQuantity} x (${this.currentPrice} - ${periodPrice})`)
+      logger.info(`byPeriod: ${this.outstandingQuantity} x (${this.currentPrice} - ${this.periodPrice})`)
     }
 
     this.unrealizedProfitByPeriod =
