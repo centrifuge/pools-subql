@@ -231,18 +231,19 @@ export class AssetService extends Asset {
     this.unrealizedProfitAtMarketPrice = atMarketPrice
     this.unrealizedProfitAtNotional = atNotional
 
-    if (previousQuantity > 0) {
+    if (previousQuantity > 0 && this.periodPrice > 0) {
       logger.info(`byPeriod: ${this.outstandingQuantity} x (${this.currentPrice} - ${this.periodPrice})`)
     }
 
     this.unrealizedProfitByPeriod =
-      previousQuantity > 0
+      previousQuantity > 0 && this.periodPrice > 0
         ? nToBigInt(
             bnToBn(this.outstandingQuantity)
               .mul(bnToBn(this.currentPrice).sub(bnToBn(this.periodPrice)))
               .div(WAD)
           )
         : BigInt(0)
+    logger.info(`byPeriod: ${this.unrealizedProfitByPeriod}`)
 
     this.periodPrice = this.currentPrice
   }
