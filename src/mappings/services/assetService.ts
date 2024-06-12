@@ -225,11 +225,11 @@ export class AssetService extends Asset {
     )
   }
 
-  public updateUnrealizedProfit(atMarketPrice: bigint, atNotional: bigint) {
+  public updateUnrealizedProfit(atMarketPrice: bigint, atNotional: bigint, previousPrice: bigint) {
     logger.info(`Updating unrealizedProfit for asset ${this.id}: ${atMarketPrice}, ${atNotional}`)
-    this.unrealizedProfitByPeriod = atMarketPrice - this.unrealizedProfitAtMarketPrice
     this.unrealizedProfitAtMarketPrice = atMarketPrice
     this.unrealizedProfitAtNotional = atNotional
+    this.unrealizedProfitByPeriod = this.outstandingQuantity.mul(this.currentPrice - previousPrice)
   }
 }
 
