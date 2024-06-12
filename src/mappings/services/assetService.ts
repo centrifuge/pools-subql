@@ -2,12 +2,14 @@ import { Option } from '@polkadot/types'
 import { bnToBn, nToBigInt } from '@polkadot/util'
 import { WAD } from '../../config'
 import { ApiQueryLoansActiveLoans, LoanPricingAmount, NftItemMetadata } from '../../helpers/types'
-import { Asset, AssetType, AssetValuationMethod, AssetStatus } from '../../types'
+import { Asset, AssetType, AssetValuationMethod, AssetStatus, AssetSnapshot } from '../../types'
 import { ActiveLoanData } from './poolService'
 import { cid, readIpfs } from '../../helpers/ipfsFetch'
 
 export const ONCHAIN_CASH_ASSET_ID = '0'
 export class AssetService extends Asset {
+  snapshot?: AssetSnapshot
+
   static init(
     poolId: string,
     assetId: string,
@@ -119,6 +121,11 @@ export class AssetService extends Asset {
     Object.assign(this, decodedAssetSpecs)
   }
 
+  public updateCurrentPrice(currentPrice: bigint) {
+    logger.info(`Updating current price for asset ${this.id} to ${currentPrice}`)
+    this.currentPrice = currentPrice
+  }
+
   public activate() {
     logger.info(`Activating asset ${this.id}`)
     this.isActive = true
@@ -132,14 +139,19 @@ export class AssetService extends Asset {
   }
 
   public async updateActiveAssetData(activeAssetData: ActiveLoanData[keyof ActiveLoanData]) {
-    const oldOutstaidingInterest = this.outstandingInterest
-    const oldTotalRepaidInterest = this.totalRepaidInterest
+    // Current price was always 0 until spec version 1025
+    const specVersion = api.runtimeVersion.specVersion.toNumber()
+    if (specVersion < 1025) delete activeAssetData.currentPrice
 
+    // Set all active asset values
     Object.assign(this, activeAssetData)
 
-    const deltaRepaidInterestAmount = this.totalRepaid - oldTotalRepaidInterest
-    this.interestAccruedByPeriod = this.outstandingInterest - oldOutstaidingInterest + deltaRepaidInterestAmount
+    if(this.snapshot) {
+    const deltaRepaidInterestAmount = this.totalRepaid - this.snapshot.totalRepaidInterest
+    this.interestAccruedByPeriod =
+      this.outstandingInterest - this.snapshot.outstandingInterest + deltaRepaidInterestAmount
     logger.info(`Updated outstanding debt for asset: ${this.id} to ${this.outstandingDebt.toString()}`)
+    }
   }
 
   public async updateItemMetadata() {
@@ -208,20 +220,40 @@ export class AssetService extends Asset {
     if (loanData.pricing.isInternal) throw new Error(`Asset ${this.id} is not of type External!`)
     const { outstandingQuantity, latestSettlementPrice } = loanData.pricing.asExternal
     this.outstandingQuantity = outstandingQuantity.toBigInt()
-    this.currentPrice = latestSettlementPrice.toBigInt()
+    this.updateCurrentPrice(latestSettlementPrice.toBigInt())
     logger.info(
       `Updated outstandingQuantity: ${outstandingQuantity.toString(10)} ` +
         `currentPrice: ${latestSettlementPrice.toString(10)} for asset ${this.id}`
     )
   }
 
-  public updateUnrealizedProfit(atMarketPrice: bigint, atNotional: bigint, byPeriod: bigint) {
+  public updateUnrealizedProfit(atMarketPrice: bigint, atNotional: bigint) {
     logger.info(
-      `Updating unrealizedProfit for asset ${this.id} atMarketPrice: ${atMarketPrice} atNotional: ${atNotional}`
+      `Updating unrealizedProfit for asset ${this.id} with atMarketPrice: ${atMarketPrice}, atNotional: ${atNotional}`
     )
     this.unrealizedProfitAtMarketPrice = atMarketPrice
     this.unrealizedProfitAtNotional = atNotional
-    this.unrealizedProfitByPeriod = byPeriod
+    if (!!this.snapshot && this.snapshot.outstandingQuantity > 0 && this.snapshot.currentPrice > 0) {
+      logger.info(`byPeriod: ${this.outstandingQuantity} x (${this.currentPrice} - ${this.snapshot.currentPrice})`)
+      this.unrealizedProfitByPeriod = nToBigInt(
+        bnToBn(this.outstandingQuantity)
+          .mul(bnToBn(this.currentPrice - this.snapshot.currentPrice))
+          .div(WAD)
+      )
+      logger.info(`byPeriod: ${this.unrealizedProfitByPeriod}`)
+    }
+  }
+
+  public async loadSnapshot(periodStart: Date) {
+    const snapshots = await AssetSnapshot.getByFields([
+      ['assetId', '=', this.id],
+      ['periodStart', '=', periodStart],
+    ])
+    if (snapshots.length !== 1) {
+      logger.warn(`Unable to load snapshot for asset ${this.id} for period ${periodStart.toISOString()}`)
+      return
+    }
+    this.snapshot = snapshots.pop()
   }
 }
 

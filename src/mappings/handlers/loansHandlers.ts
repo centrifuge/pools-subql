@@ -103,6 +103,7 @@ async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedEvent>) {
 export const handleLoanBorrowed = errorHandler(_handleLoanBorrowed)
 async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Promise<void> {
   const [poolId, loanId, borrowAmount] = event.event.data
+  const specVersion = api.runtimeVersion.specVersion.toNumber()
 
   const pool = await PoolService.getById(poolId.toString())
   if (!pool) throw missingPool
@@ -144,6 +145,9 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Pr
     await asset.borrow(amount)
 
     if (borrowAmount.isExternal) {
+      // Prices were based on the settlement prices only until spec version 1025
+      if (specVersion < 1025) await asset.updateCurrentPrice(borrowAmount.asExternal.settlementPrice.toBigInt())
+
       await asset.increaseQuantity(borrowAmount.asExternal.quantity.toBigInt())
       await AssetPositionService.buy(
         asset.id,
@@ -174,6 +178,7 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Pr
 export const handleLoanRepaid = errorHandler(_handleLoanRepaid)
 async function _handleLoanRepaid(event: SubstrateEvent<LoanRepaidEvent>) {
   const [poolId, loanId, { principal, interest, unscheduled }] = event.event.data
+  const specVersion = api.runtimeVersion.specVersion.toNumber()
 
   const pool = await PoolService.getById(poolId.toString())
   if (!pool) throw missingPool
@@ -218,6 +223,10 @@ async function _handleLoanRepaid(event: SubstrateEvent<LoanRepaidEvent>) {
     let realizedProfitFifo: bigint
     if (principal.isExternal) {
       const { quantity, settlementPrice } = principal.asExternal
+
+      // Prices were based on the settlement prices only until spec version 1025
+      if (specVersion < 1025) await asset.updateCurrentPrice(settlementPrice.toBigInt())
+
       await asset.decreaseQuantity(quantity.toBigInt())
       realizedProfitFifo = await AssetPositionService.sellFifo(
         asset.id,
@@ -297,7 +306,8 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
   if (!pool) throw missingPool
 
   const repaidPrincipalAmount = AssetService.extractPrincipalAmount(_repaidAmount.principal)
-  const repaidInterestAmount = specVersion < 1029 ? BigInt(0) : _repaidAmount.interest.toBigInt()
+  // Interest amount until spec version 1100 is off
+  const repaidInterestAmount = specVersion < 1100 ? BigInt(0) : _repaidAmount.interest.toBigInt()
   const repaidUnscheduledAmount = _repaidAmount.unscheduled.toBigInt()
   const repaidAmount = repaidPrincipalAmount + repaidInterestAmount + repaidUnscheduledAmount
 
@@ -334,6 +344,10 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
     let realizedProfitFifo: bigint
     if (_repaidAmount.principal.isExternal) {
       const { quantity, settlementPrice } = _repaidAmount.principal.asExternal
+
+      // Prices were based on the settlement prices only until spec version 1025
+      if (specVersion < 1025) await fromAsset.updateCurrentPrice(settlementPrice.toBigInt())
+
       await fromAsset.decreaseQuantity(quantity.toBigInt())
       realizedProfitFifo = await AssetPositionService.sellFifo(
         fromAsset.id,
@@ -376,6 +390,10 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
     await toAsset.borrow(borrowPrincipalAmount)
     if (_borrowAmount.isExternal) {
       const { quantity, settlementPrice } = _borrowAmount.asExternal
+
+      // Prices were based on the settlement prices only until spec version 1025
+      if (specVersion < 1025) await toAsset.updateCurrentPrice(settlementPrice.toBigInt())
+
       await toAsset.increaseQuantity(quantity.toBigInt())
       await AssetPositionService.buy(
         toAsset.id,
