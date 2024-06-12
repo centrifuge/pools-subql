@@ -230,7 +230,9 @@ export class AssetService extends Asset {
 
     this.unrealizedProfitAtMarketPrice = atMarketPrice
     this.unrealizedProfitAtNotional = atNotional
-    this.unrealizedProfitByPeriod = this.outstandingQuantity * (this.currentPrice - this.periodPrice)
+    this.unrealizedProfitByPeriod = nToBigInt(
+      bnToBn(this.outstandingQuantity).mul(bnToBn(this.currentPrice).sub(bnToBn(this.periodPrice)))
+    )
 
     this.periodPrice = this.currentPrice
   }
