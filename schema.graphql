@@ -205,18 +205,17 @@ type TrancheSnapshot @entity {
 type Epoch @entity {
   id: ID! #poolId-epochIndex
   pool: Pool!
-
   index: Int!
 
-  openedAt: Date!
+  openedAt: Date
   closedAt: Date
   executedAt: Date
 
   # Aggregated data during this epoch
-  sumBorrowedAmount: BigInt!
-  sumRepaidAmount: BigInt!
-  sumInvestedAmount: BigInt!
-  sumRedeemedAmount: BigInt!
+  sumBorrowedAmount: BigInt
+  sumRepaidAmount: BigInt
+  sumInvestedAmount: BigInt
+  sumRedeemedAmount: BigInt
   
   sumPoolFeesPaidAmount: BigInt
 
@@ -233,9 +232,9 @@ type EpochState @entity {
 
   tokenPrice: BigInt
 
-  sumOutstandingInvestOrders: BigInt!
-  sumOutstandingRedeemOrders: BigInt!
-  sumOutstandingRedeemOrdersCurrency: BigInt!
+  sumOutstandingInvestOrders: BigInt
+  sumOutstandingRedeemOrders: BigInt
+  sumOutstandingRedeemOrdersCurrency: BigInt
   sumFulfilledInvestOrders: BigInt
   sumFulfilledRedeemOrders: BigInt
   sumFulfilledRedeemOrdersCurrency: BigInt

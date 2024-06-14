@@ -8,39 +8,36 @@ import { Epoch, EpochState } from '../../types'
 export class EpochService extends Epoch {
   private states: EpochState[]
 
-  constructor(
-    id: string,
-    poolId: string,
-    index: number,
-    openedAt: Date,
-    sumBorrowedAmount: bigint,
-    sumRepaidAmount: bigint,
-    sumInvestedAmount: bigint,
-    sumRedeemedAmount: bigint
-  ) {
-    super(id, poolId, index, openedAt, sumBorrowedAmount, sumRepaidAmount, sumInvestedAmount, sumRedeemedAmount)
+  constructor(id: string, poolId: string, index: number) {
+    super(id, poolId, index)
     this.states = []
   }
 
-  static async init(poolId: string, epochNr: number, trancheIds: string[], timestamp: Date) {
-    logger.info(`Initialising epoch ${epochNr} for pool ${poolId}`)
-    const epoch = new this(
-      `${poolId}-${epochNr.toString(10)}`,
-      poolId,
-      epochNr,
-      timestamp,
-      BigInt(0),
-      BigInt(0),
-      BigInt(0),
-      BigInt(0)
-    )
+  static seed(poolId: string, index = 0) {
+    logger.info(`Seeding epoch ${index} for pool ${poolId}`)
+    return new this(`${poolId}-${index}`, poolId, index)
+  }
 
+  static init(poolId: string, epochNr: number, trancheIds: string[], timestamp: Date) {
+    logger.info(`Initialising epoch ${epochNr} for pool ${poolId}`)
+    const epoch = new this(`${poolId}-${epochNr.toString(10)}`, poolId, epochNr)
+    epoch.openedAt = timestamp
+    epoch.sumBorrowedAmount = BigInt(0)
+    epoch.sumRepaidAmount = BigInt(0)
+    epoch.sumInvestedAmount = BigInt(0)
+    epoch.sumRedeemedAmount = BigInt(0)
     epoch.sumPoolFeesPaidAmount = BigInt(0)
 
-    epoch.states = trancheIds.map(
-      (trancheId) =>
-        new EpochState(`${poolId}-${epochNr}-${trancheId}`, epoch.id, trancheId, BigInt(0), BigInt(0), BigInt(0))
-    )
+    epoch.states = trancheIds.map((trancheId) => {
+      const epochState = new EpochState(`${poolId}-${epochNr}-${trancheId}`, epoch.id, trancheId)
+      epochState.sumOutstandingInvestOrders = BigInt(0)
+      epochState.sumOutstandingRedeemOrders = BigInt(0)
+      epochState.sumOutstandingRedeemOrdersCurrency = BigInt(0)
+      epochState.sumFulfilledInvestOrders = BigInt(0)
+      epochState.sumFulfilledRedeemOrders = BigInt(0)
+      epochState.sumFulfilledRedeemOrdersCurrency = BigInt(0)
+      return epochState
+    })
 
     return epoch
   }
@@ -59,7 +56,7 @@ export class EpochService extends Epoch {
   }
 
   public getStates() {
-    return [ ...this.states ]
+    return [...this.states]
   }
 
   public closeEpoch(timestamp: Date) {

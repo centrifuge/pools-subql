@@ -20,7 +20,7 @@ async function _handleFeeProposed(event: SubstrateEvent<PoolFeesProposedEvent>):
     `Fee with id ${feeId.toString(10)} proposed for pool ${poolId.toString(10)} ` +
       `on block ${event.block.block.header.number.toNumber()}`
   )
-  const pool = await PoolService.getOrSeed(poolId.toString(10))
+  const pool = await PoolService.getOrSeed(poolId.toString(10), true, true)
   const currentEpoch = await EpochService.getById(pool.id, pool.currentEpoch)
   const poolFeeData: PoolFeeData = {
     poolId: pool.id,
@@ -52,7 +52,7 @@ async function _handleFeeAdded(event: SubstrateEvent<PoolFeesAddedEvent>): Promi
     `Fee with id ${feeId.toString(10)} added for pool ${poolId.toString(10)} ` +
       `on block ${event.block.block.header.number.toNumber()}`
   )
-  const pool = await PoolService.getOrSeed(poolId.toString(10))
+  const pool = await PoolService.getOrSeed(poolId.toString(10), true, true)
   const currentEpoch = await EpochService.getById(pool.id, pool.currentEpoch)
   const poolFeeData: PoolFeeData = {
     poolId: pool.id,
