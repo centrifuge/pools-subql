@@ -45,7 +45,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
     const poolUpdateCalls: PoolMulticall[] = []
     for (const tinlakePool of tinlakePools) {
       if (block.number >= tinlakePool.startBlock) {
-        const pool = await PoolService.getOrSeed(tinlakePool.id, false, blockchain.id)
+        const pool = await PoolService.getOrSeed(tinlakePool.id, false, false, blockchain.id)
 
         // initialize new pool
         if (!pool.isActive) {
@@ -89,7 +89,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
         const tinlakePool = tinlakePools.find((p) => p.id === callResult.id)
         const latestNavFeed = getLatestContract(tinlakePool?.navFeed, blockNumber)
         const latestReserve = getLatestContract(tinlakePool?.reserve, blockNumber)
-        const pool = await PoolService.getOrSeed(tinlakePool?.id, false, blockchain.id)
+        const pool = await PoolService.getOrSeed(tinlakePool?.id, false, false, blockchain.id)
 
         // Update pool
         if (callResult.type === 'currentNAV' && latestNavFeed) {

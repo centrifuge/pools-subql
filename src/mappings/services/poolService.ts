@@ -3,6 +3,7 @@ import { paginatedGetter } from '../../helpers/paginatedGetter'
 import { ExtendedCall, NavDetails, PoolDetails, PoolFeesList, PoolMetadata, TrancheDetails } from '../../helpers/types'
 import { Pool } from '../../types'
 import { cid, readIpfs } from '../../helpers/ipfsFetch'
+import { EpochService } from './epochService'
 
 export class PoolService extends Pool {
   static seed(poolId: string, blockchain = '0') {
@@ -10,11 +11,24 @@ export class PoolService extends Pool {
     return new this(`${poolId}`, blockchain, 'ALL', false)
   }
 
-  static async getOrSeed(poolId: string, saveSeed = true, blockchain = '0') {
+  static async getOrSeed(
+    poolId: string,
+    saveSeed = true,
+    seedEpoch = false,
+    blockchain = '0',
+    epochService = EpochService
+  ) {
     let pool = await this.getById(poolId)
     if (!pool) {
       pool = this.seed(poolId, blockchain)
-      if (saveSeed) await pool.save()
+      if (saveSeed) {
+        if(seedEpoch) pool.currentEpoch = 1
+        await pool.save()
+        if (seedEpoch) {
+          const epoch = epochService.seed(poolId, 1)
+          await epoch.save()
+        }
+      }
     }
     return pool
   }

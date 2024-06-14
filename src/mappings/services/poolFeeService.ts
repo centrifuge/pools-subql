@@ -6,7 +6,7 @@ export interface PoolFeeData {
   feeId: string
   blockNumber: number
   timestamp: Date
-  epochNumber: number
+  epochId: string
   hash: string
   amount?: bigint
   pending?: bigint

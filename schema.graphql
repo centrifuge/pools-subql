@@ -205,24 +205,24 @@ type TrancheSnapshot @entity {
 type Epoch @entity {
   id: ID! #poolId-epochIndex
   pool: Pool!
-
   index: Int!
 
-  openedAt: Date!
+  openedAt: Date
   closedAt: Date
   executedAt: Date
 
   # Aggregated data during this epoch
-  sumBorrowedAmount: BigInt!
-  sumRepaidAmount: BigInt!
-  sumInvestedAmount: BigInt!
-  sumRedeemedAmount: BigInt!
+  sumBorrowedAmount: BigInt
+  sumRepaidAmount: BigInt
+  sumInvestedAmount: BigInt
+  sumRedeemedAmount: BigInt
   
   sumPoolFeesPaidAmount: BigInt
 
   epochStates: [EpochState] @derivedFrom(field: "epoch")
-
   investorTransactions: [InvestorTransaction] @derivedFrom(field: "epoch")
+  assetTransactions: [AssetTransaction] @derivedFrom(field: "epoch")
+  poolFeeTransactions: [PoolFeeTransaction] @derivedFrom(field: "epoch")
 }
 
 type EpochState @entity {
@@ -232,9 +232,9 @@ type EpochState @entity {
 
   tokenPrice: BigInt
 
-  sumOutstandingInvestOrders: BigInt!
-  sumOutstandingRedeemOrders: BigInt!
-  sumOutstandingRedeemOrdersCurrency: BigInt!
+  sumOutstandingInvestOrders: BigInt
+  sumOutstandingRedeemOrders: BigInt
+  sumOutstandingRedeemOrdersCurrency: BigInt
   sumFulfilledInvestOrders: BigInt
   sumFulfilledRedeemOrders: BigInt
   sumFulfilledRedeemOrdersCurrency: BigInt
@@ -615,6 +615,7 @@ type PoolFeeTransaction @entity {
   timestamp: Date!
   blockNumber: Int!
   epochNumber: Int!
+  epoch: Epoch!
 
   amount: BigInt
 
