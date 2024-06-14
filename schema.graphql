@@ -221,8 +221,9 @@ type Epoch @entity {
   sumPoolFeesPaidAmount: BigInt
 
   epochStates: [EpochState] @derivedFrom(field: "epoch")
-
   investorTransactions: [InvestorTransaction] @derivedFrom(field: "epoch")
+  assetTransactions: [AssetTransaction] @derivedFrom(field: "epoch")
+  poolFeeTransactions: [PoolFeeTransaction] @derivedFrom(field: "epoch")
 }
 
 type EpochState @entity {
@@ -615,6 +616,7 @@ type PoolFeeTransaction @entity {
   timestamp: Date!
   blockNumber: Int!
   epochNumber: Int!
+  epoch: Epoch!
 
   amount: BigInt
 

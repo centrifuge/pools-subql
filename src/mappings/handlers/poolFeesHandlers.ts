@@ -21,12 +21,13 @@ async function _handleFeeProposed(event: SubstrateEvent<PoolFeesProposedEvent>):
       `on block ${event.block.block.header.number.toNumber()}`
   )
   const pool = await PoolService.getOrSeed(poolId.toString(10))
+  const currentEpoch = await EpochService.getById(pool.id, pool.currentEpoch)
   const poolFeeData: PoolFeeData = {
     poolId: pool.id,
     feeId: feeId.toString(10),
     blockNumber: event.block.block.header.number.toNumber(),
     timestamp: event.block.timestamp,
-    epochNumber: pool.currentEpoch,
+    epochId: currentEpoch.id,
     hash: event.hash.toString(),
   }
   const type = fee.feeType.type
@@ -52,12 +53,13 @@ async function _handleFeeAdded(event: SubstrateEvent<PoolFeesAddedEvent>): Promi
       `on block ${event.block.block.header.number.toNumber()}`
   )
   const pool = await PoolService.getOrSeed(poolId.toString(10))
+  const currentEpoch = await EpochService.getById(pool.id, pool.currentEpoch)
   const poolFeeData: PoolFeeData = {
     poolId: pool.id,
     feeId: feeId.toString(10),
     blockNumber: event.block.block.header.number.toNumber(),
     timestamp: event.block.timestamp,
-    epochNumber: pool.currentEpoch,
+    epochId: currentEpoch.id,
     hash: event.hash.toString(),
   }
   const type = fee.feeType.type
@@ -84,12 +86,13 @@ async function _handleFeeRemoved(event: SubstrateEvent<PoolFeesRemovedEvent>): P
   )
   const pool = await PoolService.getById(poolId.toString(10))
   if (!pool) throw missingPool
+  const currentEpoch = await EpochService.getById(pool.id, pool.currentEpoch)
   const poolFeeData: PoolFeeData = {
     poolId: pool.id,
     feeId: feeId.toString(10),
     blockNumber: event.block.block.header.number.toNumber(),
     timestamp: event.block.timestamp,
-    epochNumber: pool.currentEpoch,
+    epochId: currentEpoch.id,
     hash: event.hash.toString(),
   }
 
@@ -109,12 +112,13 @@ async function _handleFeeCharged(event: SubstrateEvent<PoolFeesChargedEvent>): P
   )
   const pool = await PoolService.getById(poolId.toString(10))
   if (!pool) throw missingPool
+  const currentEpoch = await EpochService.getById(pool.id, pool.currentEpoch)
   const poolFeeData = {
     poolId: pool.id,
     feeId: feeId.toString(10),
     blockNumber: event.block.block.header.number.toNumber(),
     timestamp: event.block.timestamp,
-    epochNumber: pool.currentEpoch,
+    epochId: currentEpoch.id,
     hash: event.hash.toString(),
     amount: amount.toBigInt(),
     pending: pending.toBigInt(),
@@ -141,12 +145,13 @@ async function _handleFeeUncharged(event: SubstrateEvent<PoolFeesUnchargedEvent>
   )
   const pool = await PoolService.getById(poolId.toString(10))
   if (!pool) throw missingPool
+  const currentEpoch = await EpochService.getById(pool.id, pool.currentEpoch)
   const poolFeeData = {
     poolId: pool.id,
     feeId: feeId.toString(10),
     blockNumber: event.block.block.header.number.toNumber(),
     timestamp: event.block.timestamp,
-    epochNumber: pool.currentEpoch,
+    epochId: currentEpoch.id,
     hash: event.hash.toString(),
     amount: amount.toBigInt(),
     pending: pending.toBigInt(),
@@ -173,12 +178,13 @@ async function _handleFeePaid(event: SubstrateEvent<PoolFeesPaidEvent>): Promise
   )
   const pool = await PoolService.getById(poolId.toString(10))
   if (!pool) throw missingPool
+  const currentEpoch = await EpochService.getById(pool.id, pool.currentEpoch)
   const poolFeeData = {
     poolId: pool.id,
     feeId: feeId.toString(10),
     blockNumber: event.block.block.header.number.toNumber(),
     timestamp: event.block.timestamp,
-    epochNumber: pool.currentEpoch,
+    epochId: currentEpoch.id,
     hash: event.hash.toString(),
     amount: amount.toBigInt(),
   }

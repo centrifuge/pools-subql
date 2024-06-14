@@ -19,6 +19,7 @@ import {
   TrancheSnapshot,
 } from '../../types/models'
 import { AssetPositionService } from '../services/assetPositionService'
+import { EpochService } from '../services/epochService'
 
 const timekeeper = TimekeeperService.init()
 
@@ -40,6 +41,7 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
     // Update Pool States
     const pools = await PoolService.getCfgActivePools()
     for (const pool of pools) {
+      const currentEpoch = await EpochService.getById(pool.id, pool.currentEpoch)
       await pool.updateState()
       await pool.resetDebtOverdue()
 
@@ -92,6 +94,10 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
       for (const accruals of accruedFees) {
         const [feeId, pending, disbursement] = accruals
         const poolFee = await PoolFeeService.getById(pool.id, feeId)
+        if (!poolFee) {
+          logger.error(`Unable to retrieve PoolFee ${pool.id}-${feeId}, skipping accruals!`)
+          continue
+        }
         await poolFee.updateAccruals(pending, disbursement)
         await poolFee.save()
 
@@ -102,7 +108,7 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
           feeId,
           blockNumber,
           amount: poolFee.sumAccruedAmountByPeriod,
-          epochNumber: pool.currentEpoch,
+          epochId: currentEpoch.id,
           hash: block.hash.toHex(),
           timestamp: block.timestamp,
         })

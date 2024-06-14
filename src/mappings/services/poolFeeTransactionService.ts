@@ -4,16 +4,17 @@ import { PoolFeeData } from './poolFeeService'
 
 export class PoolFeeTransactionService extends PoolFeeTransaction {
   static init(data: PoolFeeData, type: keyof typeof PoolFeeTransactionType) {
-    const { hash, epochNumber, poolId, feeId, timestamp, blockNumber } = data
+    const { hash, epochId, poolId, feeId, timestamp, blockNumber } = data
     const _type = PoolFeeTransactionType[type]
-    const _epochNumber = epochNumber ?? 0
+    const epochNumber = parseInt(epochId.split('-')[1],10)
     return new this(
-      `${hash}-${_epochNumber}-${type}`,
+      `${epochId}-${feeId}-${type}-${hash}`,
       `${poolId}-${feeId}`,
       _type,
       timestamp,
       blockNumber,
-      _epochNumber
+      epochNumber,
+      epochId
     )
   }
 
