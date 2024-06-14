@@ -104,12 +104,12 @@ export class TrancheService extends Tranche {
       return this
     }
     const accruedFees = bnToBn(navResponse.unwrap().navFees.toBigInt())
-    if (!this.tokenSupply || this.tokenSupply === BigInt(0) ) {
+    if (!this.tokenSupply || this.tokenSupply === BigInt(0)) {
       logger.warn(`Token supply equal 0! Cannot perform division. Token price: ${price}`)
       this.tokenPrice = price
       return this
     }
-    this.tokenPrice =  nToBigInt(bnToBn(price).sub(accruedFees.mul(WAD).div(bnToBn(this.tokenSupply))))
+    this.tokenPrice = nToBigInt(bnToBn(price).sub(accruedFees.mul(WAD).div(bnToBn(this.tokenSupply))))
     logger.info(`Updating price for tranche ${this.id} to: ${this.tokenPrice} (ACCOUNTING FOR ACCRUED FEES)`)
     return this
   }
@@ -134,9 +134,9 @@ export class TrancheService extends Tranche {
     return this
   }
 
-  public async computeYield(yieldField: string, referencePeriodStart?: Date) {
+  public async computeYield(yieldField: BigIntFields<TrancheService>, referencePeriodStart?: Date) {
     logger.info(
-      `Computing yield for tranche ${this.trancheId} of ` +
+      `Computing yield ${yieldField} for tranche ${this.trancheId} of ` +
         `pool ${this.poolId} with reference date ${referencePeriodStart}`
     )
 
@@ -167,9 +167,13 @@ export class TrancheService extends Tranche {
     return this
   }
 
-  public async computeYieldAnnualized(yieldField: string, currentPeriodStart: Date, referencePeriodStart: Date) {
+  public async computeYieldAnnualized(
+    yieldField: BigIntFields<TrancheService>,
+    currentPeriodStart: Date,
+    referencePeriodStart: Date
+  ) {
     logger.info(
-      `Computing annualized yield for tranche ${this.trancheId} of ` +
+      `Computing annualized yield ${yieldField} for tranche ${this.trancheId} of ` +
         `pool ${this.poolId} with reference date ${referencePeriodStart}`
     )
     const trancheSnapshots = await TrancheSnapshot.getByPeriodStart(referencePeriodStart)
@@ -246,3 +250,5 @@ export class TrancheService extends Tranche {
     this.isActive = true
   }
 }
+
+type BigIntFields<T> = { [K in keyof T]: T[K] extends bigint ? K : never }[keyof T]
