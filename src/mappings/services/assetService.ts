@@ -8,6 +8,8 @@ import { cid, readIpfs } from '../../helpers/ipfsFetch'
 
 export const ONCHAIN_CASH_ASSET_ID = '0'
 export class AssetService extends Asset {
+  snapshot?: AssetSnapshot
+
   static init(
     poolId: string,
     assetId: string,
@@ -241,6 +243,18 @@ export class AssetService extends Asset {
 
   public increaseRealizedProfitFifo(increase: bigint) {
     this.sumRealizedProfitFifo += increase
+  }
+
+  public async loadSnapshot(periodStart: Date) {
+    const snapshots = await AssetSnapshot.getByFields([
+      ['assetId', '=', this.id],
+      ['periodStart', '=', periodStart],
+    ])
+    if (snapshots.length !== 1) {
+      logger.warn(`Unable to load snapshot for asset ${this.id} for period ${periodStart.toISOString()}`)
+      return
+    }
+    this.snapshot = snapshots.pop()
   }
 }
 
