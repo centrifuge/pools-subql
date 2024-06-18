@@ -228,6 +228,7 @@ async function _handleLoanRepaid(event: SubstrateEvent<LoanRepaidEvent>) {
         quantity.toBigInt(),
         settlementPrice.toBigInt()
       )
+      await asset.increaseRealizedProfitFifo(realizedProfitFifo)
       await pool.increaseRealizedProfitFifo(realizedProfitFifo)
     }
 
@@ -346,6 +347,7 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
         quantity.toBigInt(),
         settlementPrice.toBigInt()
       )
+      await fromAsset.increaseRealizedProfitFifo(realizedProfitFifo)
       await pool.increaseRealizedProfitFifo(realizedProfitFifo)
     }
     await fromAsset.save()
@@ -449,14 +451,15 @@ async function _handleLoanDebtTransferred1024(event: SubstrateEvent<LoanDebtTran
   }
 
   if (fromAsset.isNonCash() && toAsset.isOffchainCash()) {
+    const quantity = nToBigInt(bnToBn(amount).mul(WAD).div(bnToBn(fromAsset.currentPrice)))
+    const realizedProfitFifo = await AssetPositionService.sellFifo(toAsset.id, quantity, toAsset.currentPrice)
+
     //Track repayment
     await fromAsset.activate()
     await fromAsset.updateExternalAssetPricingFromState()
     await fromAsset.repay(amount)
+    await fromAsset.increaseRealizedProfitFifo(realizedProfitFifo)
     await fromAsset.save()
-
-    const quantity = nToBigInt(bnToBn(amount).mul(WAD).div(bnToBn(fromAsset.currentPrice)))
-    const realizedProfitFifo = await AssetPositionService.sellFifo(toAsset.id, quantity, toAsset.currentPrice)
 
     await pool.increaseRealizedProfitFifo(realizedProfitFifo)
     await pool.increaseRepayments1024(amount)

@@ -453,6 +453,7 @@ type Asset @entity {
   unrealizedProfitAtMarketPrice: BigInt
   unrealizedProfitAtNotional: BigInt
   unrealizedProfitByPeriod: BigInt
+  sumRealizedProfitFifo: BigInt
 
   positions: [AssetPosition] @derivedFrom(field: "asset")
 }
@@ -493,6 +494,7 @@ type AssetSnapshot @entity {
   unrealizedProfitAtMarketPrice: BigInt
   unrealizedProfitAtNotional: BigInt
   unrealizedProfitByPeriod: BigInt
+  sumRealizedProfitFifo: BigInt
 }
 
 type AssetPosition @entity {

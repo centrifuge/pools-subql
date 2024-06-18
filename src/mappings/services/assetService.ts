@@ -59,6 +59,7 @@ export class AssetService extends Asset {
     asset.unrealizedProfitAtMarketPrice = BigInt(0)
     asset.unrealizedProfitAtNotional = BigInt(0)
     asset.unrealizedProfitByPeriod = BigInt(0)
+    asset.sumRealizedProfitFifo = BigInt(0)
 
     return asset
   }
@@ -144,11 +145,11 @@ export class AssetService extends Asset {
     // Set all active asset values
     Object.assign(this, activeAssetData)
 
-    if(this.snapshot) {
-    const deltaRepaidInterestAmount = this.totalRepaid - this.snapshot.totalRepaidInterest
-    this.interestAccruedByPeriod =
-      this.outstandingInterest - this.snapshot.outstandingInterest + deltaRepaidInterestAmount
-    logger.info(`Updated outstanding debt for asset: ${this.id} to ${this.outstandingDebt.toString()}`)
+    if (this.snapshot) {
+      const deltaRepaidInterestAmount = this.totalRepaid - this.snapshot.totalRepaidInterest
+      this.interestAccruedByPeriod =
+        this.outstandingInterest - this.snapshot.outstandingInterest + deltaRepaidInterestAmount
+      logger.info(`Updated outstanding debt for asset: ${this.id} to ${this.outstandingDebt.toString()}`)
     }
   }
 
@@ -192,7 +193,7 @@ export class AssetService extends Asset {
 
   public async updateIpfsAssetName(): Promise<void> {
     logger.info(`Fetching IPFS asset name for asset ${this.id} `)
-    if (!this.metadata){
+    if (!this.metadata) {
       logger.warn(`No metadata field set for asset ${this.id}`)
       return
     }
@@ -200,7 +201,7 @@ export class AssetService extends Asset {
       logger.error(`Request for metadata failed: ${err}`)
       return undefined
     })
-    if(!metadata) {
+    if (!metadata) {
       logger.error(`No http response from IPFS for asset id ${this.id} CID: ${this.metadata}`)
       return
     }
@@ -235,17 +236,13 @@ export class AssetService extends Asset {
     logger.info(
       `Updating unrealizedProfit for asset ${this.id} with atMarketPrice: ${atMarketPrice}, atNotional: ${atNotional}`
     )
+    this.unrealizedProfitByPeriod = atMarketPrice - this.unrealizedProfitAtMarketPrice
     this.unrealizedProfitAtMarketPrice = atMarketPrice
     this.unrealizedProfitAtNotional = atNotional
-    if (!!this.snapshot && this.snapshot.outstandingQuantity > 0 && this.snapshot.currentPrice > 0) {
-      logger.info(`byPeriod: ${this.outstandingQuantity} x (${this.currentPrice} - ${this.snapshot.currentPrice})`)
-      this.unrealizedProfitByPeriod = nToBigInt(
-        bnToBn(this.outstandingQuantity)
-          .mul(bnToBn(this.currentPrice - this.snapshot.currentPrice))
-          .div(WAD)
-      )
-      logger.info(`byPeriod: ${this.unrealizedProfitByPeriod}`)
-    }
+  }
+
+  public increaseRealizedProfitFifo(increase: bigint) {
+    this.sumRealizedProfitFifo += increase
   }
 
   public async loadSnapshot(periodStart: Date) {
