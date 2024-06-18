@@ -164,6 +164,7 @@ export class TrancheService extends Tranche {
     const priceCurrent = bnToBn(this.tokenPrice)
     const priceOld = referencePeriodStart ? bnToBn(trancheSnapshot.tokenPrice) : WAD
     this[yieldField] = nToBigInt(priceCurrent.mul(WAD).div(priceOld).sub(WAD))
+    logger.info(`Price: ${priceOld} to ${priceCurrent} = ${this[yieldField]}`)
     return this
   }
 

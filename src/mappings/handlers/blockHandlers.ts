@@ -37,10 +37,10 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
     const lastPeriodStart = new Date(blockPeriodStart.valueOf() - SNAPSHOT_INTERVAL_SECONDS * 1000)
     const daysAgo30 = new Date(blockPeriodStart.valueOf() - 30 * 24 * 3600 * 1000)
     const daysAgo90 = new Date(blockPeriodStart.valueOf() - 90 * 24 * 3600 * 1000)
-    const beginningOfMonth = new Date(lastPeriodStart.getFullYear(), lastPeriodStart.getMonth(), 1)
-    const quarter = Math.floor(lastPeriodStart.getMonth() / 3)
-    const beginningOfQuarter = new Date(lastPeriodStart.getFullYear(), quarter * 3, 1)
-    const beginningOfYear = new Date(lastPeriodStart.getFullYear(), 0, 1)
+    const beginningOfMonth = new Date(blockPeriodStart.getFullYear(), blockPeriodStart.getMonth(), 1)
+    const quarter = Math.floor(blockPeriodStart.getMonth() / 3)
+    const beginningOfQuarter = new Date(blockPeriodStart.getFullYear(), quarter * 3, 1)
+    const beginningOfYear = new Date(blockPeriodStart.getFullYear(), 0, 1)
 
     // Update Pool States
     const pools = await PoolService.getCfgActivePools()

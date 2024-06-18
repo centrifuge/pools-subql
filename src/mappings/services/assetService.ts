@@ -2,14 +2,12 @@ import { Option } from '@polkadot/types'
 import { bnToBn, nToBigInt } from '@polkadot/util'
 import { WAD } from '../../config'
 import { ApiQueryLoansActiveLoans, LoanPricingAmount, NftItemMetadata } from '../../helpers/types'
-import { Asset, AssetType, AssetValuationMethod, AssetStatus, AssetSnapshot } from '../../types'
+import { Asset, AssetType, AssetValuationMethod, AssetStatus } from '../../types'
 import { ActiveLoanData } from './poolService'
 import { cid, readIpfs } from '../../helpers/ipfsFetch'
 
 export const ONCHAIN_CASH_ASSET_ID = '0'
 export class AssetService extends Asset {
-  snapshot?: AssetSnapshot
-
   static init(
     poolId: string,
     assetId: string,
@@ -144,11 +142,11 @@ export class AssetService extends Asset {
     // Set all active asset values
     Object.assign(this, activeAssetData)
 
-    if(this.snapshot) {
-    const deltaRepaidInterestAmount = this.totalRepaid - this.snapshot.totalRepaidInterest
-    this.interestAccruedByPeriod =
-      this.outstandingInterest - this.snapshot.outstandingInterest + deltaRepaidInterestAmount
-    logger.info(`Updated outstanding debt for asset: ${this.id} to ${this.outstandingDebt.toString()}`)
+    if (this.snapshot) {
+      const deltaRepaidInterestAmount = this.totalRepaid - this.snapshot.totalRepaidInterest
+      this.interestAccruedByPeriod =
+        this.outstandingInterest - this.snapshot.outstandingInterest + deltaRepaidInterestAmount
+      logger.info(`Updated outstanding debt for asset: ${this.id} to ${this.outstandingDebt.toString()}`)
     }
   }
 
@@ -192,7 +190,7 @@ export class AssetService extends Asset {
 
   public async updateIpfsAssetName(): Promise<void> {
     logger.info(`Fetching IPFS asset name for asset ${this.id} `)
-    if (!this.metadata){
+    if (!this.metadata) {
       logger.warn(`No metadata field set for asset ${this.id}`)
       return
     }
@@ -200,7 +198,7 @@ export class AssetService extends Asset {
       logger.error(`Request for metadata failed: ${err}`)
       return undefined
     })
-    if(!metadata) {
+    if (!metadata) {
       logger.error(`No http response from IPFS for asset id ${this.id} CID: ${this.metadata}`)
       return
     }
@@ -235,29 +233,9 @@ export class AssetService extends Asset {
     logger.info(
       `Updating unrealizedProfit for asset ${this.id} with atMarketPrice: ${atMarketPrice}, atNotional: ${atNotional}`
     )
+    this.unrealizedProfitByPeriod = this.unrealizedProfitAtMarketPrice - atMarketPrice
     this.unrealizedProfitAtMarketPrice = atMarketPrice
     this.unrealizedProfitAtNotional = atNotional
-    if (!!this.snapshot && this.snapshot.outstandingQuantity > 0 && this.snapshot.currentPrice > 0) {
-      logger.info(`byPeriod: ${this.outstandingQuantity} x (${this.currentPrice} - ${this.snapshot.currentPrice})`)
-      this.unrealizedProfitByPeriod = nToBigInt(
-        bnToBn(this.outstandingQuantity)
-          .mul(bnToBn(this.currentPrice - this.snapshot.currentPrice))
-          .div(WAD)
-      )
-      logger.info(`byPeriod: ${this.unrealizedProfitByPeriod}`)
-    }
-  }
-
-  public async loadSnapshot(periodStart: Date) {
-    const snapshots = await AssetSnapshot.getByFields([
-      ['assetId', '=', this.id],
-      ['periodStart', '=', periodStart],
-    ])
-    if (snapshots.length !== 1) {
-      logger.warn(`Unable to load snapshot for asset ${this.id} for period ${periodStart.toISOString()}`)
-      return
-    }
-    this.snapshot = snapshots.pop()
   }
 }
 
