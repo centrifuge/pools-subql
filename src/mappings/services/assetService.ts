@@ -57,6 +57,7 @@ export class AssetService extends Asset {
     asset.unrealizedProfitAtMarketPrice = BigInt(0)
     asset.unrealizedProfitAtNotional = BigInt(0)
     asset.unrealizedProfitByPeriod = BigInt(0)
+    asset.sumRealizedProfitFifo = BigInt(0)
 
     return asset
   }
@@ -236,6 +237,10 @@ export class AssetService extends Asset {
     this.unrealizedProfitByPeriod = this.unrealizedProfitAtMarketPrice - atMarketPrice
     this.unrealizedProfitAtMarketPrice = atMarketPrice
     this.unrealizedProfitAtNotional = atNotional
+  }
+
+  public increaseRealizedProfitFifo(increase: bigint) {
+    this.sumRealizedProfitFifo += increase
   }
 }
 
