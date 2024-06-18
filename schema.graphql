@@ -204,6 +204,9 @@ type TrancheSnapshot @entity {
   yield90DaysAnnualized: BigInt
   yieldSinceInception: BigInt
   yieldSinceLastPeriod: BigInt
+  yieldMTD: BigInt
+  yieldQTD: BigInt
+  yieldYTD: BigInt
 }
 
 type Epoch @entity {
