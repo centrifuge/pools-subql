@@ -2,7 +2,7 @@ import { Option } from '@polkadot/types'
 import { bnToBn, nToBigInt } from '@polkadot/util'
 import { WAD } from '../../config'
 import { ApiQueryLoansActiveLoans, LoanPricingAmount, NftItemMetadata } from '../../helpers/types'
-import { Asset, AssetType, AssetValuationMethod, AssetStatus } from '../../types'
+import { Asset, AssetType, AssetValuationMethod, AssetStatus, AssetSnapshot } from '../../types'
 import { ActiveLoanData } from './poolService'
 import { cid, readIpfs } from '../../helpers/ipfsFetch'
 
