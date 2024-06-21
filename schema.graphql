@@ -31,6 +31,8 @@ type Pool @entity {
   lastEpochClosed: Int
   lastEpochExecuted: Int
 
+  normalizedNAV: BigInt # netAssetValue, normalized to 18 decimals
+
   # NAV == totalReserve + offchainCashValue + portfolioValuation - sumPoolFeesPendingAmount
   netAssetValue: BigInt # previously: portfolioValuation
   totalReserve: BigInt

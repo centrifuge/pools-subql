@@ -22,7 +22,7 @@ export class PoolService extends Pool {
     if (!pool) {
       pool = this.seed(poolId, blockchain)
       if (saveSeed) {
-        if(seedEpoch) pool.currentEpoch = 1
+        if (seedEpoch) pool.currentEpoch = 1
         await pool.save()
         if (seedEpoch) {
           const epoch = epochService.seed(poolId, 1)
@@ -50,6 +50,8 @@ export class PoolService extends Pool {
     this.maxPortfolioValuationAge = maxPortfolioValuationAge
 
     this.currentEpoch = 1
+
+    this.normalizedNAV = BigInt(0)
 
     this.netAssetValue = BigInt(0)
     this.totalReserve = BigInt(0)
@@ -195,6 +197,7 @@ export class PoolService extends Pool {
     // The query was only used before fees were introduced,
     // so NAV == portfolioValuation + offchainCashValue + totalReserve
     this.netAssetValue = newPortfolioValuation + this.offchainCashValue + this.totalReserve
+    this.updateNormalizedNAV()
 
     logger.info(
       `portfolio valuation: ${this.portfolioValuation.toString(10)} delta: ${this.deltaPortfolioValuationByPeriod}`
@@ -216,11 +219,20 @@ export class PoolService extends Pool {
     this.deltaPortfolioValuationByPeriod = newPortfolioValuation - this.portfolioValuation
     this.portfolioValuation = newPortfolioValuation
     this.netAssetValue = newNAV
+    this.updateNormalizedNAV()
 
     logger.info(
       `portfolio valuation: ${this.portfolioValuation.toString(10)} delta: ${this.deltaPortfolioValuationByPeriod}`
     )
     return this
+  }
+
+  public updateNormalizedNAV() {
+    const isTinlakePool = this.id.startsWith('0x')
+    logger.info(`decimals: ${this.currency.decimals}`)
+    // TODO: if not isTinlakePool, should use this.currency.decimals
+    const decimals = isTinlakePool ? 18 : 6
+    this.normalizedNAV = decimals < 18 ? this.netAssetValue * 10 ** (18 - decimals) : this.netAssetValue
   }
 
   public increaseNumberOfAssets() {
