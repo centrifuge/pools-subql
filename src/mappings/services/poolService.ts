@@ -4,6 +4,8 @@ import { ExtendedCall, NavDetails, PoolDetails, PoolFeesList, PoolMetadata, Tran
 import { Pool } from '../../types'
 import { cid, readIpfs } from '../../helpers/ipfsFetch'
 import { EpochService } from './epochService'
+import { WAD_DIGITS } from '../../config'
+import { nToBigInt, bnToBn } from '@polkadot/util'
 
 export class PoolService extends Pool {
   static seed(poolId: string, blockchain = '0') {
@@ -231,7 +233,10 @@ export class PoolService extends Pool {
     const isTinlakePool = this.id.startsWith('0x')
     // TODO: if not isTinlakePool, should use this.currency.decimals
     const decimals = isTinlakePool ? 18 : 6
-    this.normalizedNAV = decimals < 18 ? this.netAssetValue * 10 ** (18 - decimals) : this.netAssetValue
+    this.normalizedNAV =
+      decimals < 18
+        ? nToBigInt(bnToBn(this.netAssetValue).mul(bnToBn(10).pow(bnToBn(WAD_DIGITS - decimals))))
+        : this.netAssetValue
   }
 
   public increaseNumberOfAssets() {
