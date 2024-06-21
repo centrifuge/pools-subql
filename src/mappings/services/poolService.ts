@@ -229,7 +229,6 @@ export class PoolService extends Pool {
 
   public updateNormalizedNAV() {
     const isTinlakePool = this.id.startsWith('0x')
-    logger.info(`decimals: ${this.currency.decimals}`)
     // TODO: if not isTinlakePool, should use this.currency.decimals
     const decimals = isTinlakePool ? 18 : 6
     this.normalizedNAV = decimals < 18 ? this.netAssetValue * 10 ** (18 - decimals) : this.netAssetValue
