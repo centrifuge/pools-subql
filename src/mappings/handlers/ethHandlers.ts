@@ -99,6 +99,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
           )[0]
           pool.portfolioValuation = currentNAV.toBigInt()
           pool.netAssetValue = (pool.portfolioValuation || BigInt(0)) + (pool.totalReserve || BigInt(0))
+          pool.updateNormalizedNAV()
           await pool.save()
           logger.info(`Updating pool ${tinlakePool?.id} with portfolioValuation: ${pool.portfolioValuation}`)
         }
@@ -109,6 +110,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
           )[0]
           pool.totalReserve = totalBalance.toBigInt()
           pool.netAssetValue = (pool.portfolioValuation || BigInt(0)) + (pool.totalReserve || BigInt(0))
+          pool.updateNormalizedNAV()
           await pool.save()
           logger.info(`Updating pool ${tinlakePool?.id} with totalReserve: ${pool.totalReserve}`)
         }
