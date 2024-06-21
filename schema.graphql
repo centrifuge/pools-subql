@@ -94,6 +94,8 @@ type PoolSnapshot @entity {
   blockNumber: Int!
   periodStart: Date! @index
 
+  normalizedNAV: BigInt # netAssetValue, normalized to 18 decimals
+
   #States
   netAssetValue: BigInt # previously: portfolioValuation
   totalReserve: BigInt
