@@ -6,6 +6,6 @@ network:
     file: ./dist/chaintypes.js
 dataSources:
   - kind: substrate/Runtime
-    startBlock: 1093800 # June 10th 2024
+    startBlock: 1
     filter:
       modulo: 1000
