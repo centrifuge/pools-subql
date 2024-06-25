@@ -88,7 +88,7 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
             asset.unrealizedProfitAtNotional,
             asset.unrealizedProfitByPeriod
           )
-        if (asset.actualMaturityDate < block.timestamp) pool.increaseDebtOverdue(asset.outstandingDebt)
+        if (asset.isBeyondMaturity(block.timestamp)) pool.increaseDebtOverdue(asset.outstandingDebt)
         if (asset.isOffchainCash()) pool.increaseOffchainCashValue(asset.presentValue)
       }
       await pool.updateNumberOfActiveAssets(BigInt(Object.keys(activeLoanData).length))

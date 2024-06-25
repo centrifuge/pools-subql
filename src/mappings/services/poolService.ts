@@ -328,24 +328,41 @@ export class PoolService extends Pool {
     const portfolioData = await apiCall.loansApi.portfolio(this.id)
     logger.info(`${portfolioData.length} assets found.`)
     return portfolioData.reduce<ActiveLoanData>((obj, current) => {
-      const totalRepaid = current[1].activeLoan.totalRepaid
-      const maturityDate = new Date(current[1].activeLoan.schedule.maturity.asFixed.date.toNumber() * 1000)
-      obj[current[0].toString(10)] = {
-        outstandingPrincipal: current[1].outstandingPrincipal.toBigInt(),
-        outstandingInterest: current[1].outstandingInterest.toBigInt(),
-        outstandingDebt: current[1].outstandingPrincipal.toBigInt() + current[1].outstandingInterest.toBigInt(),
-        presentValue: current[1].presentValue.toBigInt(),
-        currentPrice: current[1].currentPrice?.isSome ? current[1].currentPrice.unwrap().toBigInt() : BigInt(0),
-        actualMaturityDate: new Date(current[1].activeLoan.schedule.maturity.asFixed.date.toNumber() * 1000),
-        timeToMaturity: Math.round((maturityDate.valueOf() - Date.now().valueOf()) / 1000),
-        actualOriginationDate: new Date(current[1].activeLoan.originationDate.toNumber() * 1000),
-        writeOffPercentage: current[1].activeLoan.writeOffPercentage.toBigInt(),
-        totalBorrowed: current[1].activeLoan.totalBorrowed.toBigInt(),
-        totalRepaid:
-          totalRepaid.principal.toBigInt() + totalRepaid.interest.toBigInt() + totalRepaid.unscheduled.toBigInt(),
-        totalRepaidPrincipal: totalRepaid.principal.toBigInt(),
-        totalRepaidInterest: totalRepaid.interest.toBigInt(),
-        totalRepaidUnscheduled: totalRepaid.unscheduled.toBigInt(),
+      const [assetId, asset] = current
+      const {
+        outstandingPrincipal,
+        outstandingInterest,
+        presentValue,
+        currentPrice,
+        activeLoan: {
+          schedule: { maturity },
+          originationDate,
+          writeOffPercentage,
+          totalBorrowed,
+          totalRepaid: { principal, interest, unscheduled },
+        },
+      } = asset
+
+      const actualMaturityDate = maturity.isFixed ? new Date(maturity.asFixed.date.toNumber() * 1000) : null
+      const timeToMaturity = actualMaturityDate
+        ? Math.round((actualMaturityDate.valueOf() - Date.now().valueOf()) / 1000)
+        : null
+
+      obj[assetId.toString(10)] = {
+        outstandingPrincipal: outstandingPrincipal.toBigInt(),
+        outstandingInterest: outstandingInterest.toBigInt(),
+        outstandingDebt: outstandingPrincipal.toBigInt() + outstandingInterest.toBigInt(),
+        presentValue: presentValue.toBigInt(),
+        currentPrice: currentPrice.isSome ? currentPrice.unwrap().toBigInt() : BigInt(0),
+        actualMaturityDate,
+        timeToMaturity,
+        actualOriginationDate: new Date(originationDate.toNumber() * 1000),
+        writeOffPercentage: writeOffPercentage.toBigInt(),
+        totalBorrowed: totalBorrowed.toBigInt(),
+        totalRepaid: principal.toBigInt() + interest.toBigInt() + unscheduled.toBigInt(),
+        totalRepaidPrincipal: principal.toBigInt(),
+        totalRepaidInterest: interest.toBigInt(),
+        totalRepaidUnscheduled: unscheduled.toBigInt(),
       }
       return obj
     }, {})
