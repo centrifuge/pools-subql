@@ -353,7 +353,7 @@ export class PoolService extends Pool {
         outstandingInterest: outstandingInterest.toBigInt(),
         outstandingDebt: outstandingPrincipal.toBigInt() + outstandingInterest.toBigInt(),
         presentValue: presentValue.toBigInt(),
-        currentPrice: currentPrice.isSome ? currentPrice.unwrap().toBigInt() : BigInt(0),
+        currentPrice: currentPrice?.isSome ? currentPrice.unwrap().toBigInt() : BigInt(0),
         actualMaturityDate,
         timeToMaturity,
         actualOriginationDate: new Date(originationDate.toNumber() * 1000),
@@ -462,7 +462,7 @@ export class PoolService extends Pool {
   }
 
   public increaseUnrealizedProfit(atMarket: bigint, atNotional: bigint, byPeriod) {
-    logger.info(`Increasing unrealizedProfit for pool ${this.id} atMarket: ${atMarket} notional: ${atNotional}`)
+    logger.info(`Increasing unrealizedProfit for pool ${this.id} atMarket: ${atMarket}, atNotional: ${atNotional}`)
     this.sumUnrealizedProfitAtMarketPrice += atMarket
     this.sumUnrealizedProfitAtNotional += atNotional
     this.sumUnrealizedProfitByPeriod += byPeriod
