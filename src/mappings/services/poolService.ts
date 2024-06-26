@@ -237,7 +237,7 @@ export class PoolService extends Pool {
     const digitsMismatch = WAD_DIGITS - currency.decimals
     if (digitsMismatch === 0) {
       this.normalizedNAV = this.netAssetValue
-      return
+      return this
     }
     if (digitsMismatch > 0) {
       this.normalizedNAV = BigInt(this.netAssetValue.toString(10) + '0'.repeat(digitsMismatch))
