@@ -5,7 +5,7 @@ import { Pool } from '../../types'
 import { cid, readIpfs } from '../../helpers/ipfsFetch'
 import { EpochService } from './epochService'
 import { WAD_DIGITS } from '../../config'
-import { nToBigInt, bnToBn } from '@polkadot/util'
+import { CurrencyService } from './currencyService'
 
 export class PoolService extends Pool {
   static seed(poolId: string, blockchain = '0') {
@@ -177,15 +177,19 @@ export class PoolService extends Pool {
     return this
   }
 
-  public updateNAV() {
+  public async updateNAV() {
     const specVersion = api.runtimeVersion.specVersion.toNumber()
     const specName = api.runtimeVersion.specName.toString()
     switch (specName) {
       case 'centrifuge-devel':
-        return specVersion < 1038 ? this.updateNAVQuery() : this.updateNAVCall()
+        await (specVersion < 1038 ? this.updateNAVQuery() : this.updateNAVCall())
+        break
       default:
-        return specVersion < 1025 ? this.updateNAVQuery() : this.updateNAVCall()
+        await (specVersion < 1025 ? this.updateNAVQuery() : this.updateNAVCall())
+        break
     }
+    await this.updateNormalizedNAV()
+    return this
   }
 
   private async updateNAVQuery() {
@@ -199,7 +203,6 @@ export class PoolService extends Pool {
     // The query was only used before fees were introduced,
     // so NAV == portfolioValuation + offchainCashValue + totalReserve
     this.netAssetValue = newPortfolioValuation + this.offchainCashValue + this.totalReserve
-    this.updateNormalizedNAV()
 
     logger.info(
       `portfolio valuation: ${this.portfolioValuation.toString(10)} delta: ${this.deltaPortfolioValuationByPeriod}`
@@ -221,7 +224,6 @@ export class PoolService extends Pool {
     this.deltaPortfolioValuationByPeriod = newPortfolioValuation - this.portfolioValuation
     this.portfolioValuation = newPortfolioValuation
     this.netAssetValue = newNAV
-    this.updateNormalizedNAV()
 
     logger.info(
       `portfolio valuation: ${this.portfolioValuation.toString(10)} delta: ${this.deltaPortfolioValuationByPeriod}`
@@ -229,14 +231,20 @@ export class PoolService extends Pool {
     return this
   }
 
-  public updateNormalizedNAV() {
-    const isTinlakePool = this.id.startsWith('0x')
-    // TODO: if not isTinlakePool, should use this.currency.decimals
-    const decimals = isTinlakePool ? 18 : 6
-    this.normalizedNAV =
-      decimals < 18
-        ? nToBigInt(bnToBn(this.netAssetValue).mul(bnToBn(10).pow(bnToBn(WAD_DIGITS - decimals))))
-        : this.netAssetValue
+  public async updateNormalizedNAV() {
+    const currency = await CurrencyService.get(this.currencyId)
+    if (!currency) throw new Error(`No currency with Id ${this.id} found!`)
+    const digitsMismatch = WAD_DIGITS - currency.decimals
+    if (digitsMismatch === 0) {
+      this.normalizedNAV = this.netAssetValue
+      return this
+    }
+    if (digitsMismatch > 0) {
+      this.normalizedNAV = BigInt(this.netAssetValue.toString(10) + '0'.repeat(digitsMismatch))
+    } else {
+      this.normalizedNAV = BigInt(this.netAssetValue.toString(10).substring(0, WAD_DIGITS))
+    }
+    return this
   }
 
   public increaseNumberOfAssets() {
