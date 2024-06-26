@@ -177,18 +177,19 @@ export class PoolService extends Pool {
     return this
   }
 
-  public updateNAV() {
+  public async updateNAV() {
     const specVersion = api.runtimeVersion.specVersion.toNumber()
     const specName = api.runtimeVersion.specName.toString()
     switch (specName) {
       case 'centrifuge-devel':
-        specVersion < 1038 ? this.updateNAVQuery() : this.updateNAVCall()
+        await (specVersion < 1038 ? this.updateNAVQuery() : this.updateNAVCall())
         break
       default:
-        specVersion < 1025 ? this.updateNAVQuery() : this.updateNAVCall()
+        await (specVersion < 1025 ? this.updateNAVQuery() : this.updateNAVCall())
         break
     }
-    return this.updateNormalizedNAV()
+    await this.updateNormalizedNAV()
+    return this
   }
 
   private async updateNAVQuery() {
