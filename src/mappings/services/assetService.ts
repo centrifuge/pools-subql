@@ -256,6 +256,10 @@ export class AssetService extends Asset {
     }
     this.snapshot = snapshots.pop()
   }
+
+  public isBeyondMaturity(blockTimestamp: Date) {
+    return !!this.actualMaturityDate && this.actualMaturityDate < blockTimestamp
+  }
 }
 
 interface AssetSpecs {

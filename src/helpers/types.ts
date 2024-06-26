@@ -177,7 +177,7 @@ export interface LoanInfoActivePortfolio extends Struct {
   presentValue: Balance
   outstandingPrincipal: Balance
   outstandingInterest: Balance
-  currentPrice: Option<Balance>
+  currentPrice?: Option<Balance>
 }
 
 export interface LoanInfoActive extends Struct {
