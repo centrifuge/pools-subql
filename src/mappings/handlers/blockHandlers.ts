@@ -35,6 +35,7 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
       `It's a new period on block ${blockNumber}: ${block.timestamp.toISOString()} (specVersion: ${specVersion})`
     )
     const lastPeriodStart = new Date(blockPeriodStart.valueOf() - SNAPSHOT_INTERVAL_SECONDS * 1000)
+    const daysAgo7 = new Date(blockPeriodStart.valueOf() - 7 * 24 * 3600 * 1000)
     const daysAgo30 = new Date(blockPeriodStart.valueOf() - 30 * 24 * 3600 * 1000)
     const daysAgo90 = new Date(blockPeriodStart.valueOf() - 90 * 24 * 3600 * 1000)
     const beginningOfMonth = new Date(blockPeriodStart.getFullYear(), blockPeriodStart.getMonth(), 1)
@@ -64,6 +65,7 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
         await tranche.computeYield('yieldYTD', beginningOfYear)
         await tranche.computeYield('yieldQTD', beginningOfQuarter)
         await tranche.computeYield('yieldMTD', beginningOfMonth)
+        await tranche.computeYieldAnnualized('yield7DaysAnnualized', blockPeriodStart, daysAgo7)
         await tranche.computeYieldAnnualized('yield30DaysAnnualized', blockPeriodStart, daysAgo30)
         await tranche.computeYieldAnnualized('yield90DaysAnnualized', blockPeriodStart, daysAgo90)
         await tranche.save()
