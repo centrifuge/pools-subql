@@ -36,6 +36,11 @@ const latestTypes = {
     bucket: 'CfgTraitsFeePoolFeeBucket',
     fees: 'Vec<CfgTypesPoolsPoolFee>',
   },
+  CashflowPayment: {
+    when: 'Seconds',
+    principal: 'Balance',
+    interest: 'Balance',
+  },
 }
 
 const definitions: OverrideBundleDefinition = {
@@ -72,6 +77,20 @@ const definitions: OverrideBundleDefinition = {
               },
             ],
             type: 'Option<PalletLoansEntitiesLoansActiveLoan>',
+          },
+          expected_cashflows: {
+            description: 'Retrieve expected cashflows',
+            params: [
+              {
+                name: 'pool_id',
+                type: 'u64',
+              },
+              {
+                name: 'loan_id',
+                type: 'u64',
+              },
+            ],
+            type: 'Vec<CashflowPayment>',
           },
         },
         version: 2,
