@@ -391,6 +391,9 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
       realizedProfitFifo,
     })
     await principalRepayment.save()
+
+    // Record cashflows
+    await AssetCashflowService.recordAssetCashflows(principalRepayment.assetId)
   }
 
   if (fromAsset.isOffchainCash() && toAsset.isNonCash()) {
@@ -431,6 +434,9 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
       fromAssetId: fromLoanId.toString(10),
     })
     await purchaseTransaction.save()
+
+    // Record cashflows
+    await AssetCashflowService.recordAssetCashflows(purchaseTransaction.assetId)
   }
 }
 
