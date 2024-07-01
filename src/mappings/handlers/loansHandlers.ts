@@ -99,7 +99,7 @@ async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedEvent>) {
   await pool.save()
 
   // Record cashflows
-  await AssetCashflowService.recordAssetCashflows(pool.id, asset.id)
+  await AssetCashflowService.recordAssetCashflows(asset.id)
 }
 
 export const handleLoanBorrowed = errorHandler(_handleLoanBorrowed)
@@ -174,7 +174,7 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Pr
   await asset.save()
 
   // Record cashflows
-  await AssetCashflowService.recordAssetCashflows(pool.id, asset.id)
+  await AssetCashflowService.recordAssetCashflows(asset.id)
 }
 
 export const handleLoanRepaid = errorHandler(_handleLoanRepaid)
@@ -254,7 +254,7 @@ async function _handleLoanRepaid(event: SubstrateEvent<LoanRepaidEvent>) {
   await asset.save()
 
   // Record cashflows
-  await AssetCashflowService.recordAssetCashflows(pool.id, asset.id)
+  await AssetCashflowService.recordAssetCashflows(asset.id)
 }
 
 export const handleLoanWrittenOff = errorHandler(_handleLoanWrittenOff)
@@ -273,7 +273,7 @@ async function _handleLoanWrittenOff(event: SubstrateEvent<LoanWrittenOffEvent>)
   await pool.save()
 
   // Record cashflows
-  await AssetCashflowService.recordAssetCashflows(pool.id, asset.id)
+  await AssetCashflowService.recordAssetCashflows(asset.id)
 }
 
 export const handleLoanClosed = errorHandler(_handleLoanClosed)
@@ -304,7 +304,7 @@ async function _handleLoanClosed(event: SubstrateEvent<LoanClosedEvent>) {
   await at.save()
 
   // Record cashflows
-  await AssetCashflowService.recordAssetCashflows(pool.id, asset.id)
+  await AssetCashflowService.recordAssetCashflows(asset.id)
 }
 
 export const handleLoanDebtTransferred = errorHandler(_handleLoanDebtTransferred)

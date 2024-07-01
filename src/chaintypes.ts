@@ -1,6 +1,4 @@
-import type { OverrideBundleDefinition } from '@polkadot/types/types'
-
-/* eslint-disable sort-keys */
+import type { DefinitionsCallEntry, OverrideBundleDefinition } from '@polkadot/types/types'
 
 const latestTypes = {
   ActiveLoanInfoV2: {
@@ -37,9 +35,59 @@ const latestTypes = {
     fees: 'Vec<CfgTypesPoolsPoolFee>',
   },
   CashflowPayment: {
-    when: 'Seconds',
+    when: 'u64',
     principal: 'Balance',
     interest: 'Balance',
+  },
+}
+
+const loansRuntimeApiMethodsV1: DefinitionsCallEntry['methods'] = {
+  portfolio: {
+    description: 'Get active pool loan',
+    params: [
+      {
+        name: 'pool_id',
+        type: 'u64',
+      },
+    ],
+    type: 'Vec<(u64, ActiveLoanInfoV1)>',
+  },
+  portfolio_loan: {
+    description: 'Get active pool loan',
+    params: [
+      {
+        name: 'pool_id',
+        type: 'u64',
+      },
+      {
+        name: 'loan_id',
+        type: 'u64',
+      },
+    ],
+    type: 'Option<PalletLoansEntitiesLoansActiveLoan>',
+  },
+}
+
+const loansRuntimeApiMethodsV2: DefinitionsCallEntry['methods'] = {
+  ...loansRuntimeApiMethodsV1,
+  portfolio: { ...loansRuntimeApiMethodsV1.portfolio, type: 'Vec<(u64, ActiveLoanInfoV2)>' },
+}
+
+const loansRuntimeApiMethodsV3: DefinitionsCallEntry['methods'] = {
+  ...loansRuntimeApiMethodsV2,
+  expected_cashflows: {
+    description: 'Retrieve expected cashflows',
+    params: [
+      {
+        name: 'pool_id',
+        type: 'u64',
+      },
+      {
+        name: 'loan_id',
+        type: 'u64',
+      },
+    ],
+    type: 'Vec<CashflowPayment>',
   },
 }
 
@@ -52,78 +100,9 @@ const definitions: OverrideBundleDefinition = {
   ],
   runtime: {
     LoansApi: [
-      {
-        methods: {
-          portfolio: {
-            description: 'Get active pool loan',
-            params: [
-              {
-                name: 'pool_id',
-                type: 'u64',
-              },
-            ],
-            type: 'Vec<(u64, ActiveLoanInfoV2)>',
-          },
-          portfolio_loan: {
-            description: 'Get active pool loan',
-            params: [
-              {
-                name: 'pool_id',
-                type: 'u64',
-              },
-              {
-                name: 'loan_id',
-                type: 'u64',
-              },
-            ],
-            type: 'Option<PalletLoansEntitiesLoansActiveLoan>',
-          },
-          expected_cashflows: {
-            description: 'Retrieve expected cashflows',
-            params: [
-              {
-                name: 'pool_id',
-                type: 'u64',
-              },
-              {
-                name: 'loan_id',
-                type: 'u64',
-              },
-            ],
-            type: 'Vec<CashflowPayment>',
-          },
-        },
-        version: 2,
-      },
-      {
-        methods: {
-          portfolio: {
-            description: 'Get active pool loan',
-            params: [
-              {
-                name: 'pool_id',
-                type: 'u64',
-              },
-            ],
-            type: 'Vec<(u64, ActiveLoanInfoV1)>',
-          },
-          portfolio_loan: {
-            description: 'Get active pool loan',
-            params: [
-              {
-                name: 'pool_id',
-                type: 'u64',
-              },
-              {
-                name: 'loan_id',
-                type: 'u64',
-              },
-            ],
-            type: 'Option<PalletLoansEntitiesLoansActiveLoan>',
-          },
-        },
-        version: 1,
-      },
+      { methods: loansRuntimeApiMethodsV3, version: 3 },
+      { methods: loansRuntimeApiMethodsV2, version: 2 },
+      { methods: loansRuntimeApiMethodsV1, version: 1 },
     ],
     PoolsApi: [
       {
