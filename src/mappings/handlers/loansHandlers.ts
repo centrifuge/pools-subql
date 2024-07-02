@@ -18,6 +18,7 @@ import { AssetType, AssetValuationMethod } from '../../types'
 import { bnToBn, nToBigInt } from '@polkadot/util'
 import { WAD } from '../../config'
 import { AssetPositionService } from '../services/assetPositionService'
+import { AssetCashflowService } from '../services/assetCashflowService'
 
 export const handleLoanCreated = errorHandler(_handleLoanCreated)
 async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedEvent>) {
@@ -96,6 +97,9 @@ async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedEvent>) {
   // Update pool info
   await pool.increaseNumberOfAssets()
   await pool.save()
+
+  // Record cashflows
+  await AssetCashflowService.recordAssetCashflows(asset.id)
 }
 
 export const handleLoanBorrowed = errorHandler(_handleLoanBorrowed)
@@ -168,6 +172,9 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Pr
     await epoch.save()
   }
   await asset.save()
+
+  // Record cashflows
+  await AssetCashflowService.recordAssetCashflows(asset.id)
 }
 
 export const handleLoanRepaid = errorHandler(_handleLoanRepaid)
@@ -245,6 +252,9 @@ async function _handleLoanRepaid(event: SubstrateEvent<LoanRepaidEvent>) {
   }
 
   await asset.save()
+
+  // Record cashflows
+  await AssetCashflowService.recordAssetCashflows(asset.id)
 }
 
 export const handleLoanWrittenOff = errorHandler(_handleLoanWrittenOff)
@@ -252,15 +262,18 @@ async function _handleLoanWrittenOff(event: SubstrateEvent<LoanWrittenOffEvent>)
   const [poolId, loanId, status] = event.event.data
   logger.info(`Loan writtenoff event for pool: ${poolId.toString()} loanId: ${loanId.toString()}`)
   const { percentage, penalty } = status
-  const loan = await AssetService.getById(poolId.toString(), loanId.toString())
-  await loan.writeOff(percentage.toBigInt(), penalty.toBigInt())
-  await loan.save()
+  const asset = await AssetService.getById(poolId.toString(), loanId.toString())
+  await asset.writeOff(percentage.toBigInt(), penalty.toBigInt())
+  await asset.save()
 
   const pool = await PoolService.getById(poolId.toString())
   if (pool === undefined) throw missingPool
 
-  await pool.increaseWriteOff(loan.writtenOffAmountByPeriod)
+  await pool.increaseWriteOff(asset.writtenOffAmountByPeriod)
   await pool.save()
+
+  // Record cashflows
+  await AssetCashflowService.recordAssetCashflows(asset.id)
 }
 
 export const handleLoanClosed = errorHandler(_handleLoanClosed)
@@ -273,9 +286,9 @@ async function _handleLoanClosed(event: SubstrateEvent<LoanClosedEvent>) {
 
   const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toHex())
 
-  const loan = await AssetService.getById(poolId.toString(), loanId.toString())
-  await loan.close()
-  await loan.save()
+  const asset = await AssetService.getById(poolId.toString(), loanId.toString())
+  await asset.close()
+  await asset.save()
 
   const epoch = await EpochService.getById(pool.id, pool.currentEpoch)
   if (!epoch) throw new Error('Epoch not found!')
@@ -289,6 +302,9 @@ async function _handleLoanClosed(event: SubstrateEvent<LoanClosedEvent>) {
     timestamp: event.block.timestamp,
   })
   await at.save()
+
+  // Record cashflows
+  await AssetCashflowService.recordAssetCashflows(asset.id)
 }
 
 export const handleLoanDebtTransferred = errorHandler(_handleLoanDebtTransferred)
@@ -375,6 +391,9 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
       realizedProfitFifo,
     })
     await principalRepayment.save()
+
+    // Record cashflows
+    await AssetCashflowService.recordAssetCashflows(principalRepayment.assetId)
   }
 
   if (fromAsset.isOffchainCash() && toAsset.isNonCash()) {
@@ -415,6 +434,9 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
       fromAssetId: fromLoanId.toString(10),
     })
     await purchaseTransaction.save()
+
+    // Record cashflows
+    await AssetCashflowService.recordAssetCashflows(purchaseTransaction.assetId)
   }
 }
 

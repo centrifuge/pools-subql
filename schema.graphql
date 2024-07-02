@@ -341,6 +341,15 @@ type AssetTransaction @entity {
   realizedProfitFifo: BigInt
 }
 
+type AssetCashflow @entity {
+  id: ID! # pool id - asset id - cf timestamp
+  asset: Asset! @index
+
+  timestamp: Date!
+  principal: BigInt!
+  interest: BigInt!
+}
+
 type OracleTransaction @entity {
   id: ID! # extrinsic hash - timestamp - oracle key
   timestamp: Date!

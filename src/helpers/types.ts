@@ -1,6 +1,6 @@
 //find out types: const a = createType(api.registry, '[u8;32]', 18)
 import { AugmentedCall, AugmentedRpc, PromiseRpcResult } from '@polkadot/api/types'
-import { Enum, Null, Struct, u128, u32, u64, U8aFixed, Option, Vec, Bytes } from '@polkadot/types'
+import { Enum, Null, Struct, u128, u32, u64, U8aFixed, Option, Vec, Bytes, Result } from '@polkadot/types'
 import { AccountId32, Perquintill, Balance } from '@polkadot/types/interfaces'
 import { ITuple, Observable } from '@polkadot/types/types'
 
@@ -265,7 +265,7 @@ export interface LoanPricing extends Enum {
   asExternal: {
     priceId: OracleKey
     maxBorrowAmount: LoanExternalPricingMaxBorrowAmount
-    notional: u128,
+    notional: u128
     maxPriceVariation: u128
   }
 }
@@ -403,31 +403,39 @@ export interface PoolFee extends Struct {
 }
 
 export interface OracleKey extends Enum {
-  readonly isIsin: boolean;
-    readonly asIsin: U8aFixed;
-    readonly isConversionRatio: boolean;
-    readonly asConversionRatio: ITuple<[TokensCurrencyId, TokensCurrencyId]>;
-    readonly isPoolLoanId: boolean;
-    readonly asPoolLoanId: ITuple<[u64, u64]>;
-    readonly type: 'Isin' | 'ConversionRatio' | 'PoolLoanId';
+  readonly isIsin: boolean
+  readonly asIsin: U8aFixed
+  readonly isConversionRatio: boolean
+  readonly asConversionRatio: ITuple<[TokensCurrencyId, TokensCurrencyId]>
+  readonly isPoolLoanId: boolean
+  readonly asPoolLoanId: ITuple<[u64, u64]>
+  readonly type: 'Isin' | 'ConversionRatio' | 'PoolLoanId'
 }
 
 interface DevelopmentRuntimeOriginCaller extends Enum {
-  readonly isSystem: boolean;
-  readonly asSystem: unknown//FrameSupportDispatchRawOrigin;
-  readonly isVoid: boolean;
-  readonly isCouncil: boolean;
+  readonly isSystem: boolean
+  readonly asSystem: unknown //FrameSupportDispatchRawOrigin;
+  readonly isVoid: boolean
+  readonly isCouncil: boolean
   readonly asCouncil: unknown //PalletCollectiveRawOrigin;
-  readonly isLiquidityPoolsGateway: boolean;
+  readonly isLiquidityPoolsGateway: boolean
   readonly asLiquidityPoolsGateway: unknown //PalletLiquidityPoolsGatewayOriginGatewayOrigin;
-  readonly isPolkadotXcm: boolean;
-  readonly asPolkadotXcm: unknown//PalletXcmOrigin;
-  readonly isCumulusXcm: boolean;
+  readonly isPolkadotXcm: boolean
+  readonly asPolkadotXcm: unknown //PalletXcmOrigin;
+  readonly isCumulusXcm: boolean
   readonly asCumulusXcm: unknown //CumulusPalletXcmOrigin;
-  readonly isEthereum: boolean;
+  readonly isEthereum: boolean
   readonly asEthereum: unknown //PalletEthereumRawOrigin;
-  readonly type: 'System' | 'Void' | 'Council' | 'LiquidityPoolsGateway' | 'PolkadotXcm' | 'CumulusXcm' | 'Ethereum';
+  readonly type: 'System' | 'Void' | 'Council' | 'LiquidityPoolsGateway' | 'PolkadotXcm' | 'CumulusXcm' | 'Ethereum'
 }
+
+export interface CashflowPayment extends Struct {
+  when: u64
+  principal: Balance
+  interest: Balance
+}
+
+export interface DispatchError extends Enum {}
 
 export type LoanAsset = ITuple<[collectionId: u64, itemId: u128]>
 export type LoanCreatedEvent = ITuple<[poolId: u64, loanId: u64, loanInfo: LoanInfoCreated]>
@@ -492,6 +500,10 @@ export type ExtendedRpc = typeof api.rpc & {
 export type ExtendedCall = typeof api.call & {
   loansApi: {
     portfolio: AugmentedCall<'promise', (poolId: string) => Observable<Vec<ITuple<[u64, LoanInfoActivePortfolio]>>>>
+    expectedCashflows: AugmentedCall<
+      'promise',
+      (poolId: string, loanId: string) => Observable<Result<Vec<CashflowPayment>, DispatchError>>
+    >
   }
   poolsApi: {
     nav: AugmentedCall<'promise', (poolId: string) => Observable<Option<PoolNav>>>
