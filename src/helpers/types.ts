@@ -1,6 +1,6 @@
 //find out types: const a = createType(api.registry, '[u8;32]', 18)
 import { AugmentedCall, AugmentedRpc, PromiseRpcResult } from '@polkadot/api/types'
-import { Enum, Null, Struct, u128, u32, u64, U8aFixed, Option, Vec, Bytes } from '@polkadot/types'
+import { Enum, Null, Struct, u128, u32, u64, U8aFixed, Option, Vec, Bytes, Result } from '@polkadot/types'
 import { AccountId32, Perquintill, Balance } from '@polkadot/types/interfaces'
 import { ITuple, Observable } from '@polkadot/types/types'
 
@@ -435,6 +435,8 @@ export interface CashflowPayment extends Struct {
   interest: Balance
 }
 
+export interface DispatchError extends Enum {}
+
 export type LoanAsset = ITuple<[collectionId: u64, itemId: u128]>
 export type LoanCreatedEvent = ITuple<[poolId: u64, loanId: u64, loanInfo: LoanInfoCreated]>
 export type LoanClosedEvent = ITuple<[poolId: u64, loanId: u64, collateralInfo: LoanAsset]>
@@ -498,7 +500,10 @@ export type ExtendedRpc = typeof api.rpc & {
 export type ExtendedCall = typeof api.call & {
   loansApi: {
     portfolio: AugmentedCall<'promise', (poolId: string) => Observable<Vec<ITuple<[u64, LoanInfoActivePortfolio]>>>>
-    expectedCashflows: AugmentedCall<'promise', (poolId: string, loanId: string) => Observable<Vec<CashflowPayment>>>
+    expectedCashflows: AugmentedCall<
+      'promise',
+      (poolId: string, loanId: string) => Observable<Result<Vec<CashflowPayment>, DispatchError>>
+    >
   }
   poolsApi: {
     nav: AugmentedCall<'promise', (poolId: string) => Observable<Option<PoolNav>>>

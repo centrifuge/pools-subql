@@ -17,8 +17,9 @@ export class AssetCashflowService extends AssetCashflow {
     logger.info(`Calling runtime API loansApi.expectedCashflows(${poolId}, ${assetId})`)
     const response = await apiCall.loansApi.expectedCashflows(poolId, assetId)
     logger.info(JSON.stringify(response))
+    if(!response.isOk) return
     await this.clearAssetCashflows(_assetId)
-    const saves = response.map((cf) => {
+    const saves = response.asOk.map((cf) => {
       const { when, principal, interest } = cf
       const timestamp = new Date(when.toNumber() * 1000)
       const cashflow = this.init(_assetId, timestamp, principal.toBigInt(), interest.toBigInt())

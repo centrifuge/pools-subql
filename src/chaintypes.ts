@@ -87,7 +87,7 @@ const loansRuntimeApiMethodsV3: DefinitionsCallEntry['methods'] = {
         type: 'u64',
       },
     ],
-    type: 'Vec<CashflowPayment>',
+    type: 'Result<Vec<CashflowPayment<Balance>>, SpRuntimeDispatchError>',
   },
 }
 
