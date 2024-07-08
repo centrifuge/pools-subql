@@ -134,6 +134,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
 
     // Take snapshots
     await evmStateSnapshotter<Pool, PoolSnapshot>(
+      'periodId',
       snapshotPeriod.id,
       Pool,
       PoolSnapshot,

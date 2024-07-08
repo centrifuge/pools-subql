@@ -16,7 +16,8 @@ import { SubstrateBlock } from '@subql/types'
  * @returns A promise resolving when all state manipulations in the DB is completed
  */
 async function stateSnapshotter<T extends SnapshottableEntity, U extends SnapshottedEntityProps>(
-  periodId: string,
+  relationshipField: ForeignKey,
+  relationshipId: string,
   stateModel: EntityClass<T>,
   snapshotModel: EntityClass<U>,
   block: { number: number; timestamp: Date },
@@ -40,7 +41,7 @@ async function stateSnapshotter<T extends SnapshottableEntity, U extends Snapsho
       id: `${id}-${blockNumber.toString()}`,
       timestamp: block.timestamp,
       blockNumber: blockNumber,
-      periodId,
+      [relationshipField]: relationshipId,
     })
     if (fkReferenceName) snapshotEntity[fkReferenceName] = stateEntity.id
 
@@ -56,7 +57,8 @@ async function stateSnapshotter<T extends SnapshottableEntity, U extends Snapsho
   return Promise.all(entitySaves)
 }
 export function evmStateSnapshotter<T extends SnapshottableEntity, U extends SnapshottedEntityProps>(
-  periodId: string,
+  relationshipField: ForeignKey,
+  relationshipId: string,
   stateModel: EntityClass<T>,
   snapshotModel: EntityClass<U>,
   block: EthereumBlock,
@@ -66,7 +68,8 @@ export function evmStateSnapshotter<T extends SnapshottableEntity, U extends Sna
 ): Promise<void[]> {
   const formattedBlock = { number: block.number, timestamp: new Date(Number(block.timestamp) * 1000) }
   return stateSnapshotter<T, U>(
-    periodId,
+    relationshipField,
+    relationshipId,
     stateModel,
     snapshotModel,
     formattedBlock,
@@ -78,7 +81,8 @@ export function evmStateSnapshotter<T extends SnapshottableEntity, U extends Sna
 }
 
 export function substrateStateSnapshotter<T extends SnapshottableEntity, U extends SnapshottedEntityProps>(
-  periodId: string,
+  relationshipField: ForeignKey,
+  relationshipId: string,
   stateModel: EntityClass<T>,
   snapshotModel: EntityClass<U>,
   block: SubstrateBlock,
@@ -88,7 +92,8 @@ export function substrateStateSnapshotter<T extends SnapshottableEntity, U exten
 ): Promise<void[]> {
   const formattedBlock = { number: block.block.header.number.toNumber(), timestamp: block.timestamp }
   return stateSnapshotter<T, U>(
-    periodId,
+    relationshipField,
+    relationshipId,
     stateModel,
     snapshotModel,
     formattedBlock,
@@ -109,5 +114,6 @@ export interface SnapshottableEntity extends Entity {
 export interface SnapshottedEntityProps extends Entity {
   blockNumber: number
   timestamp: Date
-  periodId: string
+  periodId?: string
+  epochId?: string
 }

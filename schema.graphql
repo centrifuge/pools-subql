@@ -106,7 +106,8 @@ type PoolSnapshot @entity {
 
   timestamp: Date!
   blockNumber: Int!
-  period: SnapshotPeriod! @index
+  period: SnapshotPeriod @index
+  epoch: Epoch @index
 
   normalizedNAV: BigInt # netAssetValue, normalized to 18 decimals
 
@@ -205,7 +206,7 @@ type TrancheSnapshot @entity {
 
   timestamp: Date!
   blockNumber: Int!
-  period: SnapshotPeriod! @index
+  period: SnapshotPeriod @index
 
   tokenSupply: BigInt
   tokenPrice: BigInt
@@ -493,7 +494,7 @@ type AssetSnapshot @entity {
 
   timestamp: Date!
   blockNumber: Int!
-  period: SnapshotPeriod! @index
+  period: SnapshotPeriod @index
 
   outstandingPrincipal: BigInt
   outstandingInterest: BigInt
@@ -623,7 +624,7 @@ type PoolFeeSnapshot @entity {
 
   timestamp: Date!
   blockNumber: Int!
-  period: SnapshotPeriod! @index
+  period: SnapshotPeriod @index
 
   sumChargedAmount: BigInt #Applies to Fixed ONLY
   sumAccruedAmount: BigInt #Applies toChargedUpTo ONLY
