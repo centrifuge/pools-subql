@@ -1,5 +1,4 @@
 import { EntityClass, paginatedGetter } from './paginatedGetter'
-import { getPeriodStart } from './timekeeperService'
 import type { Entity } from '@subql/types-core'
 import { EthereumBlock } from '@subql/types-ethereum'
 import { SubstrateBlock } from '@subql/types'
@@ -17,6 +16,7 @@ import { SubstrateBlock } from '@subql/types'
  * @returns A promise resolving when all state manipulations in the DB is completed
  */
 async function stateSnapshotter<T extends SnapshottableEntity, U extends SnapshottedEntityProps>(
+  periodId: string,
   stateModel: EntityClass<T>,
   snapshotModel: EntityClass<U>,
   block: { number: number; timestamp: Date },
@@ -40,7 +40,7 @@ async function stateSnapshotter<T extends SnapshottableEntity, U extends Snapsho
       id: `${id}-${blockNumber.toString()}`,
       timestamp: block.timestamp,
       blockNumber: blockNumber,
-      periodStart: getPeriodStart(block.timestamp),
+      periodId,
     })
     if (fkReferenceName) snapshotEntity[fkReferenceName] = stateEntity.id
 
@@ -56,6 +56,7 @@ async function stateSnapshotter<T extends SnapshottableEntity, U extends Snapsho
   return Promise.all(entitySaves)
 }
 export function evmStateSnapshotter<T extends SnapshottableEntity, U extends SnapshottedEntityProps>(
+  periodId: string,
   stateModel: EntityClass<T>,
   snapshotModel: EntityClass<U>,
   block: EthereumBlock,
@@ -64,10 +65,20 @@ export function evmStateSnapshotter<T extends SnapshottableEntity, U extends Sna
   fkReferenceName?: ForeignKey
 ): Promise<void[]> {
   const formattedBlock = { number: block.number, timestamp: new Date(Number(block.timestamp) * 1000) }
-  return stateSnapshotter<T, U>(stateModel, snapshotModel, formattedBlock, filterKey, filterValue, fkReferenceName, '1')
+  return stateSnapshotter<T, U>(
+    periodId,
+    stateModel,
+    snapshotModel,
+    formattedBlock,
+    filterKey,
+    filterValue,
+    fkReferenceName,
+    '1'
+  )
 }
 
 export function substrateStateSnapshotter<T extends SnapshottableEntity, U extends SnapshottedEntityProps>(
+  periodId: string,
   stateModel: EntityClass<T>,
   snapshotModel: EntityClass<U>,
   block: SubstrateBlock,
@@ -76,7 +87,16 @@ export function substrateStateSnapshotter<T extends SnapshottableEntity, U exten
   fkReferenceName?: ForeignKey
 ): Promise<void[]> {
   const formattedBlock = { number: block.block.header.number.toNumber(), timestamp: block.timestamp }
-  return stateSnapshotter<T, U>(stateModel, snapshotModel, formattedBlock, filterKey, filterValue, fkReferenceName, '0')
+  return stateSnapshotter<T, U>(
+    periodId,
+    stateModel,
+    snapshotModel,
+    formattedBlock,
+    filterKey,
+    filterValue,
+    fkReferenceName,
+    '0'
+  )
 }
 
 type ResettableKey = `${string}ByPeriod`
@@ -89,5 +109,5 @@ export interface SnapshottableEntity extends Entity {
 export interface SnapshottedEntityProps extends Entity {
   blockNumber: number
   timestamp: Date
-  periodStart: Date
+  periodId: string
 }

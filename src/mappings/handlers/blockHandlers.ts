@@ -20,6 +20,7 @@ import {
 } from '../../types/models'
 import { AssetPositionService } from '../services/assetPositionService'
 import { EpochService } from '../services/epochService'
+import { SnapshotPeriodService } from '../services/snapshotPeriodService'
 
 const timekeeper = TimekeeperService.init()
 
@@ -34,14 +35,18 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
     logger.info(
       `It's a new period on block ${blockNumber}: ${block.timestamp.toISOString()} (specVersion: ${specVersion})`
     )
-    const lastPeriodStart = new Date(blockPeriodStart.valueOf() - SNAPSHOT_INTERVAL_SECONDS * 1000)
-    const daysAgo7 = new Date(blockPeriodStart.valueOf() - 7 * 24 * 3600 * 1000)
-    const daysAgo30 = new Date(blockPeriodStart.valueOf() - 30 * 24 * 3600 * 1000)
-    const daysAgo90 = new Date(blockPeriodStart.valueOf() - 90 * 24 * 3600 * 1000)
-    const beginningOfMonth = new Date(blockPeriodStart.getFullYear(), blockPeriodStart.getMonth(), 1)
-    const quarter = Math.floor(blockPeriodStart.getMonth() / 3)
-    const beginningOfQuarter = new Date(blockPeriodStart.getFullYear(), quarter * 3, 1)
-    const beginningOfYear = new Date(blockPeriodStart.getFullYear(), 0, 1)
+
+    const snapshotPeriod = SnapshotPeriodService.init(blockPeriodStart)
+    await snapshotPeriod.save()
+
+    const lastPeriodStart = new Date(snapshotPeriod.start.valueOf() - SNAPSHOT_INTERVAL_SECONDS * 1000)
+    const daysAgo7 = new Date(snapshotPeriod.start.valueOf() - 7 * 24 * 3600 * 1000)
+    const daysAgo30 = new Date(snapshotPeriod.start.valueOf() - 30 * 24 * 3600 * 1000)
+    const daysAgo90 = new Date(snapshotPeriod.start.valueOf() - 90 * 24 * 3600 * 1000)
+    const beginningOfMonth = new Date(snapshotPeriod.year, snapshotPeriod.month, 1)
+    const quarter = Math.floor(snapshotPeriod.month / 3)
+    const beginningOfQuarter = new Date(snapshotPeriod.year, quarter * 3, 1)
+    const beginningOfYear = new Date(snapshotPeriod.year, 0, 1)
 
     // Update Pool States
     const pools = await PoolService.getCfgActivePools()
@@ -65,9 +70,9 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
         await tranche.computeYield('yieldYTD', beginningOfYear)
         await tranche.computeYield('yieldQTD', beginningOfQuarter)
         await tranche.computeYield('yieldMTD', beginningOfMonth)
-        await tranche.computeYieldAnnualized('yield7DaysAnnualized', blockPeriodStart, daysAgo7)
-        await tranche.computeYieldAnnualized('yield30DaysAnnualized', blockPeriodStart, daysAgo30)
-        await tranche.computeYieldAnnualized('yield90DaysAnnualized', blockPeriodStart, daysAgo90)
+        await tranche.computeYieldAnnualized('yield7DaysAnnualized', snapshotPeriod.start, daysAgo7)
+        await tranche.computeYieldAnnualized('yield30DaysAnnualized', snapshotPeriod.start, daysAgo30)
+        await tranche.computeYieldAnnualized('yield90DaysAnnualized', snapshotPeriod.start, daysAgo90)
         await tranche.save()
       }
       // Asset operations
@@ -129,12 +134,12 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
     }
 
     //Perform Snapshots and reset accumulators
-    await substrateStateSnapshotter(Pool, PoolSnapshot, block, 'isActive', true, 'poolId')
-    await substrateStateSnapshotter(Tranche, TrancheSnapshot, block, 'isActive', true, 'trancheId')
-    await substrateStateSnapshotter(Asset, AssetSnapshot, block, 'isActive', true, 'assetId')
-    await substrateStateSnapshotter(PoolFee, PoolFeeSnapshot, block, 'isActive', true, 'poolFeeId')
+    await substrateStateSnapshotter(snapshotPeriod.id, Pool, PoolSnapshot, block, 'isActive', true, 'poolId')
+    await substrateStateSnapshotter(snapshotPeriod.id, Tranche, TrancheSnapshot, block, 'isActive', true, 'trancheId')
+    await substrateStateSnapshotter(snapshotPeriod.id, Asset, AssetSnapshot, block, 'isActive', true, 'assetId')
+    await substrateStateSnapshotter(snapshotPeriod.id, PoolFee, PoolFeeSnapshot, block, 'isActive', true, 'poolFeeId')
 
     //Update tracking of period and continue
-    await (await timekeeper).update(blockPeriodStart)
+    await (await timekeeper).update(snapshotPeriod.start)
   }
 }

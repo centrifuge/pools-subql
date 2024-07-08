@@ -2,6 +2,7 @@ import { SubstrateBlock } from '@subql/types'
 import { PoolService } from '../mappings/services/poolService'
 import { substrateStateSnapshotter } from './stateSnapshot'
 import { Pool, PoolSnapshot } from '../types'
+import { getPeriodStart } from './timekeeperService'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const getByFields = store.getByFields as jest.Mock
@@ -13,7 +14,8 @@ const block = {
 
 const poolId = '123456789',
   timestamp = new Date(),
-  blockNumber = 11234
+  blockNumber = 11234,
+  periodId = getPeriodStart(timestamp).toISOString()
 
 describe('Given a populated pool,', () => {
   const pool = PoolService.seed(poolId)
@@ -23,7 +25,7 @@ describe('Given a populated pool,', () => {
     set.mockReset()
     getByFields.mockReset()
     getByFields.mockReturnValue([pool])
-    await substrateStateSnapshotter(Pool, PoolSnapshot, block)
+    await substrateStateSnapshotter(periodId, Pool, PoolSnapshot, block)
     expect(store.getByFields).toHaveBeenCalledWith('Pool', [['blockchainId', '=', '0']], expect.anything())
     expect(store.set).toHaveBeenNthCalledWith(1, 'Pool', poolId, expect.anything())
     expect(store.set).toHaveBeenNthCalledWith(2, 'PoolSnapshot', `${poolId}-11246`, expect.anything())
@@ -33,7 +35,7 @@ describe('Given a populated pool,', () => {
     set.mockReset()
     getByFields.mockReset()
     getByFields.mockReturnValue([pool])
-    await substrateStateSnapshotter(Pool, PoolSnapshot, block)
+    await substrateStateSnapshotter(periodId, Pool, PoolSnapshot, block)
     expect(store.set).toHaveBeenNthCalledWith(
       2,
       'PoolSnapshot',
@@ -46,7 +48,7 @@ describe('Given a populated pool,', () => {
     set.mockReset()
     getByFields.mockReset()
     getByFields.mockReturnValue([pool])
-    await substrateStateSnapshotter<Pool, PoolSnapshot>(Pool, PoolSnapshot, block, 'isActive', true)
+    await substrateStateSnapshotter<Pool, PoolSnapshot>(periodId, Pool, PoolSnapshot, block, 'isActive', true)
     expect(store.getByFields).toHaveBeenNthCalledWith(
       1,
       'Pool',
@@ -62,7 +64,7 @@ describe('Given a populated pool,', () => {
     set.mockReset()
     getByFields.mockReset()
     getByFields.mockReturnValue([pool])
-    await substrateStateSnapshotter<Pool, PoolSnapshot>(Pool, PoolSnapshot, block, 'type', 'ALL', 'poolId')
+    await substrateStateSnapshotter<Pool, PoolSnapshot>(periodId, Pool, PoolSnapshot, block, 'type', 'ALL', 'poolId')
     expect(store.set).toHaveBeenNthCalledWith(
       2,
       'PoolSnapshot',
@@ -89,7 +91,7 @@ describe('Given a pool with non zero accumulators, ', () => {
 
     Object.assign(pool, accumulatedProps)
 
-    await substrateStateSnapshotter(Pool, PoolSnapshot, block)
+    await substrateStateSnapshotter(periodId, Pool, PoolSnapshot, block)
 
     expect(store.set).toHaveBeenNthCalledWith(1, 'Pool', poolId, expect.objectContaining(zeroedProps))
     expect(store.set).toHaveBeenNthCalledWith(

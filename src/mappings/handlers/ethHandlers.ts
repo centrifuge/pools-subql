@@ -18,6 +18,7 @@ import { evmStateSnapshotter } from '../../helpers/stateSnapshot'
 import { Multicall3 } from '../../types/contracts/MulticallAbi'
 import type { Provider } from '@ethersproject/providers'
 import type { BigNumber } from '@ethersproject/bignumber'
+import { SnapshotPeriodService } from '../services/snapshotPeriodService'
 
 const timekeeper = TimekeeperService.init()
 
@@ -40,6 +41,9 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
 
   if (newPeriod) {
     logger.info(`It's a new period on EVM block ${blockNumber}: ${date.toISOString()}`)
+
+    const snapshotPeriod = SnapshotPeriodService.init(blockPeriodStart)
+    await snapshotPeriod.save()
 
     // update pool states
     const poolUpdateCalls: PoolMulticall[] = []
@@ -129,11 +133,19 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
     }
 
     // Take snapshots
-    await evmStateSnapshotter<Pool, PoolSnapshot>(Pool, PoolSnapshot, block, 'isActive', true, 'poolId')
+    await evmStateSnapshotter<Pool, PoolSnapshot>(
+      snapshotPeriod.id,
+      Pool,
+      PoolSnapshot,
+      block,
+      'isActive',
+      true,
+      'poolId'
+    )
     //await evmStateSnapshotter<Asset,AssetSnapshot>('Asset', 'AssetSnapshot', block, 'isActive', true, 'assetId')
 
     //Update tracking of period and continue
-    await (await timekeeper).update(blockPeriodStart)
+    await (await timekeeper).update(snapshotPeriod.start)
   }
 }
 

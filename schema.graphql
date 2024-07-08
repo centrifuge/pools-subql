@@ -3,6 +3,20 @@ type Timekeeper @entity {
   lastPeriodStart: Date!
 }
 
+type SnapshotPeriod @entity {
+  id: ID!
+  start: Date! @index
+  day: Int! @index
+  weekDay: Int! @index
+  month: Int! @index
+  year: Int! @index
+
+  poolSnapshots: [PoolSnapshot] @derivedFrom(field: "period")
+  trancheSnapshots: [TrancheSnapshot] @derivedFrom(field: "period")
+  assetSnapshots: [AssetSnapshot] @derivedFrom(field: "period")
+  poolFeeSnapshots: [PoolFeeSnapshot] @derivedFrom(field: "period")
+}
+
 type Pool @entity {
   id: ID! #poolId
   # It's not possible to simply retrieve all entities, but it is supported
@@ -92,7 +106,7 @@ type PoolSnapshot @entity {
 
   timestamp: Date!
   blockNumber: Int!
-  periodStart: Date! @index
+  period: SnapshotPeriod! @index
 
   normalizedNAV: BigInt # netAssetValue, normalized to 18 decimals
 
@@ -191,7 +205,7 @@ type TrancheSnapshot @entity {
 
   timestamp: Date!
   blockNumber: Int!
-  periodStart: Date! @index
+  period: SnapshotPeriod! @index
 
   tokenSupply: BigInt
   tokenPrice: BigInt
@@ -479,7 +493,7 @@ type AssetSnapshot @entity {
 
   timestamp: Date!
   blockNumber: Int!
-  periodStart: Date! @index
+  period: SnapshotPeriod! @index
 
   outstandingPrincipal: BigInt
   outstandingInterest: BigInt
@@ -609,7 +623,7 @@ type PoolFeeSnapshot @entity {
 
   timestamp: Date!
   blockNumber: Int!
-  periodStart: Date! @index
+  period: SnapshotPeriod! @index
 
   sumChargedAmount: BigInt #Applies to Fixed ONLY
   sumAccruedAmount: BigInt #Applies toChargedUpTo ONLY
