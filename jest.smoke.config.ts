@@ -1,13 +1,13 @@
 import type { Config } from 'jest'
 
 const config: Config = {
-  verbose: true,
+  verbose: false,
   workerThreads: true,
   preset: 'ts-jest',
   testEnvironment: 'node',
-  setupFiles: ['./jest/globals.js'],
+  setupFiles: ['./jest/smoke.js'],
   moduleFileExtensions: ['ts', 'tsx', 'js'],
-  testPathIgnorePatterns: [ '/node_modules/', '/smoke-tests/' ],
+  testMatch: [ '**/smoke-tests/**/*.test.ts' ],
   transform: {
     // '^.+\\.[tj]sx?$' to process js/ts with `ts-jest`
     // '^.+\\.m?[tj]sx?$' to process js/ts/mjs/mts with `ts-jest`

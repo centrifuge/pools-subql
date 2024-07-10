@@ -9,6 +9,7 @@
     "dev": "docker compose down -v --remove-orphans && docker compose pull && docker compose up -d",
     "prepack": "rm -rf dist && subql build",
     "test": "jest",
+    "test:smoke": "jest -c jest.smoke.config.ts",
     "codegen": "subql codegen",
     "projectgen": "./project-generator.sh",
     "generate:defs": "ts-node --skip-project node_modules/.bin/polkadot-types-from-defs --package centrifuge-subql/src/api-interfaces --endpoint 'wss://fullnode.development.cntrfg.com' --input ./src/api-interfaces",
