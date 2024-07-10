@@ -248,7 +248,7 @@ export class AssetService extends Asset {
   public async loadSnapshot(periodStart: Date) {
     const snapshots = await AssetSnapshot.getByFields([
       ['assetId', '=', this.id],
-      ['periodStart', '=', periodStart],
+      ['periodId', '=', periodStart.toISOString()],
     ])
     if (snapshots.length !== 1) {
       logger.warn(`Unable to load snapshot for asset ${this.id} for period ${periodStart.toISOString()}`)

@@ -11,6 +11,8 @@ import { TrancheBalanceService } from '../services/trancheBalanceService'
 import { BlockchainService, LOCAL_CHAIN_ID } from '../services/blockchainService'
 import { AssetService, ONCHAIN_CASH_ASSET_ID } from '../services/assetService'
 import { AssetTransactionData, AssetTransactionService } from '../services/assetTransactionService'
+import { substrateStateSnapshotter } from '../../helpers/stateSnapshot'
+import { Pool, PoolSnapshot } from '../../types'
 
 export const handlePoolCreated = errorHandler(_handlePoolCreated)
 async function _handlePoolCreated(event: SubstrateEvent<PoolCreatedEvent>): Promise<void> {
@@ -284,4 +286,6 @@ async function _handleEpochExecuted(event: SubstrateEvent<EpochClosedExecutedEve
   }
 
   await Promise.all(assetTransactionSaves)
+
+  await substrateStateSnapshotter('epochId', epoch.id, Pool, PoolSnapshot, event.block, 'isActive', true, 'poolId')
 }
