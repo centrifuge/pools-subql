@@ -11,7 +11,7 @@ describe('TVL at known intervals', () => {
     const response = await subql<any>(`
       { poolSnapshots(filter: { periodStart: { equalTo: "${sampleDate}" } }) { aggregates { sum { normalizedNAV } } } }
     `)
-    const { normalizedNav } = response.data.poolSnapshots.aggregates.sum
-    expect(normalizedNav).toBe(knownTVL[sampleDate])
+    const { normalizedNAV } = response.data.poolSnapshots.aggregates.sum
+    expect(normalizedNAV).toBe(knownTVL[sampleDate])
   })
 })
