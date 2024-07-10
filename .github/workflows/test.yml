@@ -16,7 +16,7 @@ jobs:
     env:
       SUBQL_INDEXER_VERSION: v3.4.10
       SUBQL_QUERY_VERSION: v2.8.0
-      CHAIN_ID: demo
+      CHAIN_ID: centrifuge
     steps:
       - name: Check out repo's default branch
         uses: actions/checkout@v3
@@ -44,11 +44,14 @@ jobs:
       - name: 'Setup Node'
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
-      - name: 'Install Dependencies'
-        run: yarn install
-      - name: 'Generate Entities'
-        run: yarn codegen
+          node-version: 18
+          cache: npm
+      - name: Setup Yarn
+        run: yarn install --frozen-lockfile
+      - name: Codegen
+        run: |
+          CHAIN_ID=centrifuge yarn projectgen
+          yarn codegen
       - name: 'Run Linter'
         run: yarn lint
   test:
@@ -62,10 +65,35 @@ jobs:
       - name: 'Setup Node'
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
-      - name: 'Install Dependencies'
-        run: yarn install
-      - name: 'Generate Entities'
-        run: yarn codegen
+          node-version: 18
+          cache: npm
+      - name: Setup Yarn
+        run: yarn install --frozen-lockfile
+      - name: Codegen
+        run: |
+          CHAIN_ID=centrifuge yarn projectgen
+          yarn codegen
       - name: 'Run Tests'
         run: yarn test
+  smoke-tests:
+    if: ${{ startsWith(github.head_ref, 'release-please') }}
+    name: 'Run Smoke Tests'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Checkout Repository'
+        uses: actions/checkout@v3
+      - name: Initialise project.yaml
+        run: cp chains-cfg/_root.yaml project.yaml
+      - name: 'Setup Node'
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: npm
+      - name: Setup Yarn
+        run: yarn install --frozen-lockfile
+      - name: Codegen
+        run: |
+          CHAIN_ID=centrifuge yarn projectgen
+          yarn codegen
+      - name: 'Run Tests'
+        run: yarn test:smoke
