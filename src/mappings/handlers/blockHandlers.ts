@@ -21,6 +21,8 @@ import {
 import { AssetPositionService } from '../services/assetPositionService'
 import { EpochService } from '../services/epochService'
 import { SnapshotPeriodService } from '../services/snapshotPeriodService'
+import { TrancheBalanceService } from '../services/trancheBalanceService'
+import { InvestorPositionService } from '../services/investorPositionService'
 
 const timekeeper = TimekeeperService.init()
 
@@ -74,6 +76,18 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
         await tranche.computeYieldAnnualized('yield30DaysAnnualized', period.start, daysAgo30)
         await tranche.computeYieldAnnualized('yield90DaysAnnualized', period.start, daysAgo90)
         await tranche.save()
+
+        // Compute TrancheBalances Unrealized Profit
+        const trancheBalances = await TrancheBalanceService.getByTrancheId(tranche.id) as TrancheBalanceService[]
+        for (const trancheBalance of trancheBalances) {
+          const unrealizedProfit = await InvestorPositionService.computeUnrealizedProfitAtPrice(
+            trancheBalance.accountId,
+            tranche.id,
+            tranche.tokenPrice
+          )
+          await trancheBalance.updateUnrealizedProfit(unrealizedProfit)
+          await trancheBalance.save()
+        }
       }
       // Asset operations
       const activeLoanData = await pool.getPortfolio()

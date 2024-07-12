@@ -12,6 +12,7 @@ import { CurrencyBalanceService } from '../services/currencyBalanceService'
 import type { Provider } from '@ethersproject/providers'
 import { TrancheBalanceService } from '../services/trancheBalanceService'
 import { escrows, userEscrows } from '../../config'
+import { InvestorPositionService } from '../services/investorPositionService'
 
 const _ethApi = api as unknown as Provider
 //const networkPromise = typeof ethApi.getNetwork === 'function' ? ethApi.getNetwork() : null
@@ -125,9 +126,24 @@ async function _handleEvmTransfer(event: TransferLog): Promise<void> {
   // Handle Transfer In and Out
   if (isFromUserAddress && isToUserAddress) {
     const txIn = InvestorTransactionService.transferIn({ ...orderData, address: toAccount.id })
+    await InvestorPositionService.buy(
+      txIn.accountId,
+      txIn.trancheId,
+      txIn.hash,
+      txIn.timestamp,
+      txIn.tokenAmount,
+      txIn.tokenPrice
+    )
     await txIn.save()
 
     const txOut = InvestorTransactionService.transferOut({ ...orderData, address: fromAccount.id })
+    const profit = await InvestorPositionService.sellFifo(
+      txOut.accountId,
+      txOut.trancheId,
+      txOut.tokenAmount,
+      txOut.tokenPrice
+    )
+    await txOut.setRealizedProfitFifo(profit)
     await txOut.save()
   }
 }
