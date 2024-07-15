@@ -314,6 +314,8 @@ type InvestorTransaction @entity {
   currencyAmount: BigInt
   tokenPrice: BigInt
   transactionFee: BigInt
+
+  realizedProfitFifo: BigInt
 }
 
 enum AssetTransactionType {
@@ -402,6 +404,18 @@ type TrancheBalance @entity {
 
   sumClaimedTrancheTokens: BigInt!
   sumClaimedCurrency: BigInt!
+
+  unrealizedProfit: BigInt!
+}
+
+type InvestorPosition @entity {
+  id: ID! #address - poolId - trancheId - hash
+  account: Account! @index
+  pool: Pool! @index
+  tranche: Tranche! @index
+  timestamp: Date!
+  holdingQuantity: BigInt!
+  purchasePrice: BigInt!
 }
 
 enum AssetStatus {
