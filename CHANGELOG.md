@@ -1,5 +1,36 @@
 # Changelog
 
+## [2.2.0](https://github.com/centrifuge/pools-subql/compare/v2.1.0...v2.2.0) (2024-07-26)
+
+
+### Features
+
+* add 7 day apy ([#218](https://github.com/centrifuge/pools-subql/issues/218)) ([8a13a97](https://github.com/centrifuge/pools-subql/commit/8a13a97c397d86d1d7cfe837206240a921e3439e))
+* add AssetPosition entity and track realized p&l ([#193](https://github.com/centrifuge/pools-subql/issues/193)) ([cc358ee](https://github.com/centrifuge/pools-subql/commit/cc358eeadac190d36732bdd2d8fe7eb1650c233b))
+* add missing quantity settlement price for handleLoanDebtTransferred1024 ([#192](https://github.com/centrifuge/pools-subql/issues/192)) ([6a7b554](https://github.com/centrifuge/pools-subql/commit/6a7b554ebe736dd857f8460a4f24d1042be46c44))
+* add unrealized P&L ([#197](https://github.com/centrifuge/pools-subql/issues/197)) ([43f43b0](https://github.com/centrifuge/pools-subql/commit/43f43b0748b23759f182ecaf7320e8e87c6fc6c9))
+* add yieldMTD, yieldQTD, yieldYTD ([#204](https://github.com/centrifuge/pools-subql/issues/204)) ([8c6c48e](https://github.com/centrifuge/pools-subql/commit/8c6c48eb01347c1072c88996ec3c77da9e3da173)), closes [#176](https://github.com/centrifuge/pools-subql/issues/176)
+* link asset transactions and pool fee transactions to epoch entity ([#203](https://github.com/centrifuge/pools-subql/issues/203)) ([eeb9e3f](https://github.com/centrifuge/pools-subql/commit/eeb9e3f04b3665a248d4213f8f8ac3647d140860))
+* track future cashflows per asset ([#219](https://github.com/centrifuge/pools-subql/issues/219)) ([99ea318](https://github.com/centrifuge/pools-subql/commit/99ea318f9775ab587a03de42a1f0df84dcf78e46))
+* track investments and redemptions in onchain cash asset ([#188](https://github.com/centrifuge/pools-subql/issues/188)) ([aef3249](https://github.com/centrifuge/pools-subql/commit/aef32496b239fc34cda8babfb35a54578170e3a9)), closes [#163](https://github.com/centrifuge/pools-subql/issues/163)
+* track investor side profit ([#226](https://github.com/centrifuge/pools-subql/issues/226)) ([7b38112](https://github.com/centrifuge/pools-subql/commit/7b3811268c89ddde4f9c1911955ea8000f1cb1da))
+* track oracle transactions ([#200](https://github.com/centrifuge/pools-subql/issues/200)) ([1dcdb7c](https://github.com/centrifuge/pools-subql/commit/1dcdb7c99473db870b69daa1023bdc4029047f91)), closes [#161](https://github.com/centrifuge/pools-subql/issues/161)
+* update prices ([#199](https://github.com/centrifuge/pools-subql/issues/199)) ([f4ccd62](https://github.com/centrifuge/pools-subql/commit/f4ccd6296fb2620c399e471aae204b2eb4f9bc78))
+
+
+### Bug Fixes
+
+* add normalized NAV to pool snapshot ([#212](https://github.com/centrifuge/pools-subql/issues/212)) ([091e1e8](https://github.com/centrifuge/pools-subql/commit/091e1e8f7edd3ece0ca63ee9c9fde93c791a11db))
+* allow epoch number to be null ([#228](https://github.com/centrifuge/pools-subql/issues/228)) ([0da65cd](https://github.com/centrifuge/pools-subql/commit/0da65cdb6c6112cd464e653caa8ae525cec4406f))
+* asset names ([#190](https://github.com/centrifuge/pools-subql/issues/190)) ([d8de413](https://github.com/centrifuge/pools-subql/commit/d8de413d2f43802dcdb59f6cd13a97bffa435af0))
+* check if name is not null ([#191](https://github.com/centrifuge/pools-subql/issues/191)) ([e99d281](https://github.com/centrifuge/pools-subql/commit/e99d2818b2fb55a06f38d40e33816cb0b2d799e9))
+* init epoch number ([#229](https://github.com/centrifuge/pools-subql/issues/229)) ([113551b](https://github.com/centrifuge/pools-subql/commit/113551b3c529a6bf77edefd33b883b882d309551))
+* missing epoch on some poolFee creation leading to failing poolFee tracking ([eeb9e3f](https://github.com/centrifuge/pools-subql/commit/eeb9e3f04b3665a248d4213f8f8ac3647d140860))
+* missing name in assets ([#201](https://github.com/centrifuge/pools-subql/issues/201)) ([39f5dc3](https://github.com/centrifuge/pools-subql/commit/39f5dc371e827a9f4a502e4debc560b97dada2fe)), closes [#155](https://github.com/centrifuge/pools-subql/issues/155)
+* missing yield fields on tranche snapshots ([#206](https://github.com/centrifuge/pools-subql/issues/206)) ([5cc0611](https://github.com/centrifuge/pools-subql/commit/5cc0611abf124bf3274cead7f5169a35ed259375))
+* support assets without maturity ([#216](https://github.com/centrifuge/pools-subql/issues/216)) ([9e8d854](https://github.com/centrifuge/pools-subql/commit/9e8d8547f33b80ea16d7a306aa569bcf056b6c04)), closes [#205](https://github.com/centrifuge/pools-subql/issues/205)
+* use tranche token price RT api ([#180](https://github.com/centrifuge/pools-subql/issues/180)) ([345f743](https://github.com/centrifuge/pools-subql/commit/345f743cc8cba5e83e6396abaaa2e3426b187acb))
+
 ## [2.1.0](https://github.com/centrifuge/pools-subql/compare/v2.0.0...v2.1.0) (2024-06-03)
 
 
