@@ -11,13 +11,13 @@ export class OutstandingOrderService extends OutstandingOrder {
       data.address,
       data.poolId,
       `${data.poolId}-${data.trancheId}`,
+      data.epochNumber,
       data.timestamp,
       investAmount,
       redeemAmount
     )
     oo.investAmount = investAmount
     oo.redeemAmount = redeemAmount
-    oo.epochNumber = data.epochNumber
     return oo
   }
 
@@ -37,7 +37,9 @@ export class OutstandingOrderService extends OutstandingOrder {
   }
 
   static async getAllByTrancheId(poolId: string, trancheId: string) {
-    const entities = await paginatedGetter<OutstandingOrder>(this, [['trancheId', '=', `${poolId}-${trancheId}`]])
+    const entities = await paginatedGetter<OutstandingOrder>(this, [
+      ['trancheId', '=', `${poolId}-${trancheId}`],
+    ])
     return entities as OutstandingOrderService[]
   }
 
