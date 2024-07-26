@@ -13,6 +13,7 @@ export class TrancheBalanceService extends TrancheBalance {
       BigInt(0),
       BigInt(0),
       BigInt(0),
+      BigInt(0),
       BigInt(0)
     )
     return trancheBalance
@@ -82,5 +83,13 @@ export class TrancheBalanceService extends TrancheBalance {
     )
     this.claimableCurrency -= currencyAmount
     this.sumClaimedCurrency += currencyAmount
+  }
+
+  public updateUnrealizedProfit(unrealizedProfit: bigint) {
+    logger.info(
+      `Updating unrealizedProfit for trancheBalance: ${this.id}-${this.poolId}-${this.trancheId}` +
+        ` to: ${unrealizedProfit}`
+    )
+    this.unrealizedProfit = unrealizedProfit
   }
 }

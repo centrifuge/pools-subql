@@ -54,6 +54,8 @@ export class InvestorTransactionService extends InvestorTransaction {
     tx.currencyAmount = currencyTypes.includes(type) ? data.amount : this.computeCurrencyAmount(data)
     tx.tokenAmount = tokenTypes.includes(type) ? data.amount : this.computeTokenAmount(data)
 
+    tx.realizedProfitFifo = BigInt(0)
+
     return tx
   }
 
@@ -174,5 +176,9 @@ export class InvestorTransactionService extends InvestorTransaction {
 
   static computeFulfilledAmount(data: InvestorTransactionData) {
     return nToBigInt(bnToBn(data.amount).mul(bnToBn(data.fulfillmentPercentage)).div(WAD))
+  }
+
+  public setRealizedProfitFifo(profit: bigint) {
+    this.realizedProfitFifo = profit
   }
 }

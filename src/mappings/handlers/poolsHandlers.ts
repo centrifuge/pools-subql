@@ -11,6 +11,9 @@ import { TrancheBalanceService } from '../services/trancheBalanceService'
 import { BlockchainService, LOCAL_CHAIN_ID } from '../services/blockchainService'
 import { AssetService, ONCHAIN_CASH_ASSET_ID } from '../services/assetService'
 import { AssetTransactionData, AssetTransactionService } from '../services/assetTransactionService'
+import { substrateStateSnapshotter } from '../../helpers/stateSnapshot'
+import { Pool, PoolSnapshot } from '../../types'
+import { InvestorPositionService } from '../services/investorPositionService'
 
 export const handlePoolCreated = errorHandler(_handlePoolCreated)
 async function _handlePoolCreated(event: SubstrateEvent<PoolCreatedEvent>): Promise<void> {
@@ -225,6 +228,15 @@ async function _handleEpochExecuted(event: SubstrateEvent<EpochClosedExecutedEve
         await it.save()
         await oo.updateUnfulfilledInvest(it.currencyAmount)
         await trancheBalance.investExecute(it.currencyAmount, it.tokenAmount)
+
+        await InvestorPositionService.buy(
+          it.accountId,
+          it.trancheId,
+          it.hash,
+          it.timestamp,
+          it.tokenAmount,
+          it.tokenPrice
+        )
       }
 
       if (oo.redeemAmount > BigInt(0) && epochState.redeemFulfillmentPercentage > BigInt(0)) {
@@ -233,9 +245,12 @@ async function _handleEpochExecuted(event: SubstrateEvent<EpochClosedExecutedEve
           amount: oo.redeemAmount,
           fulfillmentPercentage: epochState.redeemFulfillmentPercentage,
         })
-        await it.save()
         await oo.updateUnfulfilledRedeem(it.tokenAmount)
         await trancheBalance.redeemExecute(it.tokenAmount, it.currencyAmount)
+
+        const profit = await InvestorPositionService.sellFifo(it.accountId, it.trancheId, it.tokenAmount, it.tokenPrice)
+        await it.setRealizedProfitFifo(profit)
+        await it.save()
       }
 
       await trancheBalance.save()
@@ -284,4 +299,6 @@ async function _handleEpochExecuted(event: SubstrateEvent<EpochClosedExecutedEve
   }
 
   await Promise.all(assetTransactionSaves)
+
+  await substrateStateSnapshotter('epochId', epoch.id, Pool, PoolSnapshot, event.block, 'isActive', true, 'poolId')
 }

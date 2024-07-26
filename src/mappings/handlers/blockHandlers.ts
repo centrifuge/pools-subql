@@ -20,6 +20,9 @@ import {
 } from '../../types/models'
 import { AssetPositionService } from '../services/assetPositionService'
 import { EpochService } from '../services/epochService'
+import { SnapshotPeriodService } from '../services/snapshotPeriodService'
+import { TrancheBalanceService } from '../services/trancheBalanceService'
+import { InvestorPositionService } from '../services/investorPositionService'
 
 const timekeeper = TimekeeperService.init()
 
@@ -34,14 +37,18 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
     logger.info(
       `It's a new period on block ${blockNumber}: ${block.timestamp.toISOString()} (specVersion: ${specVersion})`
     )
-    const lastPeriodStart = new Date(blockPeriodStart.valueOf() - SNAPSHOT_INTERVAL_SECONDS * 1000)
-    const daysAgo7 = new Date(blockPeriodStart.valueOf() - 7 * 24 * 3600 * 1000)
-    const daysAgo30 = new Date(blockPeriodStart.valueOf() - 30 * 24 * 3600 * 1000)
-    const daysAgo90 = new Date(blockPeriodStart.valueOf() - 90 * 24 * 3600 * 1000)
-    const beginningOfMonth = new Date(blockPeriodStart.getFullYear(), blockPeriodStart.getMonth(), 1)
-    const quarter = Math.floor(blockPeriodStart.getMonth() / 3)
-    const beginningOfQuarter = new Date(blockPeriodStart.getFullYear(), quarter * 3, 1)
-    const beginningOfYear = new Date(blockPeriodStart.getFullYear(), 0, 1)
+
+    const period = SnapshotPeriodService.init(blockPeriodStart)
+    await period.save()
+
+    const lastPeriodStart = new Date(period.start.valueOf() - SNAPSHOT_INTERVAL_SECONDS * 1000)
+    const daysAgo7 = new Date(period.start.valueOf() - 7 * 24 * 3600 * 1000)
+    const daysAgo30 = new Date(period.start.valueOf() - 30 * 24 * 3600 * 1000)
+    const daysAgo90 = new Date(period.start.valueOf() - 90 * 24 * 3600 * 1000)
+    const beginningOfMonth = new Date(period.year, period.month, 1)
+    const quarter = Math.floor(period.month / 3)
+    const beginningOfQuarter = new Date(period.year, quarter * 3, 1)
+    const beginningOfYear = new Date(period.year, 0, 1)
 
     // Update Pool States
     const pools = await PoolService.getCfgActivePools()
@@ -65,10 +72,22 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
         await tranche.computeYield('yieldYTD', beginningOfYear)
         await tranche.computeYield('yieldQTD', beginningOfQuarter)
         await tranche.computeYield('yieldMTD', beginningOfMonth)
-        await tranche.computeYieldAnnualized('yield7DaysAnnualized', blockPeriodStart, daysAgo7)
-        await tranche.computeYieldAnnualized('yield30DaysAnnualized', blockPeriodStart, daysAgo30)
-        await tranche.computeYieldAnnualized('yield90DaysAnnualized', blockPeriodStart, daysAgo90)
+        await tranche.computeYieldAnnualized('yield7DaysAnnualized', period.start, daysAgo7)
+        await tranche.computeYieldAnnualized('yield30DaysAnnualized', period.start, daysAgo30)
+        await tranche.computeYieldAnnualized('yield90DaysAnnualized', period.start, daysAgo90)
         await tranche.save()
+
+        // Compute TrancheBalances Unrealized Profit
+        const trancheBalances = await TrancheBalanceService.getByTrancheId(tranche.id) as TrancheBalanceService[]
+        for (const trancheBalance of trancheBalances) {
+          const unrealizedProfit = await InvestorPositionService.computeUnrealizedProfitAtPrice(
+            trancheBalance.accountId,
+            tranche.id,
+            tranche.tokenPrice
+          )
+          await trancheBalance.updateUnrealizedProfit(unrealizedProfit)
+          await trancheBalance.save()
+        }
       }
       // Asset operations
       const activeLoanData = await pool.getPortfolio()
@@ -129,12 +148,30 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
     }
 
     //Perform Snapshots and reset accumulators
-    await substrateStateSnapshotter(Pool, PoolSnapshot, block, 'isActive', true, 'poolId')
-    await substrateStateSnapshotter(Tranche, TrancheSnapshot, block, 'isActive', true, 'trancheId')
-    await substrateStateSnapshotter(Asset, AssetSnapshot, block, 'isActive', true, 'assetId')
-    await substrateStateSnapshotter(PoolFee, PoolFeeSnapshot, block, 'isActive', true, 'poolFeeId')
+    await substrateStateSnapshotter('periodId', period.id, Pool, PoolSnapshot, block, 'isActive', true, 'poolId')
+    await substrateStateSnapshotter(
+      'periodId',
+      period.id,
+      Tranche,
+      TrancheSnapshot,
+      block,
+      'isActive',
+      true,
+      'trancheId'
+    )
+    await substrateStateSnapshotter('periodId', period.id, Asset, AssetSnapshot, block, 'isActive', true, 'assetId')
+    await substrateStateSnapshotter(
+      'periodId',
+      period.id,
+      PoolFee,
+      PoolFeeSnapshot,
+      block,
+      'isActive',
+      true,
+      'poolFeeId'
+    )
 
     //Update tracking of period and continue
-    await (await timekeeper).update(blockPeriodStart)
+    await (await timekeeper).update(period.start)
   }
 }

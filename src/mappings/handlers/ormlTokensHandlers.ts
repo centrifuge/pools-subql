@@ -8,6 +8,7 @@ import { InvestorTransactionService } from '../services/investorTransactionServi
 import { PoolService } from '../services/poolService'
 import { TrancheService } from '../services/trancheService'
 import { BlockchainService, LOCAL_CHAIN_ID } from '../services/blockchainService'
+import { InvestorPositionService } from '../services/investorPositionService'
 
 export const handleTokenTransfer = errorHandler(_handleTokenTransfer)
 async function _handleTokenTransfer(event: SubstrateEvent<TokensTransferEvent>): Promise<void> {
@@ -64,10 +65,25 @@ async function _handleTokenTransfer(event: SubstrateEvent<TokensTransferEvent>):
     // CREATE 2 TRANSFERS FOR FROM AND TO ADDRESS
     // with from create TRANSFER_OUT
     const txOut = InvestorTransactionService.transferOut({ ...orderData, address: fromAccount.id })
+    const profit = await InvestorPositionService.sellFifo(
+      txOut.accountId,
+      txOut.trancheId,
+      txOut.tokenAmount,
+      txOut.tokenPrice
+    )
+    await txOut.setRealizedProfitFifo(profit)
     await txOut.save()
 
     // with to create TRANSFER_IN
     const txIn = InvestorTransactionService.transferIn({ ...orderData, address: toAccount.id })
+    await InvestorPositionService.buy(
+      txIn.accountId,
+      txIn.trancheId,
+      txIn.hash,
+      txIn.timestamp,
+      txIn.tokenAmount,
+      txIn.tokenPrice
+    )
     await txIn.save()
   }
 
