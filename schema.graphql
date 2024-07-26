@@ -292,7 +292,7 @@ type OutstandingOrder @entity {
   account: Account! @index #Account @index
   pool: Pool! @index
   tranche: Tranche! @index
-  epochNumber: Int!
+  epochNumber: Int
   timestamp: Date!
 
   investAmount: BigInt!
