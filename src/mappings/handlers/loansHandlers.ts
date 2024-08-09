@@ -438,6 +438,20 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
     // Record cashflows
     await AssetCashflowService.recordAssetCashflows(purchaseTransaction.assetId)
   }
+
+  if (fromAsset.isOffchainCash() && toAsset.isOffchainCash()) {
+    const ct = await AssetTransactionService.cashTransfer({
+      ...txData,
+      assetId: toLoanId.toString(10),
+      amount: borrowPrincipalAmount,
+      principalAmount: borrowPrincipalAmount,
+      quantity: _borrowAmount.isExternal ? _borrowAmount.asExternal.quantity.toBigInt() : null,
+      settlementPrice: _borrowAmount.isExternal ? _borrowAmount.asExternal.settlementPrice.toBigInt() : null,
+      fromAssetId: fromLoanId.toString(10),
+      toAssetId: toLoanId.toString(10),
+    })
+    await ct.save()
+  }
 }
 
 export const handleLoanDebtTransferred1024 = errorHandler(_handleLoanDebtTransferred1024)
