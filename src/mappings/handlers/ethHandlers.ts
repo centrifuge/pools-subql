@@ -11,7 +11,6 @@ import {
   NavfeedAbi__factory,
   ReserveAbi__factory,
   PileAbi__factory,
-  AssessorAbi__factory,
   MulticallAbi__factory,
 } from '../../types/contracts'
 import { TimekeeperService, getPeriodStart } from '../../helpers/timekeeperService'
@@ -63,11 +62,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
 
           logger.info(`Creating senior tranche with id: ${tinlakePool.id}-senior`)
           const senior = await TrancheService.getOrSeed(tinlakePool.id, 'senior')
-          const shelfContract = ShelfAbi__factory.connect(tinlakePool.shelf[0].address, api as unknown as Provider)
-          const assessor = await shelfContract.assessor()
-          logger.info(`Assessor: ${assessor}`)
-          const assessorContract = AssessorAbi__factory.connect(assessor, api as unknown as Provider)
-          senior.interestRatePerSec = (await assessorContract.seniorInterestRate()).toBigInt()
+          senior.interestRatePerSec = BigInt(tinlakePool.seniorInterestRate)
           logger.info(`interestRatePerSec: ${senior.interestRatePerSec}`)
           senior.index = 1
           senior.activate()
