@@ -5,6 +5,8 @@ import {
   LoanCreatedEvent,
   LoanDebtTransferred,
   LoanDebtTransferred1024,
+  LoanDebtIncreased,
+  LoanDebtDecreased,
   LoanRepaidEvent,
   LoanWrittenOffEvent,
 } from '../../helpers/types'
