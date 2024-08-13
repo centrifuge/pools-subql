@@ -255,6 +255,7 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
         loan.actualMaturityDate = new Date((maturityDate as BigNumber).toNumber() * 1000)
       }
       loan.nftId = nftId
+      loan.name = id
       loan.totalBorrowed = BigInt(0)
       loan.totalRepaid = BigInt(0)
       loan.outstandingDebt = BigInt(0)
