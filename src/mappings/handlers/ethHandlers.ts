@@ -67,7 +67,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
           const assessor = await shelfContract.assessor()
           logger.info(`Assessor: ${assessor}`)
           const assessorContract = AssessorAbi__factory.connect(assessor, api as unknown as Provider)
-          senior.interestRatePerSec = await assessorContract.seniorInterestRate()
+          senior.interestRatePerSec = (await assessorContract.seniorInterestRate()).toBigInt()
           logger.info(`interestRatePerSec: ${senior.interestRatePerSec}`)
           senior.index = 1
           senior.activate()
