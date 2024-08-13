@@ -1,8 +1,9 @@
 import { AssetStatus, AssetType, AssetValuationMethod, Pool, PoolSnapshot } from '../../types'
 import { EthereumBlock } from '@subql/types-ethereum'
-import { DAIMainnetAddress, multicallAddress, tinlakePools } from '../../config'
+import { DAIName, DAISymbol, DAIMainnetAddress, multicallAddress, tinlakePools } from '../../config'
 import { errorHandler } from '../../helpers/errorHandler'
 import { PoolService } from '../services/poolService'
+import { TrancheService } from '../services/trancheService'
 import { CurrencyService } from '../services/currencyService'
 import { BlockchainService } from '../services/blockchainService'
 import {
@@ -10,6 +11,7 @@ import {
   NavfeedAbi__factory,
   ReserveAbi__factory,
   PileAbi__factory,
+  AssessorAbi__factory,
   MulticallAbi__factory,
 } from '../../types/contracts'
 import { TimekeeperService, getPeriodStart } from '../../helpers/timekeeperService'
@@ -37,7 +39,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
   const blockPeriodStart = getPeriodStart(date)
 
   const blockchain = await BlockchainService.getOrInit('1')
-  const currency = await CurrencyService.getOrInitEvm(blockchain.id, DAIMainnetAddress)
+  const currency = await CurrencyService.getOrInitEvm(blockchain.id, DAIMainnetAddress, DAISymbol, DAIName)
 
   if (newPeriod) {
     logger.info(`It's a new period on EVM block ${blockNumber}: ${date.toISOString()}`)
@@ -53,11 +55,28 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
 
         // initialize new pool
         if (!pool.isActive) {
+          logger.info(`Initializing pool ${tinlakePool.id}`)
           pool.name = tinlakePool.shortName
           pool.isActive = true
           pool.currencyId = currency.id
           await pool.save()
-          logger.info(`Initializing pool ${tinlakePool.id}`)
+
+          logger.info(`Creating senior tranche with id: ${tinlakePool.id}-senior`)
+          const senior = await TrancheService.getOrSeed(tinlakePool.id, 'senior')
+          const shelfContract = ShelfAbi__factory.connect(tinlakePool.shelf[0].address, api as unknown as Provider)
+          const assessor = await shelfContract.assessor()
+          logger.info(`Assessor: ${assessor}`)
+          const assessorContract = AssessorAbi__factory.connect(assessor, api as unknown as Provider)
+          senior.interestRatePerSec = await assessorContract.seniorInterestRate()
+          logger.info(`interestRatePerSec: ${senior.interestRatePerSec}`)
+          senior.index = 1
+          senior.activate()
+          senior.save()
+
+          logger.info(`Creating junior tranche with id: ${tinlakePool.id}-junior`)
+          const junior = await TrancheService.getOrSeed(tinlakePool.id, 'junior')
+          junior.index = 0
+          junior.save()
         }
 
         const latestNavFeed = getLatestContract(tinlakePool.navFeed, blockNumber)
