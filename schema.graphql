@@ -97,6 +97,7 @@ type Pool @entity {
   sumNumberOfAssets: BigInt
   
   tranches: [Tranche] @derivedFrom(field: "pool")
+  assets: [Asset] @derivedFrom(field: "pool")
 }
 
 #Tracks PoolState over Time
@@ -168,6 +169,7 @@ type Tranche @entity {
   pool: Pool! @index
   trancheId: String!
 
+  name: String
   index: Int
 
   isResidual: Boolean
@@ -327,6 +329,8 @@ enum AssetTransactionType {
   DEPOSIT_FROM_INVESTMENTS
   WITHDRAWAL_FOR_REDEMPTIONS
   WITHDRAWAL_FOR_FEES
+  INCREASE_DEBT
+  DECREASE_DEBT
 }
 
 type AssetTransaction @entity {
@@ -450,6 +454,7 @@ type Asset @entity {
 
   metadata: String
   name: String
+  nftId: String # Tinlake only
 
   advanceRate: BigInt
   collateralValue: BigInt
@@ -461,7 +466,7 @@ type Asset @entity {
 
   isAdminWrittenOff: Boolean
 
-  pool: Pool!
+  pool: Pool! @index
 
   isActive: Boolean! @index
   status: AssetStatus!

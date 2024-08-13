@@ -1,8 +1,9 @@
 import { AssetStatus, AssetType, AssetValuationMethod, Pool, PoolSnapshot } from '../../types'
 import { EthereumBlock } from '@subql/types-ethereum'
-import { DAIMainnetAddress, multicallAddress, tinlakePools } from '../../config'
+import { DAIName, DAISymbol, DAIMainnetAddress, multicallAddress, tinlakePools } from '../../config'
 import { errorHandler } from '../../helpers/errorHandler'
 import { PoolService } from '../services/poolService'
+import { TrancheService } from '../services/trancheService'
 import { CurrencyService } from '../services/currencyService'
 import { BlockchainService } from '../services/blockchainService'
 import {
@@ -37,7 +38,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
   const blockPeriodStart = getPeriodStart(date)
 
   const blockchain = await BlockchainService.getOrInit('1')
-  const currency = await CurrencyService.getOrInitEvm(blockchain.id, DAIMainnetAddress)
+  const currency = await CurrencyService.getOrInitEvm(blockchain.id, DAIMainnetAddress, DAISymbol, DAIName)
 
   if (newPeriod) {
     logger.info(`It's a new period on EVM block ${blockNumber}: ${date.toISOString()}`)
@@ -53,11 +54,26 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
 
         // initialize new pool
         if (!pool.isActive) {
+          logger.info(`Initializing pool ${tinlakePool.id}`)
           pool.name = tinlakePool.shortName
           pool.isActive = true
           pool.currencyId = currency.id
           await pool.save()
-          logger.info(`Initializing pool ${tinlakePool.id}`)
+
+          logger.info(`Creating senior tranche with id: ${tinlakePool.id}-senior`)
+          const senior = await TrancheService.getOrSeed(tinlakePool.id, 'senior')
+          senior.interestRatePerSec = BigInt(tinlakePool.seniorInterestRate)
+          logger.info(`interestRatePerSec: ${senior.interestRatePerSec}`)
+          senior.index = 1
+          senior.name = `${pool.name} (Senior)`
+          senior.activate()
+          senior.save()
+
+          logger.info(`Creating junior tranche with id: ${tinlakePool.id}-junior`)
+          const junior = await TrancheService.getOrSeed(tinlakePool.id, 'junior')
+          junior.index = 0
+          senior.name = `${pool.name} (Junior)`
+          junior.save()
         }
 
         const latestNavFeed = getLatestContract(tinlakePool.navFeed, blockNumber)
@@ -224,7 +240,7 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
     }
 
     // create new loans
-    for (const { id, maturityDate } of newLoanData) {
+    for (const { id, nftId, maturityDate } of newLoanData) {
       const loan = AssetService.init(
         poolId,
         id,
@@ -237,6 +253,8 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
       if (!isBlocktower) {
         loan.actualMaturityDate = new Date((maturityDate as BigNumber).toNumber() * 1000)
       }
+      loan.nftId = nftId
+      loan.name = id
       loan.totalBorrowed = BigInt(0)
       loan.totalRepaid = BigInt(0)
       loan.outstandingDebt = BigInt(0)
