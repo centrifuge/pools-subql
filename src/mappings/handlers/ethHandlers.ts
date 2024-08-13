@@ -65,12 +65,14 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
           senior.interestRatePerSec = BigInt(tinlakePool.seniorInterestRate)
           logger.info(`interestRatePerSec: ${senior.interestRatePerSec}`)
           senior.index = 1
+          senior.name = `${pool.name} (Senior)`
           senior.activate()
           senior.save()
 
           logger.info(`Creating junior tranche with id: ${tinlakePool.id}-junior`)
           const junior = await TrancheService.getOrSeed(tinlakePool.id, 'junior')
           junior.index = 0
+          senior.name = `${pool.name} (Junior)`
           junior.save()
         }
 
@@ -134,7 +136,8 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
         }
 
         // Update loans (only index if fully synced)
-        if (latestNavFeed && date.toDateString() === new Date().toDateString()) {
+        // TODO:  && date.toDateString() === new Date().toDateString()
+        if (latestNavFeed) {
           await updateLoans(
             tinlakePool?.id as string,
             date,
@@ -238,7 +241,7 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
     }
 
     // create new loans
-    for (const { id, maturityDate } of newLoanData) {
+    for (const { id, nftId, maturityDate } of newLoanData) {
       const loan = AssetService.init(
         poolId,
         id,
@@ -251,6 +254,7 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
       if (!isBlocktower) {
         loan.actualMaturityDate = new Date((maturityDate as BigNumber).toNumber() * 1000)
       }
+      loan.nftId = nftId
       loan.totalBorrowed = BigInt(0)
       loan.totalRepaid = BigInt(0)
       loan.outstandingDebt = BigInt(0)
