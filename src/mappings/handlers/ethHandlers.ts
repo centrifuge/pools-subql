@@ -136,8 +136,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
         }
 
         // Update loans (only index if fully synced)
-        // TODO:  && date.toDateString() === new Date().toDateString()
-        if (latestNavFeed) {
+        if (latestNavFeed && date.toDateString() === new Date().toDateString()) {
           await updateLoans(
             tinlakePool?.id as string,
             date,
