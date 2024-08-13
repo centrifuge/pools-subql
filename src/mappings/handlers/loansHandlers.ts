@@ -585,10 +585,9 @@ async function _handleLoanDebtIncreased(event: SubstrateEvent<LoanDebtIncreased>
   }
 
   //TODO: should be tracked separately as corrections
-  if (_borrowAmount.principal.isExternal) {
-    const { quantity } = _borrowAmount.principal.asExternal
-
-    await asset.decreaseQuantity(quantity.toBigInt())
+  if (_borrowAmount.isExternal) {
+    const { quantity } = _borrowAmount.asExternal
+    await asset.increaseQuantity(quantity.toBigInt())
   }
   await asset.save()
 
