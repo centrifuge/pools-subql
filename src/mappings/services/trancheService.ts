@@ -201,6 +201,11 @@ export class TrancheService extends Tranche {
     )
     const priceCurrent = bnToBn(this.tokenPrice)
     const priceOld = bnToBn(trancheSnapshot.tokenPrice)
+
+    logger.info(
+      `Price: ${priceOld.toString()} -> ${priceCurrent.toString()} (${referencePeriodStart.toISOString()}` +
+        ` -> ${currentPeriodStart.toISOString()}), ann ${annualizationFactor}`
+    )
     this[yieldField] = nToBigInt(priceCurrent.mul(WAD).div(priceOld).sub(WAD).mul(annualizationFactor))
     return this
   }
