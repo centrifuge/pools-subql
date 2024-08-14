@@ -13,7 +13,23 @@ repository: https://github.com/centrifuge/pools-subql
 schema:
   file: './schema.graphql'
 dataSources:
-  - kind: ethereum/Runtime
+  - kind: ethereum/Runtime #poolManager V1
+    options:
+      abi: poolManager
+    assets:
+      poolManager:
+        file: './abi/poolManager.abi.json'
+      investmentManager:
+        file: './abi/investmentManager.abi.json'
+    mapping:
+      file: './dist/index.js'
+      handlers:
+        - handler: handleEvmDeployTranche
+          kind: ethereum/LogHandler
+          filter:
+            topics:
+              - DeployTranche(uint64 indexed poolId, bytes16 indexed trancheId, address indexed token)
+  - kind: ethereum/Runtime  #poolManager V2
     options:
       abi: poolManager
     assets:
