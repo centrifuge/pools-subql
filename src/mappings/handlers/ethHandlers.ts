@@ -79,7 +79,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
         const latestNavFeed = getLatestContract(tinlakePool.navFeed, blockNumber)
         const latestReserve = getLatestContract(tinlakePool.reserve, blockNumber)
 
-        if (latestNavFeed) {
+        if (latestNavFeed?.address) {
           poolUpdateCalls.push({
             id: tinlakePool.id,
             type: 'currentNAV',
@@ -90,7 +90,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
             result: '',
           })
         }
-        if (latestReserve) {
+        if (latestReserve?.address) {
           poolUpdateCalls.push({
             id: tinlakePool.id,
             type: 'totalBalance',
@@ -112,7 +112,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
         const pool = await PoolService.getOrSeed(tinlakePool?.id, false, false, blockchain.id)
 
         // Update pool
-        if (callResult.type === 'currentNAV' && latestNavFeed) {
+        if (callResult.type === 'currentNAV' && latestNavFeed?.address) {
           const currentNAV = NavfeedAbi__factory.createInterface().decodeFunctionResult(
             'currentNAV',
             callResult.result
@@ -123,7 +123,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
           await pool.save()
           logger.info(`Updating pool ${tinlakePool?.id} with portfolioValuation: ${pool.portfolioValuation}`)
         }
-        if (callResult.type === 'totalBalance' && latestReserve) {
+        if (callResult.type === 'totalBalance' && latestReserve?.address) {
           const totalBalance = ReserveAbi__factory.createInterface().decodeFunctionResult(
             'totalBalance',
             callResult.result
@@ -136,7 +136,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
         }
 
         // Update loans (only index if fully synced)
-        if (latestNavFeed && date.toDateString() === new Date().toDateString()) {
+        if (latestNavFeed?.address && date.toDateString() === new Date().toDateString()) {
           await updateLoans(
             tinlakePool?.id as string,
             date,
