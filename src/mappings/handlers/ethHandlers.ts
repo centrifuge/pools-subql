@@ -421,7 +421,7 @@ async function processCalls(callsArray: PoolMulticall[], chunkSize = 30): Promis
     try {
       const calls = chunk.map((call) => call.call)
       results = await multicall.callStatic.tryAggregate(false, calls)
-      results[1].map((result, j) => (callsArray[i * chunkSize + j].result = result))
+      results.map((result, j) => (callsArray[i * chunkSize + j].result = result[1]))
     } catch (e) {
       logger.error(`Error fetching chunk ${i}: ${e}`)
     }
