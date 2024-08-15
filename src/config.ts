@@ -10,7 +10,7 @@ export const CPREC = (digits: number) => bnToBn(10).pow(bnToBn(digits))
 export const DAIName = 'Dai Stablecoin'
 export const DAISymbol = 'DAI'
 export const DAIMainnetAddress = '0x6b175474e89094c44da98b954eedeac495271d0f'
-export const multicallAddress = '0xeefba1e63905ef1d7acba5a8513c70307c1ce441'
+export const multicallAddress = '0xcA11bde05977b3631167028862bE2a173976CA11'
 
 export const tinlakePools = [
   {
