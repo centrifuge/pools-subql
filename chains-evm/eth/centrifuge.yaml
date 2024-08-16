@@ -11,25 +11,25 @@ dataSources:
     startBlock: 20432390
     options:
       address: '0x91808B5E2F6d7483D41A681034D7c9DbB64B9E29'
-  # - kind: ethereum/Runtime #Tinlake
-  #   startBlock: 11063000
-  #   options:
-  #     abi: navFeed
-  #   assets:
-  #     navFeed:
-  #       file: ./abi/navfeed.abi.json
-  #     reserve:
-  #       file: ./abi/reserve.abi.json
-  #     shelf:
-  #       file: ./abi/shelf.abi.json
-  #     pile:
-  #       file: ./abi/pile.abi.json
-  #     multicall:
-  #       file: ./abi/multicall.abi.json
-  #   mapping:
-  #     file: ./dist/index.js
-  #     handlers:
-  #       - handler: handleEthBlock
-  #         kind: ethereum/BlockHandler
-  #         filter:
-  #           modulo: 300
+  - kind: ethereum/Runtime #Tinlake
+    startBlock: 11063000
+    options:
+      abi: navFeed
+    assets:
+      navFeed:
+        file: ./abi/navfeed.abi.json
+      reserve:
+        file: ./abi/reserve.abi.json
+      shelf:
+        file: ./abi/shelf.abi.json
+      pile:
+        file: ./abi/pile.abi.json
+      multicall:
+        file: ./abi/multicall.abi.json
+    mapping:
+      file: ./dist/index.js
+      handlers:
+        - handler: handleEthBlock
+          kind: ethereum/BlockHandler
+          filter:
+            modulo: 300

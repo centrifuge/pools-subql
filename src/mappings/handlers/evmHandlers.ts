@@ -55,6 +55,7 @@ async function _handleEvmDeployTranche(event: DeployTrancheLog): Promise<void> {
   await createTrancheTrackerDatasource({ address: tokenAddress })
 }
 const nullAddress = '0x0000000000000000000000000000000000000000'
+const LP_TOKENS_MIGRATION_DATE = '2024-08-07'
 
 export const handleEvmTransfer = errorHandler(_handleEvmTransfer)
 async function _handleEvmTransfer(event: TransferLog): Promise<void> {
@@ -76,12 +77,13 @@ async function _handleEvmTransfer(event: TransferLog): Promise<void> {
   const orderData: Omit<InvestorTransactionData, 'address'> = {
     poolId: evmToken.poolId,
     trancheId: evmToken.trancheId.split('-')[1],
-    //epochNumber: pool.currentEpoch,
     hash: event.transactionHash,
     timestamp: new Date(Number(event.block.timestamp) * 1000),
-    //price: tranche.tokenPrice,
     amount: amount.toBigInt(),
   }
+
+  const isLpTokenMigrationDay =
+    chainId === '1' && orderData.timestamp.toISOString().startsWith(LP_TOKENS_MIGRATION_DATE)
 
   let fromAddress: string = null,
     fromAccount: AccountService = null
@@ -127,24 +129,27 @@ async function _handleEvmTransfer(event: TransferLog): Promise<void> {
   // Handle Transfer In and Out
   if (isFromUserAddress && isToUserAddress) {
     const txIn = InvestorTransactionService.transferIn({ ...orderData, address: toAccount.id })
-    await InvestorPositionService.buy(
-      txIn.accountId,
-      txIn.trancheId,
-      txIn.hash,
-      txIn.timestamp,
-      txIn.tokenAmount,
-      txIn.tokenPrice
-    )
+    if (!isLpTokenMigrationDay)
+      await InvestorPositionService.buy(
+        txIn.accountId,
+        txIn.trancheId,
+        txIn.hash,
+        txIn.timestamp,
+        txIn.tokenAmount,
+        txIn.tokenPrice
+      )
     await txIn.save()
 
     const txOut = InvestorTransactionService.transferOut({ ...orderData, address: fromAccount.id })
-    const profit = await InvestorPositionService.sellFifo(
-      txOut.accountId,
-      txOut.trancheId,
-      txOut.tokenAmount,
-      txOut.tokenPrice
-    )
-    await txOut.setRealizedProfitFifo(profit)
+    if (!isLpTokenMigrationDay) {
+      const profit = await InvestorPositionService.sellFifo(
+        txOut.accountId,
+        txOut.trancheId,
+        txOut.tokenAmount,
+        txOut.tokenPrice
+      )
+      await txOut.setRealizedProfitFifo(profit)
+    }
     await txOut.save()
   }
 }
