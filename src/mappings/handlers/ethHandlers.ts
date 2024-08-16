@@ -79,7 +79,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
         const latestNavFeed = getLatestContract(tinlakePool.navFeed, blockNumber)
         const latestReserve = getLatestContract(tinlakePool.reserve, blockNumber)
 
-        if (latestNavFeed) {
+        if (latestNavFeed && latestNavFeed.address) {
           poolUpdateCalls.push({
             id: tinlakePool.id,
             type: 'currentNAV',

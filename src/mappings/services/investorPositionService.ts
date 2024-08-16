@@ -1,10 +1,14 @@
 import { InvestorPosition } from '../../types/models/InvestorPosition'
 import { WAD } from '../../config'
 import { nToBigInt, bnToBn, BN } from '@polkadot/util'
+import assert from 'assert'
 
 export class InvestorPositionService extends InvestorPosition {
   static init(accountId: string, trancheId: string, hash: string, timestamp: Date, quantity: bigint, price: bigint) {
     const [ poolId ] = trancheId.split('-')
+    assert(quantity, 'Missing quantity')
+    assert(price, 'Missing price')
+    assert(hash, 'Missing hash')
     const id = `${accountId}-${trancheId}-${hash}`
     logger.info(
       `Initialising new InvestorPosition with Id ${id} ` +
