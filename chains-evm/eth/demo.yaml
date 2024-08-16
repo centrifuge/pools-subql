@@ -2,7 +2,11 @@ network:
   chainId: '11155111' #Ethereum Sepolia
   endpoint: "https://eth-sepolia.api.onfinality.io/rpc?apikey=${ONFINALITY_API_KEY}"
 dataSources:
-  - kind: ethereum/Runtime
+  - kind: ethereum/Runtime #PoolManager V1
+    startBlock: 6074950 # June 10th 2024
+    options:
+      address: '0x5c8657b827a138D52a4e3f03683A28B1FaD86893'
+  - kind: ethereum/Runtime #PoolManager V2
     startBlock: 6074950 # June 10th 2024
     options:
       address: '0x5c8657b827a138D52a4e3f03683A28B1FaD86893'

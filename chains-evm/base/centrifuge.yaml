@@ -3,7 +3,11 @@ network:
   endpoint: "https://base.api.onfinality.io/ws?apikey=${ONFINALITY_API_KEY}"
   dictionary: "https://api.subquery.network/sq/subquery/base-dictionary"
 dataSources:
-  - kind: ethereum/Runtime
+  - kind: ethereum/Runtime #Poolmanager V1
     startBlock: 8053055
     options:
       address: '0x78E9e622A57f70F1E0Ec652A4931E4e278e58142'
+  - kind: ethereum/Runtime #Poolmanager V2
+    startBlock: 17854400
+    options:
+      address: '0x7f192F34499DdB2bE06c4754CFf2a21c4B056994'

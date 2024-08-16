@@ -7,7 +7,7 @@ import { PoolService } from '../services/poolService'
 import { TrancheService } from '../services/trancheService'
 import { InvestorTransactionData, InvestorTransactionService } from '../services/investorTransactionService'
 import { CurrencyService } from '../services/currencyService'
-import { BlockchainService } from '../services/blockchainService'
+import { BlockchainService, LOCAL_CHAIN_ID } from '../services/blockchainService'
 import { CurrencyBalanceService } from '../services/currencyBalanceService'
 import type { Provider } from '@ethersproject/providers'
 import { TrancheBalanceService } from '../services/trancheBalanceService'
@@ -22,8 +22,9 @@ async function _handleEvmDeployTranche(event: DeployTrancheLog): Promise<void> {
   const [_poolId, _trancheId, tokenAddress] = event.args
   const poolManagerAddress = event.address
 
+  await BlockchainService.getOrInit(LOCAL_CHAIN_ID)
   const chainId = await getNodeEvmChainId() //(await networkPromise).chainId.toString(10)
-  const blockchain = await BlockchainService.getOrInit(chainId)
+  const evmBlockchain = await BlockchainService.getOrInit(chainId)
 
   const poolId = _poolId.toString()
   const trancheId = _trancheId.substring(0, 34)
@@ -36,7 +37,7 @@ async function _handleEvmDeployTranche(event: DeployTrancheLog): Promise<void> {
   const pool = await PoolService.getOrSeed(poolId)
   const tranche = await TrancheService.getOrSeed(pool.id, trancheId)
 
-  const currency = await CurrencyService.getOrInitEvm(blockchain.id, tokenAddress)
+  const currency = await CurrencyService.getOrInitEvm(evmBlockchain.id, tokenAddress)
   // TODO: fetch escrow from poolManager
   //const poolManager = PoolManagerAbi__factory.connect(poolManagerAddress, ethApi)
   //const escrowAddress = await poolManager.escrow()
@@ -54,6 +55,7 @@ async function _handleEvmDeployTranche(event: DeployTrancheLog): Promise<void> {
   await createTrancheTrackerDatasource({ address: tokenAddress })
 }
 const nullAddress = '0x0000000000000000000000000000000000000000'
+const LP_TOKENS_MIGRATION_DATE = '2024-08-07'
 
 export const handleEvmTransfer = errorHandler(_handleEvmTransfer)
 async function _handleEvmTransfer(event: TransferLog): Promise<void> {
@@ -62,8 +64,8 @@ async function _handleEvmTransfer(event: TransferLog): Promise<void> {
 
   const evmTokenAddress = event.address
   const chainId = await getNodeEvmChainId() //(await networkPromise).chainId.toString(10)
-  const blockchain = await BlockchainService.getOrInit(chainId)
-  const evmToken = await CurrencyService.getOrInitEvm(blockchain.id, evmTokenAddress)
+  const evmBlockchain = await BlockchainService.getOrInit(chainId)
+  const evmToken = await CurrencyService.getOrInitEvm(evmBlockchain.id, evmTokenAddress)
   const { escrowAddress, userEscrowAddress } = evmToken
   const serviceAddresses = [evmTokenAddress, escrowAddress, userEscrowAddress, nullAddress]
 
@@ -75,24 +77,25 @@ async function _handleEvmTransfer(event: TransferLog): Promise<void> {
   const orderData: Omit<InvestorTransactionData, 'address'> = {
     poolId: evmToken.poolId,
     trancheId: evmToken.trancheId.split('-')[1],
-    //epochNumber: pool.currentEpoch,
     hash: event.transactionHash,
     timestamp: new Date(Number(event.block.timestamp) * 1000),
-    //price: tranche.tokenPrice,
     amount: amount.toBigInt(),
   }
+
+  const isLpTokenMigrationDay =
+    chainId === '1' && orderData.timestamp.toISOString().startsWith(LP_TOKENS_MIGRATION_DATE)
 
   let fromAddress: string = null,
     fromAccount: AccountService = null
   if (isFromUserAddress) {
-    fromAddress = AccountService.evmToSubstrate(fromEvmAddress, blockchain.id)
+    fromAddress = AccountService.evmToSubstrate(fromEvmAddress, evmBlockchain.id)
     fromAccount = await AccountService.getOrInit(fromAddress)
   }
 
   let toAddress: string = null,
     toAccount: AccountService = null
   if (isToUserAddress) {
-    toAddress = AccountService.evmToSubstrate(toEvmAddress, blockchain.id)
+    toAddress = AccountService.evmToSubstrate(toEvmAddress, evmBlockchain.id)
     toAccount = await AccountService.getOrInit(toAddress)
   }
 
@@ -126,24 +129,27 @@ async function _handleEvmTransfer(event: TransferLog): Promise<void> {
   // Handle Transfer In and Out
   if (isFromUserAddress && isToUserAddress) {
     const txIn = InvestorTransactionService.transferIn({ ...orderData, address: toAccount.id })
-    await InvestorPositionService.buy(
-      txIn.accountId,
-      txIn.trancheId,
-      txIn.hash,
-      txIn.timestamp,
-      txIn.tokenAmount,
-      txIn.tokenPrice
-    )
+    if (!isLpTokenMigrationDay)
+      await InvestorPositionService.buy(
+        txIn.accountId,
+        txIn.trancheId,
+        txIn.hash,
+        txIn.timestamp,
+        txIn.tokenAmount,
+        txIn.tokenPrice
+      )
     await txIn.save()
 
     const txOut = InvestorTransactionService.transferOut({ ...orderData, address: fromAccount.id })
-    const profit = await InvestorPositionService.sellFifo(
-      txOut.accountId,
-      txOut.trancheId,
-      txOut.tokenAmount,
-      txOut.tokenPrice
-    )
-    await txOut.setRealizedProfitFifo(profit)
+    if (!isLpTokenMigrationDay) {
+      const profit = await InvestorPositionService.sellFifo(
+        txOut.accountId,
+        txOut.trancheId,
+        txOut.tokenAmount,
+        txOut.tokenPrice
+      )
+      await txOut.setRealizedProfitFifo(profit)
+    }
     await txOut.save()
   }
 }
