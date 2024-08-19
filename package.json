@@ -35,7 +35,7 @@
     "@jest/globals": "^29.2.0",
     "@polkadot/api": "^12",
     "@polkadot/typegen": "^12",
-    "@subql/cli": "latest",
+    "@subql/cli": "4.12.0",
     "@subql/common-substrate": "latest",
     "@subql/node-ethereum": "latest",
     "@subql/testing": "latest",
