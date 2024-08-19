@@ -214,13 +214,13 @@ type TrancheSnapshot @entity {
   tokenPrice: BigInt
   sumDebt: BigInt
 
-  sumOutstandingInvestOrdersByPeriod: BigInt!
-  sumOutstandingRedeemOrdersByPeriod: BigInt!
-  sumOutstandingRedeemOrdersCurrencyByPeriod: BigInt!
+  sumOutstandingInvestOrdersByPeriod: BigInt
+  sumOutstandingRedeemOrdersByPeriod: BigInt
+  sumOutstandingRedeemOrdersCurrencyByPeriod: BigInt
 
-  sumFulfilledInvestOrdersByPeriod: BigInt!
-  sumFulfilledRedeemOrdersByPeriod: BigInt!
-  sumFulfilledRedeemOrdersCurrencyByPeriod: BigInt!
+  sumFulfilledInvestOrdersByPeriod: BigInt
+  sumFulfilledRedeemOrdersByPeriod: BigInt
+  sumFulfilledRedeemOrdersCurrencyByPeriod: BigInt
 
   yield7DaysAnnualized: BigInt
   yield30DaysAnnualized: BigInt
