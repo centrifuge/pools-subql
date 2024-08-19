@@ -14,10 +14,10 @@ export class TrancheService extends Tranche {
     return new this(id, blockchain, 'ALL', poolId, trancheId, false)
   }
 
-  static async getOrSeed(poolId: string, trancheId: string) {
+  static async getOrSeed(poolId: string, trancheId: string, blockchain = '0') {
     let tranche = await this.getById(poolId, trancheId)
     if (!tranche) {
-      tranche = this.seed(poolId, trancheId)
+      tranche = this.seed(poolId, trancheId, blockchain)
       await tranche.save()
     }
     return tranche
@@ -44,6 +44,15 @@ export class TrancheService extends Tranche {
       this.minRiskBuffer = trancheData.trancheType.asNonResidual.minRiskBuffer.toBigInt()
     }
 
+    return this
+  }
+
+  public initTinlake(poolId: string, name: string, index: number, interestRatePerSec?: bigint) {
+    logger.info(`Initializing tinlake tranche ${this.id} for pool ${poolId}`)
+    this.activate()
+    this.name = name
+    this.index = index
+    this.interestRatePerSec = interestRatePerSec
     return this
   }
 

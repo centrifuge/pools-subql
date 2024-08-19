@@ -54,26 +54,16 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
 
         // initialize new pool
         if (!pool.isActive) {
-          logger.info(`Initializing pool ${tinlakePool.id}`)
-          pool.name = tinlakePool.shortName
-          pool.isActive = true
-          pool.currencyId = currency.id
+          await pool.initTinlake(tinlakePool.shortName, currency.id, date, blockNumber)
           await pool.save()
 
-          logger.info(`Creating senior tranche with id: ${tinlakePool.id}-senior`)
-          const senior = await TrancheService.getOrSeed(tinlakePool.id, 'senior')
-          senior.interestRatePerSec = BigInt(tinlakePool.seniorInterestRate)
-          logger.info(`interestRatePerSec: ${senior.interestRatePerSec}`)
-          senior.index = 1
-          senior.name = `${pool.name} (Senior)`
-          senior.activate()
-          senior.save()
+          const senior = await TrancheService.getOrSeed(pool.id, 'senior', blockchain.id)
+          await senior.initTinlake(pool.id, `${pool.name} (Senior)`, 1, BigInt(tinlakePool.seniorInterestRate))
+          await senior.save()
 
-          logger.info(`Creating junior tranche with id: ${tinlakePool.id}-junior`)
-          const junior = await TrancheService.getOrSeed(tinlakePool.id, 'junior')
-          junior.index = 0
-          senior.name = `${pool.name} (Junior)`
-          junior.save()
+          const junior = await TrancheService.getOrSeed(pool.id, 'junior', blockchain.id)
+          await junior.initTinlake(pool.id, `${pool.name} (Junior)`, 0)
+          await junior.save()
         }
 
         const latestNavFeed = getLatestContract(tinlakePool.navFeed, blockNumber)
