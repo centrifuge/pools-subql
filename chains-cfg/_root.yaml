@@ -115,6 +115,16 @@ dataSources:
             specVersion: [null, 1024]
             module: loans
             method: DebtTransferred
+        - handler: handleLoanDebtIncreased
+          kind: substrate/EventHandler
+          filter:
+            module: loans
+            method: DebtIncreased
+        - handler: handleLoanDebtDecreased
+          kind: substrate/EventHandler
+          filter:
+            module: loans
+            method: DebtDecreased
         - handler: handleTokenTransfer
           kind: substrate/EventHandler
           filter:

@@ -30,12 +30,12 @@ export class CurrencyService extends Currency {
     return currency as CurrencyService
   }
 
-  static async getOrInitEvm(chainId: string, currencyType: string, ...currencyValue: string[]) {
-    const currencyId = currencyValue.length > 0 ? `${currencyType}-${currencyValue.join('-')}` : currencyType
+  static async getOrInitEvm(chainId: string, currencyType: string, symbol?: string, name?: string) {
+    const currencyId = currencyType
     const id = `${chainId}-${currencyId}`
     let currency: CurrencyService = (await this.get(id)) as CurrencyService
     if (!currency) {
-      currency = this.init(chainId, currencyId, WAD_DIGITS)
+      currency = this.init(chainId, currencyId, WAD_DIGITS, symbol, name)
       await currency.save()
     }
     return currency as CurrencyService

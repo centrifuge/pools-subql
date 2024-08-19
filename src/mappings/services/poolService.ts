@@ -104,6 +104,28 @@ export class PoolService extends Pool {
     return this
   }
 
+  public initTinlake(
+    name: string,
+    currencyId: string,
+    timestamp: Date,
+    blockNumber: number
+  ) {
+    logger.info(`Initialising tinlake pool ${this.id}`)
+    this.isActive = true
+    this.name = name
+    this.createdAt = timestamp
+    this.createdAtBlockNumber = blockNumber
+
+    this.normalizedNAV = BigInt(0)
+    this.netAssetValue = BigInt(0)
+    this.totalReserve = BigInt(0)
+    this.portfolioValuation = BigInt(0)
+
+    this.currencyId = currencyId
+
+    return this
+  }
+
   public async initData() {
     logger.info(`Initialising data for pool: ${this.id}`)
     const [poolReq, metadataReq] = await Promise.all([
