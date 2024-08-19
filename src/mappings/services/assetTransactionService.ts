@@ -113,22 +113,4 @@ export class AssetTransactionService extends AssetTransaction {
     const tx = this.init(data, AssetTransactionType.WITHDRAWAL_FOR_FEES)
     return tx
   }
-
-  static increaseDebt(data: AssetTransactionData) {
-    logger.info(
-      `Asset transaction of type increase debt from investments for address ${data.address} in pool ${data.poolId} ` +
-        `for asset ${data.assetId} amount: ${data.amount}`
-    )
-    const tx = this.init(data, AssetTransactionType.INCREASE_DEBT)
-    return tx
-  }
-
-  static decreaseDebt(data: AssetTransactionData) {
-    logger.info(
-      `Asset transaction of type decrease debt from investments for address ${data.address} in pool ${data.poolId} ` +
-        `for asset ${data.assetId} amount: ${data.amount}`
-    )
-    const tx = this.init(data, AssetTransactionType.DECREASE_DEBT)
-    return tx
-  }
 }

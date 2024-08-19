@@ -447,8 +447,6 @@ export type LoanDebtTransferred = ITuple<
   [poolId: u64, fromLoanId: u64, toLoanId: u64, repaidAmount: LoanPricingRepaidAmount, borrowAmount: LoanPricingAmount]
 >
 export type LoanDebtTransferred1024 = ITuple<[poolId: u64, fromLoanId: u64, toLoanId: u64, amount: u128]>
-export type LoanDebtIncreased = ITuple<[poolId: u64, loanId: u64, borrowAmount: LoanPricingAmount]>
-export type LoanDebtDecreased = ITuple<[poolId: u64, loanId: u64, repaidAmount: LoanPricingRepaidAmount]>
 
 export type PoolCreatedEvent = ITuple<[admin: AccountId32, depositor: AccountId32, poolId: u64, essence: PoolEssence]>
 export type PoolUpdatedEvent = ITuple<[admin: AccountId32, old: PoolEssence, new: PoolEssence]>
