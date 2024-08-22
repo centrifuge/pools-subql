@@ -35,7 +35,7 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
   if (newPeriod) {
     const specVersion = api.runtimeVersion.specVersion.toNumber()
     logger.info(
-      `It's a new period on block ${blockNumber}: ${block.timestamp.toISOString()} (specVersion: ${specVersion})`
+      `# It's a new period on block ${blockNumber}: ${block.timestamp.toISOString()} (specVersion: ${specVersion})`
     )
 
     const period = SnapshotPeriodService.init(blockPeriodStart)
@@ -53,6 +53,7 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
     // Update Pool States
     const pools = await PoolService.getCfgActivePools()
     for (const pool of pools) {
+      logger.info(` ## Updating pool ${pool.id} states...`)
       const currentEpoch = await EpochService.getById(pool.id, pool.currentEpoch)
       await pool.updateState()
       await pool.resetDebtOverdue()
@@ -78,7 +79,7 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
         await tranche.save()
 
         // Compute TrancheBalances Unrealized Profit
-        const trancheBalances = await TrancheBalanceService.getByTrancheId(tranche.id) as TrancheBalanceService[]
+        const trancheBalances = (await TrancheBalanceService.getByTrancheId(tranche.id)) as TrancheBalanceService[]
         for (const trancheBalance of trancheBalances) {
           const unrealizedProfit = await InvestorPositionService.computeUnrealizedProfitAtPrice(
             trancheBalance.accountId,
@@ -145,8 +146,10 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
       const sumPoolFeesPendingAmount = await PoolFeeService.computeSumPendingFees(pool.id)
       await pool.updateSumPoolFeesPendingAmount(sumPoolFeesPendingAmount)
       await pool.save()
+      logger.info(`## Pool ${pool.id} states update completed!`)
     }
 
+    logger.info('## Performing snapshots...')
     //Perform Snapshots and reset accumulators
     await substrateStateSnapshotter('periodId', period.id, Pool, PoolSnapshot, block, 'isActive', true, 'poolId')
     await substrateStateSnapshotter(
@@ -170,6 +173,7 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
       true,
       'poolFeeId'
     )
+    logger.info('## Snapshotting completed!')
 
     //Update tracking of period and continue
     await (await timekeeper).update(period.start)
