@@ -31,7 +31,7 @@ async function _handlePoolCreated(event: SubstrateEvent<PoolCreatedEvent>): Prom
   )
 
   // Initialise Pool
-  const pool = await PoolService.getOrSeed(poolId.toString(10), false)
+  const pool = await PoolService.getOrSeed(poolId.toString(10), false, false, blockchain.id)
   await pool.init(
     currency.id,
     essence.maxReserve.toBigInt(),
@@ -49,11 +49,12 @@ async function _handlePoolCreated(event: SubstrateEvent<PoolCreatedEvent>): Prom
 
   // Initialise the tranches
   const trancheData = await pool.getTranches()
+
   const tranches = await Promise.all(
     essence.tranches.map((trancheEssence) => {
       const trancheId = trancheEssence.currency.trancheId.toHex()
       logger.info(`Creating tranche with id: ${pool.id}-${trancheId}`)
-      return TrancheService.getOrSeed(pool.id, trancheId)
+      return TrancheService.getOrSeed(pool.id, trancheId, blockchain.id)
     })
   )
 
