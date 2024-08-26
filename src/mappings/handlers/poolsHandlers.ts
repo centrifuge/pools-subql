@@ -289,6 +289,8 @@ async function _handleEpochExecuted(event: SubstrateEvent<EpochClosedExecutedEve
       amount: epoch.sumRedeemedAmount,
     })
     assetTransactionSaves.push(withdrawalRedemptions.save())
+  } else {
+    logger.info(`No withdrawal redemptions for pool ${pool.id}`)
   }
 
   if (epoch.sumPoolFeesPaidAmount > BigInt(0)) {
@@ -297,6 +299,8 @@ async function _handleEpochExecuted(event: SubstrateEvent<EpochClosedExecutedEve
       amount: epoch.sumPoolFeesPaidAmount,
     })
     assetTransactionSaves.push(withdrawalFees.save())
+  } else {
+    logger.info(`No withdrawal for fees for pool ${pool.id}`)
   }
 
   await Promise.all(assetTransactionSaves)
