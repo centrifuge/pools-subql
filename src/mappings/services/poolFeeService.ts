@@ -94,7 +94,7 @@ export class PoolFeeService extends PoolFee {
 
   public pay(data: Omit<PoolFeeData, 'amount'> & Required<Pick<PoolFeeData, 'amount'>>) {
     logger.info(`Paying PoolFee ${data.feeId} with amount ${data.amount.toString(10)}`)
-    if (!this.isActive) throw new Error('Unable to payinactive PolFee')
+    if (!this.isActive) throw new Error('Unable to pay inactive PolFee')
     this.sumPaidAmount += data.amount
     this.sumPaidAmountByPeriod += data.amount
     this.pendingAmount -= data.amount
@@ -109,7 +109,7 @@ export class PoolFeeService extends PoolFee {
     this.pendingAmount = pending + disbursement
 
     const newAccruedAmount = this.pendingAmount
-    this.sumAccruedAmountByPeriod = newAccruedAmount - this.sumAccruedAmount
+    this.sumAccruedAmountByPeriod = newAccruedAmount - this.sumAccruedAmount + this.sumPaidAmountByPeriod
     this.sumAccruedAmount = newAccruedAmount
     return this
   }
