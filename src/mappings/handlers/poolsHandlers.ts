@@ -305,5 +305,15 @@ async function _handleEpochExecuted(event: SubstrateEvent<EpochClosedExecutedEve
 
   await Promise.all(assetTransactionSaves)
 
-  await substrateStateSnapshotter('epochId', epoch.id, Pool, PoolSnapshot, event.block, 'isActive', true, 'poolId')
+  await substrateStateSnapshotter(
+    'epochId',
+    epoch.id,
+    Pool,
+    PoolSnapshot,
+    event.block,
+    'isActive',
+    true,
+    'poolId',
+    false
+  )
 }
