@@ -28,8 +28,8 @@ jobs:
   subql_deploy_workflow:
     runs-on: ubuntu-latest
     env:
-      SUBQL_CFG_INDEXER_VERSION: "v5.1.0"
-      SUBQL_ETH_INDEXER_VERSION: "v5.1.1"
+      SUBQL_CFG_INDEXER_VERSION: "v5.2.3"
+      SUBQL_ETH_INDEXER_VERSION: "v5.1.3"
       CHAIN_ID: ${{ inputs.chainId }}
       SUBQL_ACCESS_TOKEN: ${{ secrets.accessToken }}
       SUBQL_PROJ_ORG: ${{ inputs.projOrg }}
