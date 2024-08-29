@@ -175,3 +175,8 @@ dataSources:
           filter:
             module: oraclePriceFeed
             method: Fed
+        - handler: handleAssetMetadataSet
+          kind: substrate/EventHandler
+          filter:
+            module: uniques
+            method: MetadataSet

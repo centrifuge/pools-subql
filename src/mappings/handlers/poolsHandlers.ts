@@ -14,6 +14,7 @@ import { AssetTransactionData, AssetTransactionService } from '../services/asset
 import { substrateStateSnapshotter } from '../../helpers/stateSnapshot'
 import { Pool, PoolSnapshot } from '../../types'
 import { InvestorPositionService } from '../services/investorPositionService'
+import { PoolFeeService } from '../services/poolFeeService'
 
 export const handlePoolCreated = errorHandler(_handlePoolCreated)
 async function _handlePoolCreated(event: SubstrateEvent<PoolCreatedEvent>): Promise<void> {
@@ -41,10 +42,16 @@ async function _handlePoolCreated(event: SubstrateEvent<PoolCreatedEvent>): Prom
     event.block.block.header.number.toNumber()
   )
   await pool.initData()
-  await pool.initIpfsMetadata().catch((err) => {
+  const poolFeesMetadata = await pool.initIpfsMetadata().catch<ReturnType<typeof pool.initIpfsMetadata>>((err) => {
     logger.error(`IPFS Request failed ${err}`)
-    return Promise.resolve()
+    return Promise.resolve([])
   })
+
+  for (const { id: feeId, name } of poolFeesMetadata) {
+    const poolFee = await PoolFeeService.getById(pool.id, feeId.toString(10))
+    await poolFee.setName(name)
+    await poolFee.save()
+  }
   await pool.save()
 
   // Initialise the tranches

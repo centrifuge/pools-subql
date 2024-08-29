@@ -84,6 +84,16 @@ export class AssetService extends Asset {
     return asset
   }
 
+  static async getByNftId(collectionId: string, itemId: string) {
+    const asset = (
+      await AssetService.getByFields([
+        ['collateralNftClassId', '=', collectionId],
+        ['collateralNftItemId', '=', itemId],
+      ])
+    ).pop() as AssetService
+    return asset
+  }
+
   public borrow(amount: bigint) {
     logger.info(`Increasing borrowings for asset ${this.id} by ${amount}`)
     this.borrowedAmountByPeriod += amount
@@ -174,6 +184,10 @@ export class AssetService extends Asset {
     const payload = itemMetadata.unwrap()
     this.metadata = payload.data.toUtf8()
     return this
+  }
+
+  public setMetadata(metadata: string) {
+    this.metadata = metadata
   }
 
   static extractPrincipalAmount(principalObject: LoanPricingAmount) {

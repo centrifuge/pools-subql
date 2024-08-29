@@ -1,6 +1,6 @@
 //find out types: const a = createType(api.registry, '[u8;32]', 18)
 import { AugmentedCall, AugmentedRpc, PromiseRpcResult } from '@polkadot/api/types'
-import { Enum, Null, Struct, u128, u32, u64, U8aFixed, Option, Vec, Bytes, Result } from '@polkadot/types'
+import { Enum, Null, Struct, u128, u32, u64, U8aFixed, Option, Vec, Bytes, Result, bool } from '@polkadot/types'
 import { AccountId32, Perquintill, Balance } from '@polkadot/types/interfaces'
 import { ITuple, Observable } from '@polkadot/types/types'
 
@@ -479,6 +479,8 @@ export type TokensTransferEvent = ITuple<
 export type TokensEndowedDepositedWithdrawnEvent = ITuple<
   [currencyId: TokensCurrencyId, who: AccountId32, amount: u128]
 >
+
+export type UniquesMetadataSetEvent = ITuple<[collection: u64, item: u128, data: Bytes, isFrozen: bool]>
 
 export type PoolFeesProposedEvent = ITuple<[poolId: u64, feeId: u64, bucket: PoolFeeBucket, fee: PoolFeeInfo]>
 export type PoolFeesAddedEvent = ITuple<[poolId: u64, bucket: PoolFeeBucket, feeId: u64, fee: PoolFeeInfo]>
