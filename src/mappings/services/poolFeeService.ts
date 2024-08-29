@@ -115,6 +115,7 @@ export class PoolFeeService extends PoolFee {
   }
 
   public setName(name: string) {
+    logger.info(`Setting name for fee ${this.id} to: ${name}`)
     this.name = name
   }
 

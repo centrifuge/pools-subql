@@ -449,8 +449,8 @@ type Asset @entity {
   type: AssetType!
   valuationMethod: AssetValuationMethod!
 
-  collateralNftClassId: BigInt
-  collateralNftItemId: BigInt
+  collateralNftClassId: BigInt @index
+  collateralNftItemId: BigInt @index
 
   metadata: String
   name: String
