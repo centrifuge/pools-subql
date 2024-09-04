@@ -116,7 +116,7 @@ export class EpochService extends Epoch {
   public updateOutstandingInvestOrders(trancheId: string, newAmount: bigint, oldAmount: bigint) {
     logger.info(`Updating outstanding invest orders for epoch ${this.id}`)
     const trancheState = this.states.find((epochState) => epochState.trancheId === trancheId)
-    if (trancheState === undefined) throw new Error(`No epochState with could be found for tranche: ${trancheId}`)
+    if (!trancheState) throw new Error(`No epochState with could be found for tranche: ${trancheId}`)
     trancheState.sumOutstandingInvestOrders = trancheState.sumOutstandingInvestOrders + newAmount - oldAmount
     return this
   }
@@ -124,7 +124,7 @@ export class EpochService extends Epoch {
   public updateOutstandingRedeemOrders(trancheId: string, newAmount: bigint, oldAmount: bigint, tokenPrice: bigint) {
     logger.info(`Updating outstanding redeem orders for epoch ${this.id}`)
     const trancheState = this.states.find((trancheState) => trancheState.trancheId === trancheId)
-    if (trancheState === undefined) throw new Error(`No epochState with could be found for tranche: ${trancheId}`)
+    if (!trancheState) throw new Error(`No epochState with could be found for tranche: ${trancheId}`)
     trancheState.sumOutstandingRedeemOrders = trancheState.sumOutstandingRedeemOrders + newAmount - oldAmount
     trancheState.sumOutstandingRedeemOrdersCurrency = this.computeCurrencyAmount(
       trancheState.sumOutstandingRedeemOrders,

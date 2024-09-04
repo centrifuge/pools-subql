@@ -158,7 +158,7 @@ export class TrancheService extends Tranche {
       }
 
       trancheSnapshot = trancheSnapshots.find((snapshot) => snapshot.trancheId === `${this.poolId}-${this.trancheId}`)
-      if (trancheSnapshot === undefined) {
+      if (!trancheSnapshot) {
         logger.warn(
           `No tranche snapshot found tranche ${this.poolId}-${this.trancheId} with ` +
             `reference date ${referencePeriodStart}`
@@ -194,7 +194,7 @@ export class TrancheService extends Tranche {
     const trancheSnapshot = trancheSnapshots.find(
       (snapshot) => snapshot.trancheId === `${this.poolId}-${this.trancheId}`
     )
-    if (trancheSnapshot === undefined) {
+    if (!trancheSnapshot) {
       logger.warn(
         `No tranche snapshot found tranche ${this.poolId}-${this.poolId} with ` +
           `reference date ${referencePeriodStart}`

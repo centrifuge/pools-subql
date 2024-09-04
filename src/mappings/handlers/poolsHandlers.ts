@@ -139,7 +139,7 @@ async function _handleEpochClosed(event: SubstrateEvent<EpochClosedExecutedEvent
     `Epoch ${epochId.toNumber()} closed for pool ${poolId.toString()} in block ${event.block.block.header.number}`
   )
   const pool = await PoolService.getById(poolId.toString())
-  if (pool === undefined) throw missingPool
+  if (!pool) throw missingPool
 
   // Close the current epoch and open a new one
   const tranches = await TrancheService.getActivesByPoolId(poolId.toString())

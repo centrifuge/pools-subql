@@ -32,7 +32,7 @@ export class OutstandingOrderService extends OutstandingOrder {
 
   static async getOrInit(data: InvestorTransactionData) {
     let oo = await this.getById(data.poolId, data.trancheId, data.address)
-    if (oo === undefined) oo = this.initZero(data)
+    if (!oo) oo = this.initZero(data)
     return oo
   }
 

@@ -269,7 +269,7 @@ async function _handleLoanWrittenOff(event: SubstrateEvent<LoanWrittenOffEvent>)
   await asset.save()
 
   const pool = await PoolService.getById(poolId.toString())
-  if (pool === undefined) throw missingPool
+  if (!pool) throw missingPool
 
   await pool.increaseWriteOff(asset.writtenOffAmountByPeriod)
   await pool.save()
@@ -284,7 +284,7 @@ async function _handleLoanClosed(event: SubstrateEvent<LoanClosedEvent>) {
   logger.info(`Loan closed event for pool: ${poolId.toString()} loanId: ${loanId.toString()}`)
 
   const pool = await PoolService.getById(poolId.toString())
-  if (pool === undefined) throw missingPool
+  if (!pool) throw missingPool
 
   const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toHex())
 
