@@ -90,6 +90,7 @@ jobs:
           --ipfsCID="$CFG_IPFSCID" \
           --type=$SUBQL_DEPLOYMENT_TYPE \
           --disableHistorical \
+          --storeCacheAsync="false" \
           --queryLimit=1000 \
           --indexerUnsafe \
           --queryAggregate
