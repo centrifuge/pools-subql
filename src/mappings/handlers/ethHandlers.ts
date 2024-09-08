@@ -23,6 +23,9 @@ import { SnapshotPeriodService } from '../services/snapshotPeriodService'
 
 const timekeeper = TimekeeperService.init()
 
+const ALT_1_POOL_ID = '0xf96f18f2c70b57ec864cc0c8b828450b82ff63e3'
+const ALT_1_END_BLOCK = 20120759
+
 type PoolMulticall = {
   id: string
   type: string
@@ -103,22 +106,29 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
 
         // Update pool
         if (callResult.type === 'currentNAV' && latestNavFeed) {
-          const currentNAV = NavfeedAbi__factory.createInterface().decodeFunctionResult(
-            'currentNAV',
-            callResult.result
-          )[0]
-          pool.portfolioValuation = currentNAV.toBigInt()
-          pool.netAssetValue = (pool.portfolioValuation || BigInt(0)) + (pool.totalReserve || BigInt(0))
+          const currentNAV =
+            tinlakePool.id === ALT_1_POOL_ID && blockNumber > ALT_1_END_BLOCK
+              ? BigInt(0)
+              : NavfeedAbi__factory.createInterface()
+                  .decodeFunctionResult('currentNAV', callResult.result)[0]
+                  .toBigInt()
+          pool.portfolioValuation = currentNAV
+          pool.netAssetValue =
+            tinlakePool.id === ALT_1_POOL_ID && blockNumber > ALT_1_END_BLOCK
+              ? BigInt(0)
+              : (pool.portfolioValuation || BigInt(0)) + (pool.totalReserve || BigInt(0))
           await pool.updateNormalizedNAV()
           await pool.save()
           logger.info(`Updating pool ${tinlakePool?.id} with portfolioValuation: ${pool.portfolioValuation}`)
         }
         if (callResult.type === 'totalBalance' && latestReserve) {
-          const totalBalance = ReserveAbi__factory.createInterface().decodeFunctionResult(
-            'totalBalance',
-            callResult.result
-          )[0]
-          pool.totalReserve = totalBalance.toBigInt()
+          const totalBalance =
+            tinlakePool.id === ALT_1_POOL_ID && blockNumber > ALT_1_END_BLOCK
+              ? BigInt(0)
+              : ReserveAbi__factory.createInterface()
+                  .decodeFunctionResult('totalBalance', callResult.result)[0]
+                  .toBigInt()
+          pool.totalReserve = totalBalance
           pool.netAssetValue = (pool.portfolioValuation || BigInt(0)) + (pool.totalReserve || BigInt(0))
           await pool.updateNormalizedNAV()
           await pool.save()
@@ -130,6 +140,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
           await updateLoans(
             tinlakePool?.id as string,
             date,
+            blockNumber,
             tinlakePool?.shelf[0].address as string,
             tinlakePool?.pile[0].address as string,
             latestNavFeed.address
@@ -162,12 +173,21 @@ type NewLoanData = {
   maturityDate?: unknown
 }
 
-async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile: string, navFeed: string) {
+async function updateLoans(
+  poolId: string,
+  blockDate: Date,
+  blockNumber: number,
+  shelf: string,
+  pile: string,
+  navFeed: string
+) {
   logger.info(`Updating loans for pool ${poolId}`)
   let existingLoans = await AssetService.getByPoolId(poolId)
   const existingLoanIds = existingLoans?.map((loan) => parseInt(loan.id.split('-')[1]))
   const newLoans = await getNewLoans(existingLoanIds as number[], shelf)
   logger.info(`Found ${newLoans.length} new loans for pool ${poolId}`)
+
+  const isAlt1AndAfterEndBlock = poolId === ALT_1_POOL_ID && blockNumber > ALT_1_END_BLOCK
 
   const nftIdCalls: PoolMulticall[] = []
   for (const loanIndex of newLoans) {
@@ -304,10 +324,11 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
           )[0]
         }
         if (loanDetailsResponses[i].type === 'debt') {
-          loanDetails[loanDetailsResponses[i].id].debt = PileAbi__factory.createInterface().decodeFunctionResult(
-            'debt',
-            loanDetailsResponses[i].result
-          )[0]
+          loanDetails[loanDetailsResponses[i].id].debt = isAlt1AndAfterEndBlock
+            ? BigInt(0)
+            : PileAbi__factory.createInterface()
+                .decodeFunctionResult('debt', loanDetailsResponses[i].result)[0]
+                .toBigInt()
         }
         if (loanDetailsResponses[i].type === 'loanRates') {
           loanDetails[loanDetailsResponses[i].id].loanRates = PileAbi__factory.createInterface().decodeFunctionResult(
@@ -328,12 +349,12 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
         loan.status = AssetStatus.ACTIVE
       }
       // if the loan is not locked or the debt is 0 and the loan was active before, close it
-      if (!nftLocked || (loan.status === AssetStatus.ACTIVE && debt.toBigInt() === BigInt(0))) {
+      if (!nftLocked || (loan.status === AssetStatus.ACTIVE && debt === BigInt(0))) {
         loan.isActive = false
         loan.status = AssetStatus.CLOSED
         await loan.save()
       }
-      loan.outstandingDebt = debt.toBigInt()
+      loan.outstandingDebt = debt
       const currentDebt = loan.outstandingDebt || BigInt(0)
       const rateGroup = loanDetails[loanIndex].loanRates
       const pileContract = PileAbi__factory.connect(pile, api as unknown as Provider)
