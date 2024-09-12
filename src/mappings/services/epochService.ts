@@ -45,7 +45,7 @@ export class EpochService extends Epoch {
   static async getById(poolId: string, epochNr: number) {
     const epoch = (await this.get(`${poolId}-${epochNr.toString()}`)) as EpochService
     if (!epoch) return undefined
-    const epochStates = await EpochState.getByEpochId(`${poolId}-${epochNr.toString(10)}`)
+    const epochStates = await EpochState.getByEpochId(`${poolId}-${epochNr.toString(10)}`) ?? []
     epoch.states = epochStates
     return epoch
   }
