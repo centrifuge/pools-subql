@@ -353,7 +353,7 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
         loan.totalRepaid
           ? (loan.totalRepaid += loan.repaidAmountByPeriod)
           : (loan.totalRepaid = loan.repaidAmountByPeriod)
-        loan.repaysCount += 1
+        loan.repaysCount += BigInt(1)
       }
       if (
         prevDebt * (loan.interestRatePerSec / BigInt(10) ** BigInt(27)) * BigInt(86400) <
@@ -363,7 +363,7 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
         loan.totalBorrowed
           ? (loan.totalBorrowed += loan.borrowedAmountByPeriod)
           : (loan.totalBorrowed = loan.borrowedAmountByPeriod)
-        loan.borrowsCount += 1
+        loan.borrowsCount += BigInt(1)
       }
       logger.info(`Updating loan ${loan.id} for pool ${poolId}`)
       await loan.save()
