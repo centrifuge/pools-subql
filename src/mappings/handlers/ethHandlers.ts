@@ -169,6 +169,8 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
   const newLoans = await getNewLoans(existingLoanIds as number[], shelf)
   logger.info(`Found ${newLoans.length} new loans for pool ${poolId}`)
 
+  const pool = await PoolService.getById(poolId)
+
   const nftIdCalls: PoolMulticall[] = []
   for (const loanIndex of newLoans) {
     nftIdCalls.push({
@@ -318,6 +320,9 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
       }
     }
 
+    let totalDebt = BigInt(0)
+    let totalBorrowed = BigInt(0)
+    let totalRepaid = BigInt(0)
     for (let i = 0; i < existingLoans.length; i++) {
       const loan = existingLoans[i]
       const loanIndex = loan.id.split('-')[1]
@@ -357,7 +362,16 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
       }
       logger.info(`Updating loan ${loan.id} for pool ${poolId}`)
       await loan.save()
+
+      totalDebt += loan.outstandingDebt
+      totalBorrowed += loan.totalBorrowed
+      totalRepaid += loan.totalRepaid
     }
+
+    pool.sumDebt = totalDebt
+    pool.sumBorrowedAmount = totalBorrowed
+    pool.sumRepaidAmount = totalRepaid
+    await pool.save()
   }
 }
 
