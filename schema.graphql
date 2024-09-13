@@ -55,6 +55,8 @@ type Pool @entity {
 
   availableReserve: BigInt
   maxReserve: BigInt
+
+  weightedAverageInterestRatePerSec: BigInt
   
   # Aggregated transaction data over the last period
   sumBorrowedAmountByPeriod: BigInt
@@ -120,6 +122,8 @@ type PoolSnapshot @entity {
   
   availableReserve: BigInt
   maxReserve: BigInt
+  
+  weightedAverageInterestRatePerSec: BigInt
   
   # Aggregated transaction data over the last period
   sumBorrowedAmountByPeriod: BigInt

@@ -323,6 +323,7 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
     let totalDebt = BigInt(0)
     let totalBorrowed = BigInt(0)
     let totalRepaid = BigInt(0)
+    let totalInterestRatePerSec = BigInt(0)
     for (let i = 0; i < existingLoans.length; i++) {
       const loan = existingLoans[i]
       const loanIndex = loan.id.split('-')[1]
@@ -366,11 +367,13 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
       totalDebt += loan.outstandingDebt
       totalBorrowed += loan.totalBorrowed
       totalRepaid += loan.totalRepaid
+      totalInterestRatePerSec += loan.interestRatePerSec * loan.outstandingDebt
     }
 
     pool.sumDebt = totalDebt
     pool.sumBorrowedAmount = totalBorrowed
     pool.sumRepaidAmount = totalRepaid
+    pool.weightedAverageInterestRatePerSec = totalInterestRatePerSec / totalDebt
     await pool.save()
   }
 }
