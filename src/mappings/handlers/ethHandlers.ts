@@ -320,10 +320,12 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
       }
     }
 
-    let totalDebt = BigInt(0)
-    let totalBorrowed = BigInt(0)
-    let totalRepaid = BigInt(0)
-    let totalInterestRatePerSec = BigInt(0)
+    let sumDebt = BigInt(0)
+    let sumBorrowed = BigInt(0)
+    let sumRepaid = BigInt(0)
+    let sumInterestRatePerSec = BigInt(0)
+    let sumBorrowsCount = BigInt(0)
+    let sumRepaysCount = BigInt(0)
     for (let i = 0; i < existingLoans.length; i++) {
       const loan = existingLoans[i]
       const loanIndex = loan.id.split('-')[1]
@@ -351,6 +353,7 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
         loan.totalRepaid
           ? (loan.totalRepaid += loan.repaidAmountByPeriod)
           : (loan.totalRepaid = loan.repaidAmountByPeriod)
+        loan.repaysCount += 1
       }
       if (
         prevDebt * (loan.interestRatePerSec / BigInt(10) ** BigInt(27)) * BigInt(86400) <
@@ -360,20 +363,25 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
         loan.totalBorrowed
           ? (loan.totalBorrowed += loan.borrowedAmountByPeriod)
           : (loan.totalBorrowed = loan.borrowedAmountByPeriod)
+        loan.borrowsCount += 1
       }
       logger.info(`Updating loan ${loan.id} for pool ${poolId}`)
       await loan.save()
 
-      totalDebt += loan.outstandingDebt
-      totalBorrowed += loan.totalBorrowed
-      totalRepaid += loan.totalRepaid
-      totalInterestRatePerSec += loan.interestRatePerSec * loan.outstandingDebt
+      sumDebt += loan.outstandingDebt
+      sumBorrowed += loan.totalBorrowed
+      sumRepaid += loan.totalRepaid
+      sumInterestRatePerSec += loan.interestRatePerSec * loan.outstandingDebt
+      sumBorrowsCount += loan.borrowsCount
+      sumRepaysCount += loan.repaysCount
     }
 
-    pool.sumDebt = totalDebt
-    pool.sumBorrowedAmount = totalBorrowed
-    pool.sumRepaidAmount = totalRepaid
-    pool.weightedAverageInterestRatePerSec = totalInterestRatePerSec / totalDebt
+    pool.sumDebt = sumDebt
+    pool.sumBorrowedAmount = sumBorrowed
+    pool.sumRepaidAmount = sumRepaid
+    pool.weightedAverageInterestRatePerSec = sumInterestRatePerSec / sumDebt
+    pool.sumBorrowsCount = sumBorrowsCount
+    pool.sumRepaysCount = sumRepaysCount
     await pool.save()
   }
 }
