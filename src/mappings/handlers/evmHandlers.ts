@@ -13,6 +13,7 @@ import type { Provider } from '@ethersproject/providers'
 import { TrancheBalanceService } from '../services/trancheBalanceService'
 import { escrows, userEscrows } from '../../config'
 import { InvestorPositionService } from '../services/investorPositionService'
+import { getPeriodStart } from '../../helpers/timekeeperService'
 
 const _ethApi = api as unknown as Provider
 //const networkPromise = typeof ethApi.getNetwork === 'function' ? ethApi.getNetwork() : null
@@ -62,6 +63,7 @@ async function _handleEvmTransfer(event: TransferLog): Promise<void> {
   const [fromEvmAddress, toEvmAddress, amount] = event.args
   logger.info(`Transfer ${fromEvmAddress}-${toEvmAddress} of ${amount.toString()} at block: ${event.blockNumber}`)
 
+  const timestamp = new Date(Number(event.block.timestamp) * 1000)
   const evmTokenAddress = event.address
   const chainId = await getNodeEvmChainId() //(await networkPromise).chainId.toString(10)
   const evmBlockchain = await BlockchainService.getOrInit(chainId)
@@ -74,12 +76,16 @@ async function _handleEvmTransfer(event: TransferLog): Promise<void> {
   const isFromEscrow = fromEvmAddress === escrowAddress
   const _isFromUserEscrow = fromEvmAddress === userEscrowAddress
 
+  const trancheId = evmToken.trancheId.split('-')[1]
+  const tranche = await TrancheService.getById(evmToken.poolId, trancheId)
+
   const orderData: Omit<InvestorTransactionData, 'address'> = {
     poolId: evmToken.poolId,
-    trancheId: evmToken.trancheId.split('-')[1],
+    trancheId: trancheId,
     hash: event.transactionHash,
-    timestamp: new Date(Number(event.block.timestamp) * 1000),
+    timestamp: timestamp,
     amount: amount.toBigInt(),
+    price: tranche.snapshot?.tokenPrice,
   }
 
   const isLpTokenMigrationDay =
@@ -128,27 +134,40 @@ async function _handleEvmTransfer(event: TransferLog): Promise<void> {
 
   // Handle Transfer In and Out
   if (isFromUserAddress && isToUserAddress) {
-    const txIn = InvestorTransactionService.transferIn({ ...orderData, address: toAccount.id })
-    if (!isLpTokenMigrationDay)
-      await InvestorPositionService.buy(
-        txIn.accountId,
-        txIn.trancheId,
-        txIn.hash,
-        txIn.timestamp,
-        txIn.tokenAmount,
-        txIn.tokenPrice
-      )
-    await txIn.save()
+    await tranche.loadSnapshot(getPeriodStart(timestamp))
+    const price = tranche.tokenPrice
 
-    const txOut = InvestorTransactionService.transferOut({ ...orderData, address: fromAccount.id })
+    const txIn = InvestorTransactionService.transferIn({ ...orderData, address: toAccount.id, price })
+    await txIn.save()
+    if (!isLpTokenMigrationDay)
+      try {
+        await InvestorPositionService.buy(
+          txIn.accountId,
+          txIn.trancheId,
+          txIn.hash,
+          txIn.timestamp,
+          txIn.tokenAmount,
+          txIn.tokenPrice
+        )
+      } catch (error) {
+        logger.error(`Unable to save buy investor position: ${error}`)
+        // TODO: Fallback use PoolManager Contract to read price
+      }
+
+    const txOut = InvestorTransactionService.transferOut({ ...orderData, address: fromAccount.id, price })
     if (!isLpTokenMigrationDay) {
-      const profit = await InvestorPositionService.sellFifo(
-        txOut.accountId,
-        txOut.trancheId,
-        txOut.tokenAmount,
-        txOut.tokenPrice
-      )
-      await txOut.setRealizedProfitFifo(profit)
+      try {
+        const profit = await InvestorPositionService.sellFifo(
+          txOut.accountId,
+          txOut.trancheId,
+          txOut.tokenAmount,
+          txOut.tokenPrice
+        )
+        await txOut.setRealizedProfitFifo(profit)
+      } catch (error) {
+        logger.error(`Unable to save sell investor position: ${error}`)
+        // TODO: Fallback use PoolManager Contract to read price
+      }
     }
     await txOut.save()
   }

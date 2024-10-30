@@ -8,6 +8,8 @@ import { Tranche, TrancheSnapshot } from '../../types'
 const MAINNET_CHAINID = '0xb3db41421702df9a7fcac62b53ffeac85f7853cc4e689e0b93aeb3db18c09d82'
 
 export class TrancheService extends Tranche {
+  snapshot?: TrancheSnapshot
+
   static seed(poolId: string, trancheId: string, blockchain = '0') {
     const id = `${poolId}-${trancheId}`
     logger.info(`Seeding tranche ${id}`)
@@ -258,6 +260,18 @@ export class TrancheService extends Tranche {
   public activate() {
     logger.info(`Activating tranche ${this.id}`)
     this.isActive = true
+  }
+
+  public async loadSnapshot(periodStart: Date) {
+    const snapshots = await TrancheSnapshot.getByFields([
+      ['trancheId', '=', this.id],
+      ['periodId', '=', periodStart.toISOString()],
+    ], { limit: 100 })
+    if (snapshots.length !== 1) {
+      logger.warn(`Unable to load snapshot for asset ${this.id} for period ${periodStart.toISOString()}`)
+      return
+    }
+    this.snapshot = snapshots.pop()
   }
 }
 
