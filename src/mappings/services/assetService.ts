@@ -89,7 +89,7 @@ export class AssetService extends Asset {
       await AssetService.getByFields([
         ['collateralNftClassId', '=', collectionId],
         ['collateralNftItemId', '=', itemId],
-      ])
+      ], { limit: 100 })
     ).pop() as AssetService
     return asset
   }
@@ -263,7 +263,7 @@ export class AssetService extends Asset {
     const snapshots = await AssetSnapshot.getByFields([
       ['assetId', '=', this.id],
       ['periodId', '=', periodStart.toISOString()],
-    ])
+    ], { limit: 100 })
     if (snapshots.length !== 1) {
       logger.warn(`Unable to load snapshot for asset ${this.id} for period ${periodStart.toISOString()}`)
       return

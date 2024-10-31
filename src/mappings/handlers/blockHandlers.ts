@@ -79,7 +79,9 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
         await tranche.save()
 
         // Compute TrancheBalances Unrealized Profit
-        const trancheBalances = (await TrancheBalanceService.getByTrancheId(tranche.id)) as TrancheBalanceService[]
+        const trancheBalances = (await TrancheBalanceService.getByTrancheId(tranche.id, {
+          limit: 100,
+        })) as TrancheBalanceService[]
         for (const trancheBalance of trancheBalances) {
           const unrealizedProfit = await InvestorPositionService.computeUnrealizedProfitAtPrice(
             trancheBalance.accountId,

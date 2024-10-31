@@ -27,7 +27,7 @@ export class AssetPositionService extends AssetPosition {
         `sellingQuantity: ${sellingQuantity.toString(10)} sellingPrice: ${sellingPrice.toString(10)}`
     )
     if (sellingQuantity <= BigInt(0)) return BigInt(0)
-    const positions = await this.getByAssetId(assetId)
+    const positions = await this.getByAssetId(assetId, { limit: 100 })
     positions.sort((a, b) => b.timestamp.valueOf() - a.timestamp.valueOf())
 
     const sellPositions: [assetPosition: AssetPosition, sellQuantity: bigint][] = []
@@ -67,7 +67,7 @@ export class AssetPositionService extends AssetPosition {
   static async computeUnrealizedProfitAtPrice(assetId: string, sellingPrice: bigint) {
     if (!sellingPrice || sellingPrice <= BigInt(0)) return BigInt(0)
     logger.info(`Computing unrealizedProfit at price ${sellingPrice} for asset ${assetId}`)
-    const sellingPositions = await this.getByAssetId(assetId)
+    const sellingPositions = await this.getByAssetId(assetId, { limit: 100 })
     const sellingQuantity = sellingPositions.reduce<bigint>(
       (result, position) => result + position.holdingQuantity,
       BigInt(0)

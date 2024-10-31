@@ -30,7 +30,7 @@ export class AssetCashflowService extends AssetCashflow {
 
   static async clearAssetCashflows(assetId: string) {
     logger.info(`Clearing AssetCashflows for asset: ${assetId}`)
-    const cashflows = await this.getByAssetId(assetId)
+    const cashflows = await this.getByAssetId(assetId, { limit: 100 })
     const deletes = cashflows.map((cf) => this.remove(cf.id))
     return Promise.all(deletes)
   }
