@@ -55,6 +55,8 @@ type Pool @entity {
 
   availableReserve: BigInt
   maxReserve: BigInt
+
+  weightedAverageInterestRatePerSec: BigInt
   
   # Aggregated transaction data over the last period
   sumBorrowedAmountByPeriod: BigInt
@@ -95,6 +97,9 @@ type Pool @entity {
   sumInterestRepaidAmount: BigInt
   sumUnscheduledRepaidAmount: BigInt
   sumNumberOfAssets: BigInt
+  
+  sumBorrowsCount: BigInt
+  sumRepaysCount: BigInt
   
   tranches: [Tranche] @derivedFrom(field: "pool")
   assets: [Asset] @derivedFrom(field: "pool")
@@ -121,6 +126,8 @@ type PoolSnapshot @entity {
   availableReserve: BigInt
   maxReserve: BigInt
   
+  weightedAverageInterestRatePerSec: BigInt
+  
   # Aggregated transaction data over the last period
   sumBorrowedAmountByPeriod: BigInt
   sumRepaidAmountByPeriod: BigInt
@@ -160,6 +167,9 @@ type PoolSnapshot @entity {
   sumInterestRepaidAmount: BigInt
   sumUnscheduledRepaidAmount: BigInt
   sumNumberOfAssets: BigInt
+
+  sumBorrowsCount: BigInt
+  sumRepaysCount: BigInt
 }
 
 type Tranche @entity {
@@ -488,6 +498,9 @@ type Asset @entity {
   totalRepaidPrincipal: BigInt
   totalRepaidInterest: BigInt
   totalRepaidUnscheduled: BigInt
+
+  borrowsCount: BigInt
+  repaysCount: BigInt
 
   borrowedAmountByPeriod: BigInt
   repaidAmountByPeriod: BigInt
