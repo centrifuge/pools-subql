@@ -121,7 +121,7 @@ export class PoolFeeService extends PoolFee {
 
   static async computeSumPendingFees(poolId: string): Promise<bigint> {
     logger.info(`Computing pendingFees for pool: ${poolId} `)
-    const poolFees = await this.getByPoolId(poolId)
+    const poolFees = await this.getByPoolId(poolId, { limit: 100 })
     return poolFees.reduce((sumPendingAmount, poolFee) => (sumPendingAmount + poolFee.pendingAmount), BigInt(0))
   }
 }

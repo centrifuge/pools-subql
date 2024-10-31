@@ -689,5 +689,4 @@ type PoolFeeTransaction @entity {
   epoch: Epoch!
 
   amount: BigInt
-
 }
