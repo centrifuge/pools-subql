@@ -182,7 +182,7 @@ async function updateLoans(
   navFeed: string
 ) {
   logger.info(`Updating loans for pool ${poolId}`)
-  let existingLoans = await AssetService.getByPoolId(poolId)
+  let existingLoans = await AssetService.getByPoolId(poolId, { limit: 100 })
   const existingLoanIds = existingLoans?.map((loan) => parseInt(loan.id.split('-')[1]))
   const newLoans = await getNewLoans(existingLoanIds as number[], shelf)
   logger.info(`Found ${newLoans.length} new loans for pool ${poolId}`)
@@ -276,7 +276,8 @@ async function updateLoans(
   }
 
   // update all loans
-  existingLoans = (await AssetService.getByPoolId(poolId))?.filter((loan) => loan.status !== AssetStatus.CLOSED) || []
+  existingLoans =
+    (await AssetService.getByPoolId(poolId, { limit: 100 }))?.filter((loan) => loan.status !== AssetStatus.CLOSED) || []
   logger.info(`Updating ${existingLoans?.length} existing loans for pool ${poolId}`)
   const loanDetailsCalls: PoolMulticall[] = []
   existingLoans.forEach((loan) => {

@@ -153,7 +153,7 @@ export class TrancheService extends Tranche {
 
     let trancheSnapshot: TrancheSnapshot
     if (referencePeriodStart) {
-      const trancheSnapshots = await TrancheSnapshot.getByPeriodId(referencePeriodStart.toISOString())
+      const trancheSnapshots = await TrancheSnapshot.getByPeriodId(referencePeriodStart.toISOString(), { limit: 100 })
       if (trancheSnapshots.length === 0) {
         logger.warn(`No tranche snapshot exist for pool ${this.poolId} with reference date ${referencePeriodStart}`)
         return this
@@ -188,7 +188,7 @@ export class TrancheService extends Tranche {
       `Computing annualized yield ${yieldField} for tranche ${this.trancheId} of ` +
         `pool ${this.poolId} with reference date ${referencePeriodStart}`
     )
-    const trancheSnapshots = await TrancheSnapshot.getByPeriodId(referencePeriodStart.toISOString())
+    const trancheSnapshots = await TrancheSnapshot.getByPeriodId(referencePeriodStart.toISOString(), { limit: 100 })
     if (trancheSnapshots.length === 0) {
       logger.warn(`No tranche snapshot found pool ${this.poolId} with reference date ${referencePeriodStart}`)
       return this
