@@ -21,7 +21,6 @@ dataSources:
           kind: substrate/BlockHandler
           filter:
             modulo: 300
-            #timestamp: '1 0,12 * * *'
         # - handler: logEvents
         #   kind: substrate/EventHandler
         - handler: handlePoolCreated
@@ -176,3 +175,8 @@ dataSources:
           filter:
             module: oraclePriceFeed
             method: Fed
+        - handler: handleAssetMetadataSet
+          kind: substrate/EventHandler
+          filter:
+            module: uniques
+            method: MetadataSet

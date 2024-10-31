@@ -94,7 +94,7 @@ export class PoolFeeService extends PoolFee {
 
   public pay(data: Omit<PoolFeeData, 'amount'> & Required<Pick<PoolFeeData, 'amount'>>) {
     logger.info(`Paying PoolFee ${data.feeId} with amount ${data.amount.toString(10)}`)
-    if (!this.isActive) throw new Error('Unable to payinactive PolFee')
+    if (!this.isActive) throw new Error('Unable to pay inactive PolFee')
     this.sumPaidAmount += data.amount
     this.sumPaidAmountByPeriod += data.amount
     this.pendingAmount -= data.amount
@@ -109,18 +109,19 @@ export class PoolFeeService extends PoolFee {
     this.pendingAmount = pending + disbursement
 
     const newAccruedAmount = this.pendingAmount
-    this.sumAccruedAmountByPeriod = newAccruedAmount - this.sumAccruedAmount
+    this.sumAccruedAmountByPeriod = newAccruedAmount - this.sumAccruedAmount + this.sumPaidAmountByPeriod
     this.sumAccruedAmount = newAccruedAmount
     return this
   }
 
   public setName(name: string) {
+    logger.info(`Setting name for fee ${this.id} to: ${name}`)
     this.name = name
   }
 
   static async computeSumPendingFees(poolId: string): Promise<bigint> {
     logger.info(`Computing pendingFees for pool: ${poolId} `)
-    const poolFees = await this.getByPoolId(poolId)
+    const poolFees = await this.getByPoolId(poolId, { limit: 100 })
     return poolFees.reduce((sumPendingAmount, poolFee) => (sumPendingAmount + poolFee.pendingAmount), BigInt(0))
   }
 }

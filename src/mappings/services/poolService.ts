@@ -104,6 +104,28 @@ export class PoolService extends Pool {
     return this
   }
 
+  public initTinlake(
+    name: string,
+    currencyId: string,
+    timestamp: Date,
+    blockNumber: number
+  ) {
+    logger.info(`Initialising tinlake pool ${this.id}`)
+    this.isActive = true
+    this.name = name
+    this.createdAt = timestamp
+    this.createdAtBlockNumber = blockNumber
+
+    this.normalizedNAV = BigInt(0)
+    this.netAssetValue = BigInt(0)
+    this.totalReserve = BigInt(0)
+    this.portfolioValuation = BigInt(0)
+
+    this.currencyId = currencyId
+
+    return this
+  }
+
   public async initData() {
     logger.info(`Initialising data for pool: ${this.id}`)
     const [poolReq, metadataReq] = await Promise.all([
@@ -125,7 +147,7 @@ export class PoolService extends Pool {
     this.metadata = metadata
   }
 
-  public async initIpfsMetadata() {
+  public async initIpfsMetadata(): Promise<PoolIpfsMetadata['pool']['poolFees']> {
     if (!this.metadata) {
       logger.warn('No IPFS metadata')
       return
@@ -135,16 +157,26 @@ export class PoolService extends Pool {
     this.assetClass = metadata.pool.asset.class
     this.assetSubclass = metadata.pool.asset.subClass
     this.icon = metadata.pool.icon.uri
+    return metadata.pool.poolFees ?? []
+  }
+
+  public async getIpfsPoolFeeMetadata(): Promise<PoolIpfsMetadata['pool']['poolFees']> {
+    if (!this.metadata) return logger.warn('No IPFS metadata')
+    const metadata = await readIpfs<PoolIpfsMetadata>(this.metadata.match(cid)[0])
+    if (!metadata.pool.poolFees) {
+      return null
+    }
+    return metadata.pool.poolFees
   }
 
   public async getIpfsPoolFeeName(poolFeeId: string): Promise<string> {
     if (!this.metadata) return logger.warn('No IPFS metadata')
-    const metadata = await readIpfs<PoolIpfsMetadata>(this.metadata.match(cid)[0])
-    if (!metadata.pool.poolFees) {
+    const poolFeeMetadata = await this.getIpfsPoolFeeMetadata()
+    if (!poolFeeMetadata) {
       logger.warn('Missing poolFee object in pool metadata!')
       return null
     }
-    return metadata.pool.poolFees.find((elem) => elem.id.toString(10) === poolFeeId)?.name ?? null
+    return poolFeeMetadata.find((elem) => elem.id.toString(10) === poolFeeId)?.name ?? null
   }
 
   static async getById(poolId: string) {

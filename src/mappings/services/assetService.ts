@@ -84,6 +84,16 @@ export class AssetService extends Asset {
     return asset
   }
 
+  static async getByNftId(collectionId: string, itemId: string) {
+    const asset = (
+      await AssetService.getByFields([
+        ['collateralNftClassId', '=', collectionId],
+        ['collateralNftItemId', '=', itemId],
+      ], { limit: 100 })
+    ).pop() as AssetService
+    return asset
+  }
+
   public borrow(amount: bigint) {
     logger.info(`Increasing borrowings for asset ${this.id} by ${amount}`)
     this.borrowedAmountByPeriod += amount
@@ -176,6 +186,10 @@ export class AssetService extends Asset {
     return this
   }
 
+  public setMetadata(metadata: string) {
+    this.metadata = metadata
+  }
+
   static extractPrincipalAmount(principalObject: LoanPricingAmount) {
     let principal: bigint
     switch (principalObject.type) {
@@ -249,7 +263,7 @@ export class AssetService extends Asset {
     const snapshots = await AssetSnapshot.getByFields([
       ['assetId', '=', this.id],
       ['periodId', '=', periodStart.toISOString()],
-    ])
+    ], { limit: 100 })
     if (snapshots.length !== 1) {
       logger.warn(`Unable to load snapshot for asset ${this.id} for period ${periodStart.toISOString()}`)
       return

@@ -23,6 +23,9 @@ import { SnapshotPeriodService } from '../services/snapshotPeriodService'
 
 const timekeeper = TimekeeperService.init()
 
+const ALT_1_POOL_ID = '0xf96f18f2c70b57ec864cc0c8b828450b82ff63e3'
+const ALT_1_END_BLOCK = 20120759
+
 type PoolMulticall = {
   id: string
   type: string
@@ -54,32 +57,22 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
 
         // initialize new pool
         if (!pool.isActive) {
-          logger.info(`Initializing pool ${tinlakePool.id}`)
-          pool.name = tinlakePool.shortName
-          pool.isActive = true
-          pool.currencyId = currency.id
+          await pool.initTinlake(tinlakePool.shortName, currency.id, date, blockNumber)
           await pool.save()
 
-          logger.info(`Creating senior tranche with id: ${tinlakePool.id}-senior`)
-          const senior = await TrancheService.getOrSeed(tinlakePool.id, 'senior')
-          senior.interestRatePerSec = BigInt(tinlakePool.seniorInterestRate)
-          logger.info(`interestRatePerSec: ${senior.interestRatePerSec}`)
-          senior.index = 1
-          senior.name = `${pool.name} (Senior)`
-          senior.activate()
-          senior.save()
+          const senior = await TrancheService.getOrSeed(pool.id, 'senior', blockchain.id)
+          await senior.initTinlake(pool.id, `${pool.name} (Senior)`, 1, BigInt(tinlakePool.seniorInterestRate))
+          await senior.save()
 
-          logger.info(`Creating junior tranche with id: ${tinlakePool.id}-junior`)
-          const junior = await TrancheService.getOrSeed(tinlakePool.id, 'junior')
-          junior.index = 0
-          senior.name = `${pool.name} (Junior)`
-          junior.save()
+          const junior = await TrancheService.getOrSeed(pool.id, 'junior', blockchain.id)
+          await junior.initTinlake(pool.id, `${pool.name} (Junior)`, 0)
+          await junior.save()
         }
 
         const latestNavFeed = getLatestContract(tinlakePool.navFeed, blockNumber)
         const latestReserve = getLatestContract(tinlakePool.reserve, blockNumber)
 
-        if (latestNavFeed?.address) {
+        if (latestNavFeed && latestNavFeed.address) {
           poolUpdateCalls.push({
             id: tinlakePool.id,
             type: 'currentNAV',
@@ -111,24 +104,30 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
         const latestReserve = getLatestContract(tinlakePool?.reserve, blockNumber)
         const pool = await PoolService.getOrSeed(tinlakePool?.id, false, false, blockchain.id)
 
-        // Update pool
-        if (callResult.type === 'currentNAV' && latestNavFeed?.address) {
-          const currentNAV = NavfeedAbi__factory.createInterface().decodeFunctionResult(
-            'currentNAV',
-            callResult.result
-          )[0]
-          pool.portfolioValuation = currentNAV.toBigInt()
-          pool.netAssetValue = (pool.portfolioValuation || BigInt(0)) + (pool.totalReserve || BigInt(0))
+        if (callResult.type === 'currentNAV' && latestNavFeed) {
+          const currentNAV =
+            tinlakePool.id === ALT_1_POOL_ID && blockNumber > ALT_1_END_BLOCK
+              ? BigInt(0)
+              : NavfeedAbi__factory.createInterface()
+                  .decodeFunctionResult('currentNAV', callResult.result)[0]
+                  .toBigInt()
+          pool.portfolioValuation = currentNAV
+          pool.netAssetValue =
+            tinlakePool.id === ALT_1_POOL_ID && blockNumber > ALT_1_END_BLOCK
+              ? BigInt(0)
+              : (pool.portfolioValuation || BigInt(0)) + (pool.totalReserve || BigInt(0))
           await pool.updateNormalizedNAV()
           await pool.save()
           logger.info(`Updating pool ${tinlakePool?.id} with portfolioValuation: ${pool.portfolioValuation}`)
         }
-        if (callResult.type === 'totalBalance' && latestReserve?.address) {
-          const totalBalance = ReserveAbi__factory.createInterface().decodeFunctionResult(
-            'totalBalance',
-            callResult.result
-          )[0]
-          pool.totalReserve = totalBalance.toBigInt()
+        if (callResult.type === 'totalBalance' && latestReserve) {
+          const totalBalance =
+            tinlakePool.id === ALT_1_POOL_ID && blockNumber > ALT_1_END_BLOCK
+              ? BigInt(0)
+              : ReserveAbi__factory.createInterface()
+                  .decodeFunctionResult('totalBalance', callResult.result)[0]
+                  .toBigInt()
+          pool.totalReserve = totalBalance
           pool.netAssetValue = (pool.portfolioValuation || BigInt(0)) + (pool.totalReserve || BigInt(0))
           await pool.updateNormalizedNAV()
           await pool.save()
@@ -140,6 +139,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
           await updateLoans(
             tinlakePool?.id as string,
             date,
+            blockNumber,
             tinlakePool?.shelf[0].address as string,
             tinlakePool?.pile[0].address as string,
             latestNavFeed.address
@@ -172,12 +172,22 @@ type NewLoanData = {
   maturityDate?: unknown
 }
 
-async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile: string, navFeed: string) {
+async function updateLoans(
+  poolId: string,
+  blockDate: Date,
+  blockNumber: number,
+  shelf: string,
+  pile: string,
+  navFeed: string
+) {
   logger.info(`Updating loans for pool ${poolId}`)
-  let existingLoans = await AssetService.getByPoolId(poolId)
+  let existingLoans = await AssetService.getByPoolId(poolId, { limit: 100 })
   const existingLoanIds = existingLoans?.map((loan) => parseInt(loan.id.split('-')[1]))
   const newLoans = await getNewLoans(existingLoanIds as number[], shelf)
   logger.info(`Found ${newLoans.length} new loans for pool ${poolId}`)
+
+  const pool = await PoolService.getById(poolId)
+  const isAlt1AndAfterEndBlock = poolId === ALT_1_POOL_ID && blockNumber > ALT_1_END_BLOCK
 
   const nftIdCalls: PoolMulticall[] = []
   for (const loanIndex of newLoans) {
@@ -266,7 +276,8 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
   }
 
   // update all loans
-  existingLoans = (await AssetService.getByPoolId(poolId))?.filter((loan) => loan.status !== AssetStatus.CLOSED) || []
+  existingLoans =
+    (await AssetService.getByPoolId(poolId, { limit: 100 }))?.filter((loan) => loan.status !== AssetStatus.CLOSED) || []
   logger.info(`Updating ${existingLoans?.length} existing loans for pool ${poolId}`)
   const loanDetailsCalls: PoolMulticall[] = []
   existingLoans.forEach((loan) => {
@@ -314,10 +325,11 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
           )[0]
         }
         if (loanDetailsResponses[i].type === 'debt') {
-          loanDetails[loanDetailsResponses[i].id].debt = PileAbi__factory.createInterface().decodeFunctionResult(
-            'debt',
-            loanDetailsResponses[i].result
-          )[0]
+          loanDetails[loanDetailsResponses[i].id].debt = isAlt1AndAfterEndBlock
+            ? BigInt(0)
+            : PileAbi__factory.createInterface()
+                .decodeFunctionResult('debt', loanDetailsResponses[i].result)[0]
+                .toBigInt()
         }
         if (loanDetailsResponses[i].type === 'loanRates') {
           loanDetails[loanDetailsResponses[i].id].loanRates = PileAbi__factory.createInterface().decodeFunctionResult(
@@ -328,6 +340,12 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
       }
     }
 
+    let sumDebt = BigInt(0)
+    let sumBorrowed = BigInt(0)
+    let sumRepaid = BigInt(0)
+    let sumInterestRatePerSec = BigInt(0)
+    let sumBorrowsCount = BigInt(0)
+    let sumRepaysCount = BigInt(0)
     for (let i = 0; i < existingLoans.length; i++) {
       const loan = existingLoans[i]
       const loanIndex = loan.id.split('-')[1]
@@ -338,12 +356,12 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
         loan.status = AssetStatus.ACTIVE
       }
       // if the loan is not locked or the debt is 0 and the loan was active before, close it
-      if (!nftLocked || (loan.status === AssetStatus.ACTIVE && debt.toBigInt() === BigInt(0))) {
+      if (!nftLocked || (loan.status === AssetStatus.ACTIVE && debt === BigInt(0))) {
         loan.isActive = false
         loan.status = AssetStatus.CLOSED
         await loan.save()
       }
-      loan.outstandingDebt = debt.toBigInt()
+      loan.outstandingDebt = debt
       const currentDebt = loan.outstandingDebt || BigInt(0)
       const rateGroup = loanDetails[loanIndex].loanRates
       const pileContract = PileAbi__factory.connect(pile, api as unknown as Provider)
@@ -352,22 +370,39 @@ async function updateLoans(poolId: string, blockDate: Date, shelf: string, pile:
 
       if (prevDebt > currentDebt) {
         loan.repaidAmountByPeriod = prevDebt - currentDebt
-        loan.totalRepaid
-          ? (loan.totalRepaid += loan.repaidAmountByPeriod)
-          : (loan.totalRepaid = loan.repaidAmountByPeriod)
+        loan.totalRepaid = (loan.totalRepaid || BigInt(0)) + loan.repaidAmountByPeriod
+        loan.repaysCount = (loan.repaysCount || BigInt(0)) + BigInt(1)
       }
       if (
         prevDebt * (loan.interestRatePerSec / BigInt(10) ** BigInt(27)) * BigInt(86400) <
         (loan.outstandingDebt || BigInt(0))
       ) {
         loan.borrowedAmountByPeriod = (loan.outstandingDebt || BigInt(0)) - prevDebt
-        loan.totalBorrowed
-          ? (loan.totalBorrowed += loan.borrowedAmountByPeriod)
-          : (loan.totalBorrowed = loan.borrowedAmountByPeriod)
+        loan.totalBorrowed = (loan.totalBorrowed || BigInt(0)) + loan.borrowedAmountByPeriod
+        loan.borrowsCount = (loan.borrowsCount || BigInt(0)) + BigInt(1)
       }
       logger.info(`Updating loan ${loan.id} for pool ${poolId}`)
       await loan.save()
+
+      sumDebt += loan.outstandingDebt || BigInt(0)
+      sumBorrowed += loan.totalBorrowed || BigInt(0)
+      sumRepaid += loan.totalRepaid || BigInt(0)
+      sumInterestRatePerSec += (loan.interestRatePerSec || BigInt(0)) * (loan.outstandingDebt || BigInt(0))
+      sumBorrowsCount += loan.borrowsCount || BigInt(0)
+      sumRepaysCount += loan.repaysCount || BigInt(0)
     }
+
+    pool.sumDebt = sumDebt
+    pool.sumBorrowedAmount = sumBorrowed
+    pool.sumRepaidAmount = sumRepaid
+    if (sumDebt > BigInt(0)) {
+      pool.weightedAverageInterestRatePerSec = sumInterestRatePerSec / sumDebt
+    } else {
+      pool.weightedAverageInterestRatePerSec = BigInt(0)
+    }
+    pool.sumBorrowsCount = sumBorrowsCount
+    pool.sumRepaysCount = sumRepaysCount
+    await pool.save()
   }
 }
 

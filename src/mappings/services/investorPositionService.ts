@@ -1,10 +1,14 @@
 import { InvestorPosition } from '../../types/models/InvestorPosition'
 import { WAD } from '../../config'
 import { nToBigInt, bnToBn, BN } from '@polkadot/util'
+import assert from 'assert'
 
 export class InvestorPositionService extends InvestorPosition {
   static init(accountId: string, trancheId: string, hash: string, timestamp: Date, quantity: bigint, price: bigint) {
-    const [ poolId ] = trancheId.split('-')
+    const [poolId] = trancheId.split('-')
+    assert(quantity, 'Missing quantity')
+    assert(price, 'Missing price')
+    assert(hash, 'Missing hash')
     const id = `${accountId}-${trancheId}-${hash}`
     logger.info(
       `Initialising new InvestorPosition with Id ${id} ` +
@@ -23,12 +27,20 @@ export class InvestorPositionService extends InvestorPosition {
   }
 
   static async sellFifo(accountId: string, trancheId: string, sellingQuantity: bigint, sellingPrice: bigint) {
+    assert(sellingPrice, 'Missing price')
+    assert(sellingQuantity, 'Missing quantity')
     logger.info(
       `Selling positions for ${trancheId} ` +
         `sellingQuantity: ${sellingQuantity.toString(10)} sellingPrice: ${sellingPrice.toString(10)}`
     )
     if (sellingQuantity <= BigInt(0)) return BigInt(0)
-    const positions = await this.getByFields([['accountId', '=', accountId], ['trancheId', '=', trancheId]])
+    const positions = await this.getByFields(
+      [
+        ['accountId', '=', accountId],
+        ['trancheId', '=', trancheId],
+      ],
+      { limit: 100 }
+    )
     positions.sort((a, b) => b.timestamp.valueOf() - a.timestamp.valueOf())
 
     const sellPositions: [InvestorPosition: InvestorPosition, sellQuantity: bigint][] = []
@@ -68,7 +80,13 @@ export class InvestorPositionService extends InvestorPosition {
   static async computeUnrealizedProfitAtPrice(accountId: string, trancheId: string, sellingPrice: bigint) {
     if (!sellingPrice || sellingPrice <= BigInt(0)) return BigInt(0)
     logger.info(`Computing unrealizedProfit at price ${sellingPrice} for tranche ${trancheId}`)
-    const sellingPositions = await this.getByFields([['accountId', '=', accountId], ['trancheId', '=', trancheId]])
+    const sellingPositions = await this.getByFields(
+      [
+        ['accountId', '=', accountId],
+        ['trancheId', '=', trancheId],
+      ],
+      { limit: 100 }
+    )
     const sellingQuantity = sellingPositions.reduce<bigint>(
       (result, position) => result + position.holdingQuantity,
       BigInt(0)

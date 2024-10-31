@@ -3,12 +3,19 @@ network:
   endpoint: 'https://eth.api.onfinality.io/ws?apikey=${ONFINALITY_API_KEY}'
   #dictionary: 'https://gx.api.subquery.network/sq/subquery/eth-dictionary'
 dataSources:
-  - kind: ethereum/Runtime
-    startBlock: 18721030
+  - kind: ethereum/Runtime #PoolManager V1
+    startBlock: 20778999
+    # startBlock: 18721030
     options:
       address: '0x78E9e622A57f70F1E0Ec652A4931E4e278e58142'
-  - kind: ethereum/Runtime
-    startBlock: 11063000
+  - kind: ethereum/Runtime #PoolManager V2
+    startBlock: 20778999
+    # startBlock: 20432390
+    options:
+      address: '0x91808B5E2F6d7483D41A681034D7c9DbB64B9E29'
+  - kind: ethereum/Runtime #Tinlake
+    startBlock: 20778999
+    # startBlock: 11063000
     options:
       abi: navFeed
     assets:

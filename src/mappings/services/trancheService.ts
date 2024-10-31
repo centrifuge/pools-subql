@@ -8,16 +8,18 @@ import { Tranche, TrancheSnapshot } from '../../types'
 const MAINNET_CHAINID = '0xb3db41421702df9a7fcac62b53ffeac85f7853cc4e689e0b93aeb3db18c09d82'
 
 export class TrancheService extends Tranche {
+  snapshot?: TrancheSnapshot
+
   static seed(poolId: string, trancheId: string, blockchain = '0') {
     const id = `${poolId}-${trancheId}`
     logger.info(`Seeding tranche ${id}`)
     return new this(id, blockchain, 'ALL', poolId, trancheId, false)
   }
 
-  static async getOrSeed(poolId: string, trancheId: string) {
+  static async getOrSeed(poolId: string, trancheId: string, blockchain = '0') {
     let tranche = await this.getById(poolId, trancheId)
     if (!tranche) {
-      tranche = this.seed(poolId, trancheId)
+      tranche = this.seed(poolId, trancheId, blockchain)
       await tranche.save()
     }
     return tranche
@@ -44,6 +46,15 @@ export class TrancheService extends Tranche {
       this.minRiskBuffer = trancheData.trancheType.asNonResidual.minRiskBuffer.toBigInt()
     }
 
+    return this
+  }
+
+  public initTinlake(poolId: string, name: string, index: number, interestRatePerSec?: bigint) {
+    logger.info(`Initializing tinlake tranche ${this.id} for pool ${poolId}`)
+    this.activate()
+    this.name = name
+    this.index = index
+    this.interestRatePerSec = interestRatePerSec
     return this
   }
 
@@ -142,7 +153,7 @@ export class TrancheService extends Tranche {
 
     let trancheSnapshot: TrancheSnapshot
     if (referencePeriodStart) {
-      const trancheSnapshots = await TrancheSnapshot.getByPeriodId(referencePeriodStart.toISOString())
+      const trancheSnapshots = await TrancheSnapshot.getByPeriodId(referencePeriodStart.toISOString(), { limit: 100 })
       if (trancheSnapshots.length === 0) {
         logger.warn(`No tranche snapshot exist for pool ${this.poolId} with reference date ${referencePeriodStart}`)
         return this
@@ -177,7 +188,7 @@ export class TrancheService extends Tranche {
       `Computing annualized yield ${yieldField} for tranche ${this.trancheId} of ` +
         `pool ${this.poolId} with reference date ${referencePeriodStart}`
     )
-    const trancheSnapshots = await TrancheSnapshot.getByPeriodId(referencePeriodStart.toISOString())
+    const trancheSnapshots = await TrancheSnapshot.getByPeriodId(referencePeriodStart.toISOString(), { limit: 100 })
     if (trancheSnapshots.length === 0) {
       logger.warn(`No tranche snapshot found pool ${this.poolId} with reference date ${referencePeriodStart}`)
       return this
@@ -249,6 +260,18 @@ export class TrancheService extends Tranche {
   public activate() {
     logger.info(`Activating tranche ${this.id}`)
     this.isActive = true
+  }
+
+  public async loadSnapshot(periodStart: Date) {
+    const snapshots = await TrancheSnapshot.getByFields([
+      ['trancheId', '=', this.id],
+      ['periodId', '=', periodStart.toISOString()],
+    ], { limit: 100 })
+    if (snapshots.length !== 1) {
+      logger.warn(`Unable to load snapshot for asset ${this.id} for period ${periodStart.toISOString()}`)
+      return
+    }
+    this.snapshot = snapshots.pop()
   }
 }
 

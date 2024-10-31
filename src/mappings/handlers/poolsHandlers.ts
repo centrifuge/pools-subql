@@ -14,6 +14,7 @@ import { AssetTransactionData, AssetTransactionService } from '../services/asset
 import { substrateStateSnapshotter } from '../../helpers/stateSnapshot'
 import { Pool, PoolSnapshot } from '../../types'
 import { InvestorPositionService } from '../services/investorPositionService'
+import { PoolFeeService } from '../services/poolFeeService'
 
 export const handlePoolCreated = errorHandler(_handlePoolCreated)
 async function _handlePoolCreated(event: SubstrateEvent<PoolCreatedEvent>): Promise<void> {
@@ -31,7 +32,7 @@ async function _handlePoolCreated(event: SubstrateEvent<PoolCreatedEvent>): Prom
   )
 
   // Initialise Pool
-  const pool = await PoolService.getOrSeed(poolId.toString(10), false)
+  const pool = await PoolService.getOrSeed(poolId.toString(10), false, false, blockchain.id)
   await pool.init(
     currency.id,
     essence.maxReserve.toBigInt(),
@@ -41,19 +42,26 @@ async function _handlePoolCreated(event: SubstrateEvent<PoolCreatedEvent>): Prom
     event.block.block.header.number.toNumber()
   )
   await pool.initData()
-  await pool.initIpfsMetadata().catch((err) => {
+  const poolFeesMetadata = await pool.initIpfsMetadata().catch<ReturnType<typeof pool.initIpfsMetadata>>((err) => {
     logger.error(`IPFS Request failed ${err}`)
-    return Promise.resolve()
+    return Promise.resolve([])
   })
+
+  for (const { id: feeId, name } of poolFeesMetadata) {
+    const poolFee = await PoolFeeService.getById(pool.id, feeId.toString(10))
+    await poolFee.setName(name)
+    await poolFee.save()
+  }
   await pool.save()
 
   // Initialise the tranches
   const trancheData = await pool.getTranches()
+
   const tranches = await Promise.all(
     essence.tranches.map((trancheEssence) => {
       const trancheId = trancheEssence.currency.trancheId.toHex()
       logger.info(`Creating tranche with id: ${pool.id}-${trancheId}`)
-      return TrancheService.getOrSeed(pool.id, trancheId)
+      return TrancheService.getOrSeed(pool.id, trancheId, blockchain.id)
     })
   )
 
@@ -288,6 +296,8 @@ async function _handleEpochExecuted(event: SubstrateEvent<EpochClosedExecutedEve
       amount: epoch.sumRedeemedAmount,
     })
     assetTransactionSaves.push(withdrawalRedemptions.save())
+  } else {
+    logger.info(`No withdrawal redemptions for pool ${pool.id}`)
   }
 
   if (epoch.sumPoolFeesPaidAmount > BigInt(0)) {
@@ -296,9 +306,21 @@ async function _handleEpochExecuted(event: SubstrateEvent<EpochClosedExecutedEve
       amount: epoch.sumPoolFeesPaidAmount,
     })
     assetTransactionSaves.push(withdrawalFees.save())
+  } else {
+    logger.info(`No withdrawal for fees for pool ${pool.id}`)
   }
 
   await Promise.all(assetTransactionSaves)
 
-  await substrateStateSnapshotter('epochId', epoch.id, Pool, PoolSnapshot, event.block, 'isActive', true, 'poolId')
+  await substrateStateSnapshotter(
+    'epochId',
+    epoch.id,
+    Pool,
+    PoolSnapshot,
+    event.block,
+    'isActive',
+    true,
+    'poolId',
+    false
+  )
 }

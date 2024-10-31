@@ -28,9 +28,8 @@ jobs:
   subql_deploy_workflow:
     runs-on: ubuntu-latest
     env:
-      SUBQL_INDEXER_VERSION: v4.0.1
-      SUBQL_ETH_INDEXER_VERSION: v4.1.0
-      SUBQL_QUERY_VERSION: v2.13.1
+      SUBQL_CFG_INDEXER_VERSION: "v5.2.5"
+      SUBQL_ETH_INDEXER_VERSION: "v5.1.3"
       CHAIN_ID: ${{ inputs.chainId }}
       SUBQL_ACCESS_TOKEN: ${{ secrets.accessToken }}
       SUBQL_PROJ_ORG: ${{ inputs.projOrg }}
@@ -70,15 +69,27 @@ jobs:
             if [[ -n "$SUBQL_ENDPOINTS" ]]; then SUBQL_ENDPOINTS+=","; fi
             SUBQL_ENDPOINTS+="${chainId}:${endpoint}"
 
+            if [[ -n "$SUBQL_ENDPOINTS" ]]; then SUBQL_ENDPOINTS+=","; fi
+            SUBQL_ENDPOINTS+="${chainId}:${endpoint}"
+
             if [[ "$dictionary" != "null" ]]; then
               if [[ -n "$SUBQL_DICTIONARIES" ]]; then SUBQL_DICTIONARIES+=","; fi
               SUBQL_DICTIONARIES+="${chainId}:${dictionary}"
+            fi
+            if [[ -n "$SUBQL_CFG_INDEXER_VERSION" && -n "$SUBQL_ETH_INDEXER_VERSION" ]]; then
+              if [[ -n "$SUBQL_VERSIONS" ]]; then SUBQL_VERSIONS+=","; fi
+              if [[ "${chainId:0:2}" == "0x" ]]; then
+                SUBQL_VERSIONS+="${chainId}:${SUBQL_CFG_INDEXER_VERSION}"
+              else
+                SUBQL_VERSIONS+="${chainId}:${SUBQL_ETH_INDEXER_VERSION}"
+              fi
             fi
           done
           echo "SUBQL_PROJ_NAME=$(yq '.name' project-centrifuge.yaml)-multichain" >> $GITHUB_ENV
           echo "SUBQL_PROJ_DECRIPTION=$(yq '.description' project-centrifuge.yaml)" >> $GITHUB_ENV
           echo "SUBQL_ENDPOINTS=${SUBQL_ENDPOINTS}" >> $GITHUB_ENV
           echo "SUBQL_DICTIONARIES=${SUBQL_DICTIONARIES}" >> $GITHUB_ENV
+          echo "SUBQL_VERSIONS=${SUBQL_VERSIONS}" >> $GITHUB_ENV
       - name: Publish SubQL version
         run: |
           echo "IPFSCID=$(node_modules/.bin/subql publish -o)" >> $GITHUB_ENV
@@ -110,8 +121,10 @@ jobs:
           --dict="$SUBQL_DICTIONARIES" \
           --type=$SUBQL_DEPLOYMENT_TYPE \
           --disableHistorical \
+          --disableIndexerStoreCacheAsync \
           --queryLimit=1000 \
           --indexerWorkers=0 \
           --indexerUnsafe \
+          --indexerVersion="$SUBQL_VERSIONS" \
           --queryAggregate
 

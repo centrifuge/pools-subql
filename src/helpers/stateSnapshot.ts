@@ -13,6 +13,7 @@ import { SubstrateBlock } from '@subql/types'
  * blockNumber fields)
  * @param block - the correspondint substrateBlock to provide additional state values to the snapshot
  * @param fkReferenceName - (optional) name of the foreignKey to save a reference to the originating entity.
+ * @param resetPeriodStates - (optional) reset properties ending in ByPeriod to 0 after snapshot (defaults to true).
  * @returns A promise resolving when all state manipulations in the DB is completed
  */
 async function stateSnapshotter<T extends SnapshottableEntity, U extends SnapshottedEntityProps>(
@@ -24,6 +25,7 @@ async function stateSnapshotter<T extends SnapshottableEntity, U extends Snapsho
   filterKey?: keyof T,
   filterValue?: T[keyof T],
   fkReferenceName?: ForeignKey,
+  resetPeriodStates = true,
   blockchainId: T['blockchainId'] = '0'
 ): Promise<void[]> {
   const entitySaves: Promise<void>[] = []
@@ -47,11 +49,13 @@ async function stateSnapshotter<T extends SnapshottableEntity, U extends Snapsho
 
     const propNames = Object.getOwnPropertyNames(stateEntity)
     const propNamesToReset = propNames.filter((propName) => propName.endsWith('ByPeriod')) as ResettableKey[]
-    for (const propName of propNamesToReset) {
-      logger.debug(`resetting ${stateEntity._name.toLowerCase()}.${propName} to 0`)
-      stateEntity[propName] = BigInt(0)
+    if (resetPeriodStates) {
+      for (const propName of propNamesToReset) {
+        logger.debug(`resetting ${stateEntity._name.toLowerCase()}.${propName} to 0`)
+        stateEntity[propName] = BigInt(0)
+      }
+      entitySaves.push(stateEntity.save())
     }
-    entitySaves.push(stateEntity.save())
     entitySaves.push(snapshotEntity.save())
   }
   return Promise.all(entitySaves)
@@ -64,7 +68,8 @@ export function evmStateSnapshotter<T extends SnapshottableEntity, U extends Sna
   block: EthereumBlock,
   filterKey?: keyof T,
   filterValue?: T[keyof T],
-  fkReferenceName?: ForeignKey
+  fkReferenceName?: ForeignKey,
+  resetPeriodStates = true
 ): Promise<void[]> {
   const formattedBlock = { number: block.number, timestamp: new Date(Number(block.timestamp) * 1000) }
   return stateSnapshotter<T, U>(
@@ -76,6 +81,7 @@ export function evmStateSnapshotter<T extends SnapshottableEntity, U extends Sna
     filterKey,
     filterValue,
     fkReferenceName,
+    resetPeriodStates,
     '1'
   )
 }
@@ -88,7 +94,8 @@ export function substrateStateSnapshotter<T extends SnapshottableEntity, U exten
   block: SubstrateBlock,
   filterKey?: keyof T,
   filterValue?: T[keyof T],
-  fkReferenceName?: ForeignKey
+  fkReferenceName?: ForeignKey,
+  resetPeriodStates = true
 ): Promise<void[]> {
   const formattedBlock = { number: block.block.header.number.toNumber(), timestamp: block.timestamp }
   return stateSnapshotter<T, U>(
@@ -100,6 +107,7 @@ export function substrateStateSnapshotter<T extends SnapshottableEntity, U exten
     filterKey,
     filterValue,
     fkReferenceName,
+    resetPeriodStates,
     '0'
   )
 }
