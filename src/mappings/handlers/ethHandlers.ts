@@ -9,6 +9,7 @@ import { BlockchainService } from '../services/blockchainService'
 import {
   ShelfAbi__factory,
   NavfeedAbi__factory,
+  AssessorAbi__factory,
   ReserveAbi__factory,
   PileAbi__factory,
   MulticallAbi__factory,
@@ -71,6 +72,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
 
         const latestNavFeed = getLatestContract(tinlakePool.navFeed, blockNumber)
         const latestReserve = getLatestContract(tinlakePool.reserve, blockNumber)
+        const latestAssessor = getLatestContract(tinlakePool.assessor, blockNumber)
 
         if (latestNavFeed && latestNavFeed.address) {
           poolUpdateCalls.push({
@@ -94,6 +96,28 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
             result: '',
           })
         }
+
+        if (latestAssessor && latestAssessor.address) {
+          poolUpdateCalls.push({
+            id: tinlakePool.id,
+            type: 'calcSeniorTokenPrice',
+            call: {
+              target: latestAssessor.address,
+              callData: AssessorAbi__factory.createInterface().encodeFunctionData('calcSeniorTokenPrice'),
+            },
+            result: '',
+          })
+
+          poolUpdateCalls.push({
+            id: tinlakePool.id,
+            type: 'calcJuniorTokenPrice',
+            call: {
+              target: latestAssessor.address,
+              callData: AssessorAbi__factory.createInterface().encodeFunctionData('calcJuniorTokenPrice'),
+            },
+            result: '',
+          })
+        }
       }
     }
     if (poolUpdateCalls.length > 0) {
@@ -102,7 +126,11 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
         const tinlakePool = tinlakePools.find((p) => p.id === callResult.id)
         const latestNavFeed = getLatestContract(tinlakePool?.navFeed, blockNumber)
         const latestReserve = getLatestContract(tinlakePool?.reserve, blockNumber)
+        const latestAssessor = getLatestContract(tinlakePool?.assessor, blockNumber)
         const pool = await PoolService.getOrSeed(tinlakePool?.id, false, false, blockchain.id)
+
+        const senior = await TrancheService.getOrSeed(tinlakePool?.id, 'senior', blockchain.id)
+        const junior = await TrancheService.getOrSeed(tinlakePool?.id, 'junior', blockchain.id)
 
         // Update pool
         if (callResult.type === 'currentNAV' && latestNavFeed) {
@@ -121,6 +149,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
           await pool.save()
           logger.info(`Updating pool ${tinlakePool?.id} with portfolioValuation: ${pool.portfolioValuation}`)
         }
+
         if (callResult.type === 'totalBalance' && latestReserve) {
           const totalBalance =
             tinlakePool.id === ALT_1_POOL_ID && blockNumber > ALT_1_END_BLOCK
@@ -133,6 +162,24 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
           await pool.updateNormalizedNAV()
           await pool.save()
           logger.info(`Updating pool ${tinlakePool?.id} with totalReserve: ${pool.totalReserve}`)
+        }
+
+        if (callResult.type === 'calcSeniorTokenPrice' && latestAssessor) {
+          const seniorPrice = AssessorAbi__factory.createInterface()
+            .decodeFunctionResult('calcSeniorTokenPrice', callResult.result)[0]
+            .toBigInt()
+          senior.tokenPrice = seniorPrice
+          await senior.save()
+          logger.info(`Updating pool ${tinlakePool?.id} senior token price to: ${seniorPrice}`)
+        }
+
+        if (callResult.type === 'calcJuniorTokenPrice' && latestAssessor) {
+          const juniorPrice = AssessorAbi__factory.createInterface()
+            .decodeFunctionResult('calcJuniorTokenPrice', callResult.result)[0]
+            .toBigInt()
+          junior.tokenPrice = juniorPrice
+          await junior.save()
+          logger.info(`Updating pool ${tinlakePool?.id} junior token price to: ${juniorPrice}`)
         }
 
         // Update loans (only index if fully synced)

@@ -24,6 +24,8 @@ dataSources:
         file: ./abi/shelf.abi.json
       pile:
         file: ./abi/pile.abi.json
+      assessor:
+        file: ./abi/assessor.abi.json
       multicall:
         file: ./abi/multicall.abi.json
     mapping:

@@ -21,6 +21,7 @@ export const tinlakePools = [
     reserve: [{ address: '0xdcc68229b0d0fb7668f3304d88ee9a2738a7b51d', startBlock: 13796304 }],
     shelf: [{ address: '0xbcCB3516D0fDE02DC46d9Bf591CF9cb3880D9842' }],
     pile: [{ address: '0xc2a75288cf644b068fC1e765586c170f2529a87F' }],
+    assessor: [{ address: '0xbAC0588400b84367E1F9601b96ac6C7f3e28F979' }],
     seniorInterestRate: '1000000001585489599188229325',
   },
   {
