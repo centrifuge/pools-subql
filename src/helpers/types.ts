@@ -1,5 +1,6 @@
 //find out types: const a = createType(api.registry, '[u8;32]', 18)
 import { AugmentedCall, AugmentedRpc, PromiseRpcResult } from '@polkadot/api/types'
+import { Codec } from '@polkadot/types-codec/types'
 import { Enum, Null, Struct, u128, u32, u64, U8aFixed, Option, Vec, Bytes, Result, bool } from '@polkadot/types'
 import { AccountId32, Perquintill, Balance } from '@polkadot/types/interfaces'
 import { ITuple, Observable } from '@polkadot/types/types'
@@ -39,14 +40,9 @@ export interface TrancheData extends Struct {
 }
 
 export interface TrancheEssence extends Struct {
-  currency: TrancheCurrency
+  currency: TrancheCurrency | TrancheCurrencyBefore1400
   ty: TrancheTypeEnum
   metadata: TrancheMetadata
-}
-
-export interface TrancheCurrency extends Struct {
-  poolId: u64
-  trancheId: U8aFixed
 }
 
 export interface TrancheMetadata extends Struct {
@@ -57,7 +53,7 @@ export interface TrancheMetadata extends Struct {
 export interface TrancheDetails extends Struct {
   trancheType: TrancheTypeEnum
   seniority: u32
-  currency: TrancheCurrency
+  currency: TrancheCurrency | TrancheCurrencyBefore1400
   debt: u128
   reserve: u128
   loss: u128
@@ -71,6 +67,7 @@ export interface TrancheTypeEnum extends Enum {
   isNonResidual: boolean
   asNonResidual: { interestRatePerSec: u128; minRiskBuffer: Perquintill }
   asResidual: Null
+  readonly type: 'Residual' | 'NonResidual';
 }
 
 export interface NavDetails extends Struct {
@@ -89,7 +86,7 @@ export interface EpochExecutionInfo extends Struct {
 }
 
 export interface EpochExecutionTranche extends Struct {
-  currency: TrancheCurrency
+  currency: TrancheCurrency | TrancheCurrencyBefore1400
   supply: u128
   price: u128
   invest: u128
@@ -114,7 +111,7 @@ export interface TokensCurrencyId extends Enum {
   isNative: boolean
   asNative: null
   isTranche: boolean
-  asTranche: ITuple<[poolId: u64, trancheId: U8aFixed]> //poolId, trancheId
+  asTranche: TrancheCurrency | TrancheCurrencyBefore1400
   isAUSD: boolean
   asAUSD: null
   isForeignAsset: boolean
@@ -457,22 +454,19 @@ export type PoolMetadataSetEvent = ITuple<[poolId: u64, metadata: Bytes]>
 export type EpochClosedExecutedEvent = ITuple<[poolId: u64, epochId: u32]>
 export type EpochSolutionEvent = ITuple<[poolId: u64, epochId: u32, solution: EpochSolution]>
 
-export type InvestOrdersCollectedEvent = ITuple<
-  [
-    investmentId: TrancheCurrency,
-    who: AccountId32,
-    processedOrders: Vec<u64>,
-    collection: InvestCollection,
-    outcome: Enum,
-  ]
+export type InvestOrdersCollectedEvent<T extends Codec = TrancheCurrency> = ITuple<
+  [investmentId: T, who: AccountId32, processedOrders: Vec<u64>, collection: InvestCollection, outcome: Enum]
 >
-export type RedeemOrdersCollectedEvent = ITuple<
-  [investmentId: TrancheCurrency, who: AccountId32, collections: Vec<u64>, collection: RedeemCollection, outcome: Enum]
+
+export type RedeemOrdersCollectedEvent<T extends Codec = TrancheCurrency> = ITuple<
+  [investmentId: T, who: AccountId32, collections: Vec<u64>, collection: RedeemCollection, outcome: Enum]
 >
-export type OrderUpdatedEvent = ITuple<
-  [investmentId: TrancheCurrency, submittedAt: u64, who: AccountId32, amount: u128]
+export type OrderUpdatedEvent<T extends Codec = TrancheCurrency> = ITuple<
+  [investmentId: T, submittedAt: u64, who: AccountId32, amount: u128]
 >
-export type OrdersClearedEvent = ITuple<[investmentId: TrancheCurrency, orderId: u64, fulfillment: OrdersFulfillment]>
+export type OrdersClearedEvent<T extends Codec = TrancheCurrency> = ITuple<
+  [investmentId: T, orderId: u64, fulfillment: OrdersFulfillment]
+>
 export type TokensTransferEvent = ITuple<
   [currencyId: TokensCurrencyId, from: AccountId32, to: AccountId32, amount: u128]
 >
@@ -520,3 +514,9 @@ export type ExtendedCall = typeof api.call & {
 }
 
 export type ApiQueryLoansActiveLoans = Vec<ITuple<[u64, LoanInfoActive]>>
+
+export type TrancheCurrency = ITuple<[poolId: u64, trancheId: U8aFixed]>
+export interface TrancheCurrencyBefore1400 extends Struct {
+  poolId: u64
+  trancheId: U8aFixed
+}

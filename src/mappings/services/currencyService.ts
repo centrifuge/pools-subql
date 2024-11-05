@@ -58,11 +58,15 @@ export class CurrencyService extends Currency {
 
 export const currencyFormatters: CurrencyFormatters = {
   AUSD: () => [],
-  ForeignAsset: (value) => [value.toString(10)],
+  ForeignAsset: (value: TokensCurrencyId['asForeignAsset']) => [value.toString(10)],
   Native: () => [],
   Staking: () => ['BlockRewards'],
-  Tranche: (value) => [value[0].toString(10), value[1].toHex()],
-  LocalAsset: (value) => [value.toString(10)],
+  Tranche: (value: TokensCurrencyId['asTranche']) => {
+    return 'trancheId' in value
+      ? [value.poolId.toString(10), value.trancheId.toHex()]
+      : [value[0].toString(10), value[1].toHex()]
+  },
+  LocalAsset: (value: TokensCurrencyId['asLocalAsset']) => [value.toString(10)],
 }
 
 export function formatEnumPayload(currencyType: string, ...currencyValue: string[]) {

@@ -51,21 +51,49 @@ dataSources:
         - handler: handleInvestOrderUpdated
           kind: substrate/EventHandler
           filter:
+            specVersion: [1400]
+            module: investments
+            method: InvestOrderUpdated
+        - handler: handleInvestOrderUpdatedBefore1400
+          kind: substrate/EventHandler
+          filter:
+            specVersion: [null,1399]
             module: investments
             method: InvestOrderUpdated
         - handler: handleRedeemOrderUpdated
           kind: substrate/EventHandler
           filter:
+            specVersion: [1400]
+            module: investments
+            method: RedeemOrderUpdated
+        - handler: handleRedeemOrderUpdatedBefore1400
+          kind: substrate/EventHandler
+          filter:
+            specVersion: [null,1399]
             module: investments
             method: RedeemOrderUpdated
         - handler: handleInvestOrdersCollected
           kind: substrate/EventHandler
           filter:
+            specVersion: [1400]
+            module: investments
+            method: InvestOrdersCollected
+        - handler: handleInvestOrdersCollectedBefore1400
+          kind: substrate/EventHandler
+          filter:
+            specVersion: [null,1399]
             module: investments
             method: InvestOrdersCollected
         - handler: handleRedeemOrdersCollected
           kind: substrate/EventHandler
           filter:
+            specVersion: [1400]
+            module: investments
+            method: RedeemOrdersCollected
+        - handler: handleRedeemOrdersCollectedBefore1400
+          kind: substrate/EventHandler
+          filter:
+            specVersion: [null,1399]
             module: investments
             method: RedeemOrdersCollected
         # - handler: handleProxyAdded
