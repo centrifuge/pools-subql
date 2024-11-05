@@ -11,7 +11,7 @@ import { BlockchainService, LOCAL_CHAIN_ID } from '../services/blockchainService
 import { CurrencyBalanceService } from '../services/currencyBalanceService'
 import type { Provider } from '@ethersproject/providers'
 import { TrancheBalanceService } from '../services/trancheBalanceService'
-import { escrows, userEscrows } from '../../config'
+import { escrows } from '../../config'
 import { InvestorPositionService } from '../services/investorPositionService'
 import { getPeriodStart } from '../../helpers/timekeeperService'
 
@@ -42,15 +42,21 @@ async function _handleEvmDeployTranche(event: DeployTrancheLog): Promise<void> {
   // TODO: fetch escrow from poolManager
   //const poolManager = PoolManagerAbi__factory.connect(poolManagerAddress, ethApi)
   //const escrowAddress = await poolManager.escrow()
-  const escrowAddress = escrows[chainId]
+  if (!(tokenAddress in escrows)) throw new Error(`Escrow address for token ${tokenAddress} missing in config!`)
+  const escrowAddress: string = escrows[tokenAddress]
 
   // TODO: fetch escrow from investmentManager
   //const investmentManagerAddress = await poolManager.investmentManager()
   //const investmentManager = InvestmentManagerAbi__factory.connect(investmentManagerAddress, ethApi)
   //const userEscrowAddress = await investmentManager.userEscrow()
-  const userEscrowAddress = userEscrows[chainId]
+  //const userEscrowAddress = userEscrows[chainId]
 
-  await currency.initTrancheDetails(tranche.poolId, tranche.trancheId, tokenAddress, escrowAddress, userEscrowAddress)
+  await currency.initTrancheDetails(
+    tranche.poolId,
+    tranche.trancheId,
+    tokenAddress,
+    escrowAddress
+  )
   await currency.save()
 
   await createTrancheTrackerDatasource({ address: tokenAddress })

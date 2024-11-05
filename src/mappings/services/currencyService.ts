@@ -62,9 +62,9 @@ export const currencyFormatters: CurrencyFormatters = {
   Native: () => [],
   Staking: () => ['BlockRewards'],
   Tranche: (value: TokensCurrencyId['asTranche']) => {
-    return 'trancheId' in value
-      ? [value.poolId.toString(10), value.trancheId.toHex()]
-      : [value[0].toString(10), value[1].toHex()]
+    return Array.isArray(value)
+      ? [value[0].toString(10), value[1].toHex()]
+      : [value.poolId.toString(10), value.trancheId.toHex()]
   },
   LocalAsset: (value: TokensCurrencyId['asLocalAsset']) => [value.toString(10)],
 }

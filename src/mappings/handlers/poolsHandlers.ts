@@ -63,9 +63,9 @@ async function _handlePoolCreated(event: SubstrateEvent<PoolCreatedEvent>): Prom
   const tranches = await Promise.all(
     essence.tranches.map((trancheEssence) => {
       const trancheId =
-        'trancheId' in trancheEssence.currency
-          ? trancheEssence.currency.trancheId.toHex()
-          : trancheEssence.currency[1].toHex()
+        Array.isArray(trancheEssence.currency)
+          ? trancheEssence.currency[1].toHex()
+          : trancheEssence.currency.trancheId.toHex()
       logger.info(`Creating tranche with id: ${pool.id}-${trancheId}`)
       return TrancheService.getOrSeed(pool.id, trancheId, blockchain.id)
     })

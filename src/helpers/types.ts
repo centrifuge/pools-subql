@@ -1,6 +1,5 @@
 //find out types: const a = createType(api.registry, '[u8;32]', 18)
 import { AugmentedCall, AugmentedRpc, PromiseRpcResult } from '@polkadot/api/types'
-import { Codec } from '@polkadot/types-codec/types'
 import { Enum, Null, Struct, u128, u32, u64, U8aFixed, Option, Vec, Bytes, Result, bool } from '@polkadot/types'
 import { AccountId32, Perquintill, Balance } from '@polkadot/types/interfaces'
 import { ITuple, Observable } from '@polkadot/types/types'
@@ -67,7 +66,7 @@ export interface TrancheTypeEnum extends Enum {
   isNonResidual: boolean
   asNonResidual: { interestRatePerSec: u128; minRiskBuffer: Perquintill }
   asResidual: Null
-  readonly type: 'Residual' | 'NonResidual';
+  readonly type: 'Residual' | 'NonResidual'
 }
 
 export interface NavDetails extends Struct {
@@ -454,18 +453,30 @@ export type PoolMetadataSetEvent = ITuple<[poolId: u64, metadata: Bytes]>
 export type EpochClosedExecutedEvent = ITuple<[poolId: u64, epochId: u32]>
 export type EpochSolutionEvent = ITuple<[poolId: u64, epochId: u32, solution: EpochSolution]>
 
-export type InvestOrdersCollectedEvent<T extends Codec = TrancheCurrency> = ITuple<
-  [investmentId: T, who: AccountId32, processedOrders: Vec<u64>, collection: InvestCollection, outcome: Enum]
+export type InvestOrdersCollectedEvent = ITuple<
+  [
+    investmentId: TrancheCurrency | TrancheCurrencyBefore1400,
+    who: AccountId32,
+    processedOrders: Vec<u64>,
+    collection: InvestCollection,
+    outcome: Enum,
+  ]
 >
 
-export type RedeemOrdersCollectedEvent<T extends Codec = TrancheCurrency> = ITuple<
-  [investmentId: T, who: AccountId32, collections: Vec<u64>, collection: RedeemCollection, outcome: Enum]
+export type RedeemOrdersCollectedEvent = ITuple<
+  [
+    investmentId: TrancheCurrency | TrancheCurrencyBefore1400,
+    who: AccountId32,
+    collections: Vec<u64>,
+    collection: RedeemCollection,
+    outcome: Enum,
+  ]
 >
-export type OrderUpdatedEvent<T extends Codec = TrancheCurrency> = ITuple<
-  [investmentId: T, submittedAt: u64, who: AccountId32, amount: u128]
+export type OrderUpdatedEvent = ITuple<
+  [investmentId: TrancheCurrency | TrancheCurrencyBefore1400, submittedAt: u64, who: AccountId32, amount: u128]
 >
-export type OrdersClearedEvent<T extends Codec = TrancheCurrency> = ITuple<
-  [investmentId: T, orderId: u64, fulfillment: OrdersFulfillment]
+export type OrdersClearedEvent = ITuple<
+  [investmentId: TrancheCurrency | TrancheCurrencyBefore1400, orderId: u64, fulfillment: OrdersFulfillment]
 >
 export type TokensTransferEvent = ITuple<
   [currencyId: TokensCurrencyId, from: AccountId32, to: AccountId32, amount: u128]
