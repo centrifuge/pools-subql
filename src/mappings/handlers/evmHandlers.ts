@@ -42,21 +42,11 @@ async function _handleEvmDeployTranche(event: DeployTrancheLog): Promise<void> {
   // TODO: fetch escrow from poolManager
   //const poolManager = PoolManagerAbi__factory.connect(poolManagerAddress, ethApi)
   //const escrowAddress = await poolManager.escrow()
-  if (!(tokenAddress in escrows)) throw new Error(`Escrow address for token ${tokenAddress} missing in config!`)
-  const escrowAddress: string = escrows[tokenAddress]
+  if (!(poolManagerAddress in escrows))
+    throw new Error(`Escrow address for PoolManager ${poolManagerAddress} missing in config!`)
+  const escrowAddress: string = escrows[poolManagerAddress]
 
-  // TODO: fetch escrow from investmentManager
-  //const investmentManagerAddress = await poolManager.investmentManager()
-  //const investmentManager = InvestmentManagerAbi__factory.connect(investmentManagerAddress, ethApi)
-  //const userEscrowAddress = await investmentManager.userEscrow()
-  //const userEscrowAddress = userEscrows[chainId]
-
-  await currency.initTrancheDetails(
-    tranche.poolId,
-    tranche.trancheId,
-    tokenAddress,
-    escrowAddress
-  )
+  await currency.initTrancheDetails(tranche.poolId, tranche.trancheId, tokenAddress, escrowAddress)
   await currency.save()
 
   await createTrancheTrackerDatasource({ address: tokenAddress })
