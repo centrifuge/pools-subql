@@ -2,8 +2,9 @@ import { u128 } from '@polkadot/types'
 import { bnToBn, nToBigInt } from '@polkadot/util'
 import { paginatedGetter } from '../../helpers/paginatedGetter'
 import { WAD } from '../../config'
-import { ExtendedCall, TrancheDetails } from '../../helpers/types'
+import { ExtendedCall } from '../../helpers/types'
 import { Tranche, TrancheSnapshot } from '../../types'
+import { TrancheData } from './poolService'
 
 const MAINNET_CHAINID = '0xb3db41421702df9a7fcac62b53ffeac85f7853cc4e689e0b93aeb3db18c09d82'
 
@@ -25,11 +26,11 @@ export class TrancheService extends Tranche {
     return tranche
   }
 
-  public init(index: number, trancheData: TrancheDetails) {
+  public init(index: number, trancheData: TrancheData) {
     logger.info(`Initializing tranche ${this.id}`)
     this.index = index
-    this.isResidual = trancheData.trancheType.isResidual
-    this.seniority = trancheData.seniority.toNumber()
+    this.isResidual = trancheData.trancheType === 'Residual'
+    this.seniority = trancheData.seniority
     this.isActive = true
     this.sumOutstandingInvestOrdersByPeriod = BigInt(0)
     this.sumOutstandingRedeemOrdersByPeriod = BigInt(0)
@@ -39,12 +40,10 @@ export class TrancheService extends Tranche {
     this.sumFulfilledRedeemOrdersCurrencyByPeriod = BigInt(0)
 
     this.tokenPrice = nToBigInt(WAD)
-    this.sumDebt = trancheData.debt.toBigInt()
+    this.sumDebt = trancheData.debt
 
-    if (!this.isResidual) {
-      this.interestRatePerSec = trancheData.trancheType.asNonResidual.interestRatePerSec.toBigInt()
-      this.minRiskBuffer = trancheData.trancheType.asNonResidual.minRiskBuffer.toBigInt()
-    }
+    this.interestRatePerSec = trancheData.interestRatePerSec
+    this.minRiskBuffer = trancheData.minRiskBuffer
 
     return this
   }
@@ -263,10 +262,13 @@ export class TrancheService extends Tranche {
   }
 
   public async loadSnapshot(periodStart: Date) {
-    const snapshots = await TrancheSnapshot.getByFields([
-      ['trancheId', '=', this.id],
-      ['periodId', '=', periodStart.toISOString()],
-    ], { limit: 100 })
+    const snapshots = await TrancheSnapshot.getByFields(
+      [
+        ['trancheId', '=', this.id],
+        ['periodId', '=', periodStart.toISOString()],
+      ],
+      { limit: 100 }
+    )
     if (snapshots.length !== 1) {
       logger.warn(`Unable to load snapshot for asset ${this.id} for period ${periodStart.toISOString()}`)
       return

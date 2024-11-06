@@ -1,6 +1,15 @@
 import { Option, u128, Vec } from '@polkadot/types'
 import { paginatedGetter } from '../../helpers/paginatedGetter'
-import { ExtendedCall, NavDetails, PoolDetails, PoolFeesList, PoolMetadata, TrancheDetails } from '../../helpers/types'
+import type {
+  ExtendedCall,
+  NavDetails,
+  PoolDetails,
+  PoolFeesList,
+  PoolMetadata,
+  TrancheCurrency,
+  TrancheCurrencyBefore1400,
+  TrancheDetails,
+} from '../../helpers/types'
 import { Pool } from '../../types'
 import { cid, readIpfs } from '../../helpers/ipfsFetch'
 import { EpochService } from './epochService'
@@ -104,12 +113,7 @@ export class PoolService extends Pool {
     return this
   }
 
-  public initTinlake(
-    name: string,
-    currencyId: string,
-    timestamp: Date,
-    blockNumber: number
-  ) {
+  public initTinlake(name: string, currencyId: string, timestamp: Date, blockNumber: number) {
     logger.info(`Initialising tinlake pool ${this.id}`)
     this.isActive = true
     this.name = name
@@ -265,7 +269,7 @@ export class PoolService extends Pool {
 
   public async updateNormalizedNAV() {
     const currency = await CurrencyService.get(this.currencyId)
-    if (!currency) throw new Error(`No currency with Id ${this.id} found!`)
+    if (!currency) throw new Error(`No currency with Id ${this.currencyId} found!`)
     const digitsMismatch = WAD_DIGITS - currency.decimals
     if (digitsMismatch === 0) {
       this.normalizedNAV = this.netAssetValue
@@ -350,16 +354,79 @@ export class PoolService extends Pool {
     this.sumInterestAccruedByPeriod += amount
   }
 
-  public async getTranches() {
+  public async fetchTranchesFrom1400(): Promise<TrancheData[]> {
+    logger.info(`Fetching tranches for pool: ${this.id} with specVersion >= 1400`)
     const poolResponse = await api.query.poolSystem.pool<Option<PoolDetails>>(this.id)
-    logger.info(`Fetching tranches for pool: ${this.id}`)
-
     if (poolResponse.isNone) throw new Error('Unable to fetch pool data!')
-
     const poolData = poolResponse.unwrap()
     const { ids, tranches } = poolData.tranches
+    const trancheData: TrancheData[] = []
+    for (const [index, tranche] of tranches.entries()) {
+      const currency = tranche.currency as TrancheCurrency
+      trancheData.push({
+        index,
+        id: ids[index].toHex(),
+        trancheType: tranche.trancheType.type,
+        seniority: tranche.seniority.toNumber(),
+        poolId: currency[0].toString(),
+        trancheId: currency[1].toHex(),
+        debt: tranche.debt.toBigInt(),
+        reserve: tranche.reserve.toBigInt(),
+        loss: tranche.loss.toBigInt(),
+        ratio: tranche.ratio.toBigInt(),
+        lastUpdatedInterest: tranche.lastUpdatedInterest.toBigInt(),
+        interestRatePerSec: tranche.trancheType.isNonResidual
+          ? tranche.trancheType.asNonResidual.interestRatePerSec.toBigInt()
+          : undefined,
+        minRiskBuffer: tranche.trancheType.isNonResidual
+          ? tranche.trancheType.asNonResidual.minRiskBuffer.toBigInt()
+          : undefined,
+      })
+    }
+    return trancheData
+  }
 
-    return tranches.reduce<PoolTranches>((obj, data, index) => ({ ...obj, [ids[index].toHex()]: { index, data } }), {})
+  public async fetchTranchesBefore1400(): Promise<TrancheData[]> {
+    logger.info(`Fetching tranches for pool: ${this.id} with specVersion < 1400`)
+    const poolResponse = await api.query.poolSystem.pool<Option<PoolDetails>>(this.id)
+    if (poolResponse.isNone) throw new Error('Unable to fetch pool data!')
+    const poolData = poolResponse.unwrap()
+    const { ids, tranches } = poolData.tranches
+    const trancheData: TrancheData[] = []
+    for (const [index, tranche] of tranches.entries()) {
+      const currency = tranche.currency as TrancheCurrencyBefore1400
+      trancheData.push({
+        index,
+        id: ids[index].toHex(),
+        trancheType: tranche.trancheType.type,
+        seniority: tranche.seniority.toNumber(),
+        poolId: currency.poolId.toString(10),
+        trancheId: currency.trancheId.toString() as `0x${string}`,
+        debt: tranche.debt.toBigInt(),
+        reserve: tranche.reserve.toBigInt(),
+        loss: tranche.loss.toBigInt(),
+        ratio: tranche.ratio.toBigInt(),
+        lastUpdatedInterest: tranche.lastUpdatedInterest.toBigInt(),
+        interestRatePerSec: tranche.trancheType.isNonResidual
+          ? tranche.trancheType.asNonResidual.interestRatePerSec.toBigInt()
+          : undefined,
+        minRiskBuffer: tranche.trancheType.isNonResidual
+          ? tranche.trancheType.asNonResidual.minRiskBuffer.toBigInt()
+          : undefined,
+      })
+    }
+    return trancheData
+  }
+
+  public async getTranches() {
+    const specVersion = api.runtimeVersion.specVersion.toNumber()
+    let tranches: TrancheData[]
+    if (specVersion >= 1400) {
+      tranches = await this.fetchTranchesFrom1400()
+    } else {
+      tranches = await this.fetchTranchesBefore1400()
+    }
+    return tranches.reduce<PoolTranches>((obj, data) => ({ ...obj, [data.id]: { ...data } }), {})
   }
 
   public async getPortfolio(): Promise<ActiveLoanData> {
@@ -528,8 +595,24 @@ export interface ActiveLoanData {
   }
 }
 
-interface PoolTranches {
-  [trancheId: string]: { index: number; data: TrancheDetails }
+export interface TrancheData {
+  index: number
+  id: `0x${string}`
+  trancheType: TrancheDetails['trancheType']['type']
+  seniority: number
+  poolId: string
+  trancheId: `0x${string}`
+  debt: bigint
+  reserve: bigint
+  loss: bigint
+  ratio: bigint
+  lastUpdatedInterest: bigint
+  interestRatePerSec?: bigint
+  minRiskBuffer?: bigint
+}
+
+export interface PoolTranches {
+  [trancheId: string]: TrancheData
 }
 
 interface PoolIpfsMetadata {
