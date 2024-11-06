@@ -40,11 +40,10 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
   const newPeriod = (await timekeeper).processBlock(date)
   const blockPeriodStart = getPeriodStart(date)
 
-  const blockchain = await BlockchainService.getOrInit('1')
-  const currency = await CurrencyService.getOrInitEvm(blockchain.id, DAIMainnetAddress, DAISymbol, DAIName)
-
   if (newPeriod) {
     logger.info(`It's a new period on EVM block ${blockNumber}: ${date.toISOString()}`)
+    const blockchain = await BlockchainService.getOrInit('1')
+    const currency = await CurrencyService.getOrInitEvm(blockchain.id, DAIMainnetAddress, DAISymbol, DAIName)
 
     const snapshotPeriod = SnapshotPeriodService.init(blockPeriodStart)
     await snapshotPeriod.save()

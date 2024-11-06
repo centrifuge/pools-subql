@@ -23,8 +23,8 @@ async function _handlePoolCreated(event: SubstrateEvent<PoolCreatedEvent>): Prom
     `${LOCAL_CHAIN_ID}-${essence.currency.type}-` +
     `${currencyFormatters[essence.currency.type](essence.currency.value).join('-')}`
   logger.info(
-    `Pool ${poolId.toString()} with currency: ${formattedCurrency} ` +
-      `created in block ${event.block.block.header.number}`
+    `Creating Pool ${poolId.toString()} with currency: ${formattedCurrency} ` +
+      `in block ${event.block.block.header.number}`
   )
 
   const blockchain = await BlockchainService.getOrInit(LOCAL_CHAIN_ID)
@@ -62,10 +62,9 @@ async function _handlePoolCreated(event: SubstrateEvent<PoolCreatedEvent>): Prom
 
   const tranches = await Promise.all(
     essence.tranches.map((trancheEssence) => {
-      const trancheId =
-        Array.isArray(trancheEssence.currency)
-          ? trancheEssence.currency[1].toHex()
-          : trancheEssence.currency.trancheId.toHex()
+      const trancheId = Array.isArray(trancheEssence.currency)
+        ? trancheEssence.currency[1].toHex()
+        : trancheEssence.currency.trancheId.toHex()
       logger.info(`Creating tranche with id: ${pool.id}-${trancheId}`)
       return TrancheService.getOrSeed(pool.id, trancheId, blockchain.id)
     })
@@ -88,6 +87,7 @@ async function _handlePoolCreated(event: SubstrateEvent<PoolCreatedEvent>): Prom
 
   const onChainCashAsset = AssetService.initOnchainCash(pool.id, event.block.timestamp)
   await onChainCashAsset.save()
+  logger.info(`Pool ${pool.id} successfully created!`)
 }
 
 export const handlePoolUpdated = errorHandler(_handlePoolUpdated)
@@ -125,6 +125,7 @@ async function _handlePoolUpdated(event: SubstrateEvent<PoolUpdatedEvent>): Prom
     await currency.initTrancheDetails(pool.id, trancheService.trancheId)
     await currency.save()
   }
+  logger.info(`Pool ${pool.id} successfully updated!`)
 }
 
 export const handleMetadataSet = errorHandler(_handleMetadataSet)
