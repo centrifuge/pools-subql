@@ -19,9 +19,12 @@ import { PoolFeeService } from '../services/poolFeeService'
 export const handlePoolCreated = errorHandler(_handlePoolCreated)
 async function _handlePoolCreated(event: SubstrateEvent<PoolCreatedEvent>): Promise<void> {
   const [, , poolId, essence] = event.event.data
+  const formattedCurrency =
+    `${LOCAL_CHAIN_ID}-${essence.currency.type}-` +
+    `${currencyFormatters[essence.currency.type](essence.currency.value).join('-')}`
   logger.info(
-    `Pool ${poolId.toString()} with currency: ${essence.currency.type} ` +
-      `created in block ${event.block.block.header.number}`
+    `Creating Pool ${poolId.toString()} with currency: ${formattedCurrency} ` +
+      `in block ${event.block.block.header.number}`
   )
 
   const blockchain = await BlockchainService.getOrInit(LOCAL_CHAIN_ID)
@@ -59,14 +62,16 @@ async function _handlePoolCreated(event: SubstrateEvent<PoolCreatedEvent>): Prom
 
   const tranches = await Promise.all(
     essence.tranches.map((trancheEssence) => {
-      const trancheId = trancheEssence.currency.trancheId.toHex()
+      const trancheId = Array.isArray(trancheEssence.currency)
+        ? trancheEssence.currency[1].toHex()
+        : trancheEssence.currency.trancheId.toHex()
       logger.info(`Creating tranche with id: ${pool.id}-${trancheId}`)
       return TrancheService.getOrSeed(pool.id, trancheId, blockchain.id)
     })
   )
 
   for (const [index, tranche] of tranches.entries()) {
-    await tranche.init(index, trancheData[tranche.trancheId].data)
+    await tranche.init(index, trancheData[tranche.trancheId])
     await tranche.updateSupply()
     await tranche.save()
 
@@ -82,6 +87,7 @@ async function _handlePoolCreated(event: SubstrateEvent<PoolCreatedEvent>): Prom
 
   const onChainCashAsset = AssetService.initOnchainCash(pool.id, event.block.timestamp)
   await onChainCashAsset.save()
+  logger.info(`Pool ${pool.id} successfully created!`)
 }
 
 export const handlePoolUpdated = errorHandler(_handlePoolUpdated)
@@ -109,16 +115,17 @@ async function _handlePoolUpdated(event: SubstrateEvent<PoolUpdatedEvent>): Prom
   for (const [id, tranche] of Object.entries(tranches)) {
     logger.info(`Syncing tranche with id: ${id}`)
     const trancheService = await TrancheService.getOrSeed(poolId.toString(), id)
-    trancheService.init(tranche.index, tranche.data)
+    trancheService.init(tranche.index, tranche)
     await trancheService.activate()
     await trancheService.updateSupply()
-    await trancheService.updateDebt(tranche.data.debt.toBigInt())
+    await trancheService.updateDebt(tranche.debt)
     await trancheService.save()
 
     const currency = await CurrencyService.getOrInit(blockchain.id, 'Tranche', pool.id, trancheService.trancheId)
     await currency.initTrancheDetails(pool.id, trancheService.trancheId)
     await currency.save()
   }
+  logger.info(`Pool ${pool.id} successfully updated!`)
 }
 
 export const handleMetadataSet = errorHandler(_handleMetadataSet)

@@ -11,7 +11,9 @@ import { TrancheBalanceService } from '../services/trancheBalanceService'
 
 export const handleInvestOrderUpdated = errorHandler(_handleInvestOrderUpdated)
 async function _handleInvestOrderUpdated(event: SubstrateEvent<OrderUpdatedEvent>): Promise<void> {
-  const [{ poolId, trancheId }, , address, newAmount] = event.event.data
+  const [investmentId, , address, newAmount] = event.event.data
+  const poolId = Array.isArray(investmentId) ? investmentId[0] : investmentId.poolId
+  const trancheId = Array.isArray(investmentId) ? investmentId[1] : investmentId.trancheId
   logger.info(
     `Invest order updated for tranche ${poolId.toString()}-${trancheId.toString()}. ` +
       `amount: ${newAmount.toString()} ` +
@@ -72,7 +74,9 @@ async function _handleInvestOrderUpdated(event: SubstrateEvent<OrderUpdatedEvent
 
 export const handleRedeemOrderUpdated = errorHandler(_handleRedeemOrderUpdated)
 async function _handleRedeemOrderUpdated(event: SubstrateEvent<OrderUpdatedEvent>): Promise<void> {
-  const [{ poolId, trancheId }, , address, amount] = event.event.data
+  const [investmentId, , address, amount] = event.event.data
+  const poolId = Array.isArray(investmentId) ? investmentId[0] : investmentId.poolId
+  const trancheId = Array.isArray(investmentId) ? investmentId[1] : investmentId.trancheId
   logger.info(
     `Redeem order updated for tranche ${poolId.toString()}-${trancheId.toString()}. ` +
       `amount: ${amount.toString()} at ` +
@@ -133,7 +137,9 @@ async function _handleRedeemOrderUpdated(event: SubstrateEvent<OrderUpdatedEvent
 
 export const handleInvestOrdersCollected = errorHandler(_handleInvestOrdersCollected)
 async function _handleInvestOrdersCollected(event: SubstrateEvent<InvestOrdersCollectedEvent>): Promise<void> {
-  const [{ poolId, trancheId }, address, , investCollection] = event.event.data
+  const [investmentId, address, , investCollection] = event.event.data
+  const poolId = Array.isArray(investmentId) ? investmentId[0] : investmentId.poolId
+  const trancheId = Array.isArray(investmentId) ? investmentId[1] : investmentId.trancheId
   logger.info(
     `Orders collected for tranche ${poolId.toString()}-${trancheId.toString()}. ` +
       `Address: ${address.toHex()} at ` +
@@ -182,7 +188,9 @@ async function _handleInvestOrdersCollected(event: SubstrateEvent<InvestOrdersCo
 
 export const handleRedeemOrdersCollected = errorHandler(_handleRedeemOrdersCollected)
 async function _handleRedeemOrdersCollected(event: SubstrateEvent<RedeemOrdersCollectedEvent>): Promise<void> {
-  const [{ poolId, trancheId }, address, , redeemCollection] = event.event.data
+  const [investmentId, address, , redeemCollection] = event.event.data
+  const poolId = Array.isArray(investmentId) ? investmentId[0] : investmentId.poolId
+  const trancheId = Array.isArray(investmentId) ? investmentId[1] : investmentId.trancheId
   logger.info(
     `Orders collected for tranche ${poolId.toString()}-${trancheId.toString()}. ` +
       `Address: ${address.toHex()} ` +
