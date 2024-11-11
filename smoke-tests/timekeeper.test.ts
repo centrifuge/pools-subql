@@ -12,7 +12,7 @@ describe('SubQl Nodes', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const response = await subql<any>(`
       {
-        timekeeper(id: "${chainIds[chain]}") {
+        timekeeper(id: "${chainIds[chain as keyof typeof chainIds]}") {
           lastPeriodStart
         }
       }

@@ -57,9 +57,9 @@ export class CurrencyService extends Currency {
 }
 
 export const currencyFormatters: CurrencyFormatters = {
-  AUSD: () => [],
+  Ausd: () => [],
   ForeignAsset: (value: TokensCurrencyId['asForeignAsset']) => [value.toString(10)],
-  Native: () => [],
+  Native: () => [''],
   Staking: () => ['BlockRewards'],
   Tranche: (value: TokensCurrencyId['asTranche']) => {
     return Array.isArray(value)

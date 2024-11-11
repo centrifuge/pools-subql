@@ -15,10 +15,13 @@ import { substrateStateSnapshotter } from '../../helpers/stateSnapshot'
 import { Pool, PoolSnapshot } from '../../types'
 import { InvestorPositionService } from '../services/investorPositionService'
 import { PoolFeeService } from '../services/poolFeeService'
+import { assertPropInitialized } from '../../helpers/validation'
 
 export const handlePoolCreated = errorHandler(_handlePoolCreated)
 async function _handlePoolCreated(event: SubstrateEvent<PoolCreatedEvent>): Promise<void> {
   const [, , poolId, essence] = event.event.data
+  const timestamp = event.block.timestamp
+  if (!timestamp) throw new Error(`Block ${event.block.block.header.number.toString()} has no timestamp`)
   const formattedCurrency =
     `${LOCAL_CHAIN_ID}-${essence.currency.type}-` +
     `${currencyFormatters[essence.currency.type](essence.currency.value).join('-')}`
@@ -41,7 +44,7 @@ async function _handlePoolCreated(event: SubstrateEvent<PoolCreatedEvent>): Prom
     essence.maxReserve.toBigInt(),
     essence.maxNavAge.toNumber(),
     essence.minEpochTime.toNumber(),
-    event.block.timestamp,
+    timestamp,
     event.block.block.header.number.toNumber()
   )
   await pool.initData()
@@ -81,11 +84,12 @@ async function _handlePoolCreated(event: SubstrateEvent<PoolCreatedEvent>): Prom
   }
 
   // Initialise Epoch
+  assertPropInitialized(pool, 'currentEpoch', 'number')
   const trancheIds = tranches.map((tranche) => tranche.trancheId)
-  const epoch = await EpochService.init(pool.id, pool.currentEpoch, trancheIds, event.block.timestamp)
+  const epoch = await EpochService.init(pool.id, pool.currentEpoch!, trancheIds, timestamp)
   await epoch.saveWithStates()
 
-  const onChainCashAsset = AssetService.initOnchainCash(pool.id, event.block.timestamp)
+  const onChainCashAsset = AssetService.initOnchainCash(pool.id, timestamp)
   await onChainCashAsset.save()
   logger.info(`Pool ${pool.id} successfully created!`)
 }
@@ -142,25 +146,23 @@ async function _handleMetadataSet(event: SubstrateEvent<PoolMetadataSetEvent>) {
 export const handleEpochClosed = errorHandler(_handleEpochClosed)
 async function _handleEpochClosed(event: SubstrateEvent<EpochClosedExecutedEvent>): Promise<void> {
   const [poolId, epochId] = event.event.data
+  const timestamp = event.block.timestamp
+  if (!timestamp) throw new Error(`Block ${event.block.block.header.number.toString()} has no timestamp`)
   logger.info(
     `Epoch ${epochId.toNumber()} closed for pool ${poolId.toString()} in block ${event.block.block.header.number}`
   )
   const pool = await PoolService.getById(poolId.toString())
-  if (pool === undefined) throw missingPool
+  if (!pool) throw missingPool
 
   // Close the current epoch and open a new one
   const tranches = await TrancheService.getActivesByPoolId(poolId.toString())
   const epoch = await EpochService.getById(poolId.toString(), epochId.toNumber())
-  await epoch.closeEpoch(event.block.timestamp)
+  if (!epoch) throw new Error(`Epoch ${epochId.toString(10)} not found for pool ${poolId.toString(10)}`)
+  await epoch.closeEpoch(timestamp)
   await epoch.saveWithStates()
 
   const trancheIds = tranches.map((tranche) => tranche.trancheId)
-  const nextEpoch = await EpochService.init(
-    poolId.toString(),
-    epochId.toNumber() + 1,
-    trancheIds,
-    event.block.timestamp
-  )
+  const nextEpoch = await EpochService.init(poolId.toString(), epochId.toNumber() + 1, trancheIds, timestamp)
   await nextEpoch.saveWithStates()
 
   await pool.closeEpoch(epochId.toNumber())
@@ -170,6 +172,8 @@ async function _handleEpochClosed(event: SubstrateEvent<EpochClosedExecutedEvent
 export const handleEpochExecuted = errorHandler(_handleEpochExecuted)
 async function _handleEpochExecuted(event: SubstrateEvent<EpochClosedExecutedEvent>): Promise<void> {
   const [poolId, epochId] = event.event.data
+  const timestamp = event.block.timestamp
+  if (!timestamp) throw new Error(`Block ${event.block.block.header.number.toString()} has no timestamp`)
   logger.info(
     `Epoch ${epochId.toString()} executed event for pool ${poolId.toString()} ` +
       `at block ${event.block.block.header.number.toString()}`
@@ -179,37 +183,40 @@ async function _handleEpochExecuted(event: SubstrateEvent<EpochClosedExecutedEve
   if (!pool) throw missingPool
 
   const epoch = await EpochService.getById(poolId.toString(), epochId.toNumber())
+  if (!epoch) throw new Error(`Epoch ${epochId.toString(10)} not found for pool ${poolId.toString(10)}`)
 
-  await epoch.executeEpoch(event.block.timestamp)
+  await epoch.executeEpoch(timestamp)
   await epoch.saveWithStates()
 
   await pool.executeEpoch(epochId.toNumber())
-  await pool.increaseInvestments(epoch.sumInvestedAmount)
-  await pool.increaseRedemptions(epoch.sumRedeemedAmount)
+  await pool.increaseInvestments(epoch.sumInvestedAmount!)
+  await pool.increaseRedemptions(epoch.sumRedeemedAmount!)
   await pool.save()
 
   // Compute and save aggregated order fulfillment
   const tranches = await TrancheService.getByPoolId(poolId.toString())
   const nextEpoch = await EpochService.getById(poolId.toString(), epochId.toNumber() + 1)
+  if (!nextEpoch) throw new Error(`Epoch ${epochId.toNumber() + 1} not found for pool ${poolId.toString(10)}`)
   for (const tranche of tranches) {
     const epochState = epoch.getStates().find((epochState) => epochState.trancheId === tranche.trancheId)
+    if (!epochState) throw new Error('EpochState not found!')
     await tranche.updateSupply()
-    await tranche.updatePrice(epochState.tokenPrice, event.block.block.header.number.toNumber())
-    await tranche.updateFulfilledInvestOrders(epochState.sumFulfilledInvestOrders)
-    await tranche.updateFulfilledRedeemOrders(epochState.sumFulfilledRedeemOrders)
+    await tranche.updatePrice(epochState.tokenPrice!, event.block.block.header.number.toNumber())
+    await tranche.updateFulfilledInvestOrders(epochState.sumFulfilledInvestOrders!)
+    await tranche.updateFulfilledRedeemOrders(epochState.sumFulfilledRedeemOrders!)
     await tranche.save()
 
     // Carry over aggregated unfulfilled orders to next epoch
     await nextEpoch.updateOutstandingInvestOrders(
       tranche.trancheId,
-      epochState.sumOutstandingInvestOrders - epochState.sumFulfilledInvestOrders,
+      epochState.sumOutstandingInvestOrders! - epochState.sumFulfilledInvestOrders!,
       BigInt(0)
     )
     await nextEpoch.updateOutstandingRedeemOrders(
       tranche.trancheId,
-      epochState.sumOutstandingRedeemOrders - epochState.sumFulfilledRedeemOrders,
+      epochState.sumOutstandingRedeemOrders! - epochState.sumFulfilledRedeemOrders!,
       BigInt(0),
-      epochState.tokenPrice
+      epochState.tokenPrice!
     )
 
     // Find single outstanding orders posted for this tranche and fulfill them to investorTransactions
@@ -225,7 +232,7 @@ async function _handleEpochExecuted(event: SubstrateEvent<EpochClosedExecutedEve
         hash: oo.hash,
         price: epochState.tokenPrice,
         fee: BigInt(0),
-        timestamp: event.block.timestamp,
+        timestamp,
       }
 
       const trancheBalance = await TrancheBalanceService.getOrInit(
@@ -234,36 +241,41 @@ async function _handleEpochExecuted(event: SubstrateEvent<EpochClosedExecutedEve
         orderData.trancheId
       )
 
-      if (oo.investAmount > BigInt(0) && epochState.investFulfillmentPercentage > BigInt(0)) {
+      if (oo.investAmount > BigInt(0) && epochState.investFulfillmentPercentage! > BigInt(0)) {
         const it = InvestorTransactionService.executeInvestOrder({
           ...orderData,
           amount: oo.investAmount,
           fulfillmentPercentage: epochState.investFulfillmentPercentage,
         })
         await it.save()
-        await oo.updateUnfulfilledInvest(it.currencyAmount)
-        await trancheBalance.investExecute(it.currencyAmount, it.tokenAmount)
+        await oo.updateUnfulfilledInvest(it.currencyAmount!)
+        await trancheBalance.investExecute(it.currencyAmount!, it.tokenAmount!)
 
         await InvestorPositionService.buy(
           it.accountId,
           it.trancheId,
           it.hash,
           it.timestamp,
-          it.tokenAmount,
-          it.tokenPrice
+          it.tokenAmount!,
+          it.tokenPrice!
         )
       }
 
-      if (oo.redeemAmount > BigInt(0) && epochState.redeemFulfillmentPercentage > BigInt(0)) {
+      if (oo.redeemAmount > BigInt(0) && epochState.redeemFulfillmentPercentage! > BigInt(0)) {
         const it = InvestorTransactionService.executeRedeemOrder({
           ...orderData,
           amount: oo.redeemAmount,
           fulfillmentPercentage: epochState.redeemFulfillmentPercentage,
         })
-        await oo.updateUnfulfilledRedeem(it.tokenAmount)
-        await trancheBalance.redeemExecute(it.tokenAmount, it.currencyAmount)
+        await oo.updateUnfulfilledRedeem(it.tokenAmount!)
+        await trancheBalance.redeemExecute(it.tokenAmount!, it.currencyAmount!)
 
-        const profit = await InvestorPositionService.sellFifo(it.accountId, it.trancheId, it.tokenAmount, it.tokenPrice)
+        const profit = await InvestorPositionService.sellFifo(
+          it.accountId,
+          it.trancheId,
+          it.tokenAmount!,
+          it.tokenPrice!
+        )
         await it.setRealizedProfitFifo(profit)
         await it.save()
       }
@@ -282,22 +294,23 @@ async function _handleEpochExecuted(event: SubstrateEvent<EpochClosedExecutedEve
   await nextEpoch.saveWithStates()
 
   // Track investments and redemptions for onchain cash
+  if (!event.extrinsic) throw new Error('Event has no extrinsic')
   const onChainCashAsset = await AssetService.getById(pool.id, ONCHAIN_CASH_ASSET_ID)
   if (!onChainCashAsset) throw new Error(`OnChain Asset not found for ${pool.id}`)
   const txData: Omit<AssetTransactionData, 'amount'> = {
     poolId: pool.id,
     epochNumber: epoch.index,
     hash: event.extrinsic.extrinsic.hash.toString(),
-    timestamp: event.block.timestamp,
+    timestamp: timestamp,
     assetId: ONCHAIN_CASH_ASSET_ID,
   }
   const assetTransactionSaves: Array<Promise<void>> = []
-  if (epoch.sumInvestedAmount > BigInt(0)) {
+  if (epoch.sumInvestedAmount! > BigInt(0)) {
     const deposit = AssetTransactionService.depositFromInvestments({ ...txData, amount: epoch.sumInvestedAmount })
     assetTransactionSaves.push(deposit.save())
   }
 
-  if (epoch.sumRedeemedAmount > BigInt(0)) {
+  if (epoch.sumRedeemedAmount! > BigInt(0)) {
     const withdrawalRedemptions = await AssetTransactionService.withdrawalForRedemptions({
       ...txData,
       amount: epoch.sumRedeemedAmount,
@@ -307,7 +320,7 @@ async function _handleEpochExecuted(event: SubstrateEvent<EpochClosedExecutedEve
     logger.info(`No withdrawal redemptions for pool ${pool.id}`)
   }
 
-  if (epoch.sumPoolFeesPaidAmount > BigInt(0)) {
+  if (epoch.sumPoolFeesPaidAmount! > BigInt(0)) {
     const withdrawalFees = await AssetTransactionService.withdrawalForFees({
       ...txData,
       amount: epoch.sumPoolFeesPaidAmount,
@@ -325,8 +338,7 @@ async function _handleEpochExecuted(event: SubstrateEvent<EpochClosedExecutedEve
     Pool,
     PoolSnapshot,
     event.block,
-    'isActive',
-    true,
+    [['isActive', '=', true]],
     'poolId',
     false
   )

@@ -1,7 +1,7 @@
 import { AssetStatus, AssetType, AssetValuationMethod, Pool, PoolSnapshot } from '../../types'
 import { EthereumBlock } from '@subql/types-ethereum'
 import { DAIName, DAISymbol, DAIMainnetAddress, multicallAddress, tinlakePools } from '../../config'
-import { errorHandler } from '../../helpers/errorHandler'
+import { errorHandler, missingPool } from '../../helpers/errorHandler'
 import { PoolService } from '../services/poolService'
 import { TrancheService } from '../services/trancheService'
 import { CurrencyService } from '../services/currencyService'
@@ -26,13 +26,6 @@ const timekeeper = TimekeeperService.init()
 const ALT_1_POOL_ID = '0xf96f18f2c70b57ec864cc0c8b828450b82ff63e3'
 const ALT_1_END_BLOCK = 20120759
 
-type PoolMulticall = {
-  id: string
-  type: string
-  call: Multicall3.CallStruct
-  result: string
-}
-
 export const handleEthBlock = errorHandler(_handleEthBlock)
 async function _handleEthBlock(block: EthereumBlock): Promise<void> {
   const date = new Date(Number(block.timestamp) * 1000)
@@ -50,6 +43,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
 
     // update pool states
     const poolUpdateCalls: PoolMulticall[] = []
+
     for (const tinlakePool of tinlakePools) {
       if (block.number >= tinlakePool.startBlock) {
         const pool = await PoolService.getOrSeed(tinlakePool.id, false, false, blockchain.id)
@@ -82,7 +76,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
             result: '',
           })
         }
-        if (latestReserve) {
+        if (latestReserve && latestReserve.address) {
           poolUpdateCalls.push({
             id: tinlakePool.id,
             type: 'totalBalance',
@@ -99,9 +93,10 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
       const callResults = await processCalls(poolUpdateCalls)
       for (const callResult of callResults) {
         const tinlakePool = tinlakePools.find((p) => p.id === callResult.id)
-        const latestNavFeed = getLatestContract(tinlakePool?.navFeed, blockNumber)
-        const latestReserve = getLatestContract(tinlakePool?.reserve, blockNumber)
-        const pool = await PoolService.getOrSeed(tinlakePool?.id, false, false, blockchain.id)
+        if (!tinlakePool) throw missingPool
+        const latestNavFeed = getLatestContract(tinlakePool.navFeed, blockNumber)
+        const latestReserve = getLatestContract(tinlakePool.reserve, blockNumber)
+        const pool = await PoolService.getOrSeed(tinlakePool.id, false, false, blockchain.id)
 
         // Update pool
         if (callResult.type === 'currentNAV' && latestNavFeed) {
@@ -115,7 +110,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
           pool.netAssetValue =
             tinlakePool.id === ALT_1_POOL_ID && blockNumber > ALT_1_END_BLOCK
               ? BigInt(0)
-              : (pool.portfolioValuation || BigInt(0)) + (pool.totalReserve || BigInt(0))
+              : (pool.portfolioValuation ?? BigInt(0)) + (pool.totalReserve ?? BigInt(0))
           await pool.updateNormalizedNAV()
           await pool.save()
           logger.info(`Updating pool ${tinlakePool?.id} with portfolioValuation: ${pool.portfolioValuation}`)
@@ -128,14 +123,14 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
                   .decodeFunctionResult('totalBalance', callResult.result)[0]
                   .toBigInt()
           pool.totalReserve = totalBalance
-          pool.netAssetValue = (pool.portfolioValuation || BigInt(0)) + (pool.totalReserve || BigInt(0))
+          pool.netAssetValue = (pool.portfolioValuation ?? BigInt(0)) + (pool.totalReserve ?? BigInt(0))
           await pool.updateNormalizedNAV()
           await pool.save()
           logger.info(`Updating pool ${tinlakePool?.id} with totalReserve: ${pool.totalReserve}`)
         }
 
         // Update loans (only index if fully synced)
-        if (latestNavFeed && date.toDateString() === new Date().toDateString()) {
+        if (latestNavFeed && latestNavFeed.address && date.toDateString() === new Date().toDateString()) {
           await updateLoans(
             tinlakePool?.id as string,
             date,
@@ -155,8 +150,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
       Pool,
       PoolSnapshot,
       block,
-      'isActive',
-      true,
+      [['isActive', '=', true]],
       'poolId'
     )
     //await evmStateSnapshotter<Asset,AssetSnapshot>('Asset', 'AssetSnapshot', block, 'isActive', true, 'assetId')
@@ -277,7 +271,7 @@ async function updateLoans(
 
   // update all loans
   existingLoans =
-    (await AssetService.getByPoolId(poolId, { limit: 100 }))?.filter((loan) => loan.status !== AssetStatus.CLOSED) || []
+    (await AssetService.getByPoolId(poolId, { limit: 100 }))?.filter((loan) => loan.status !== AssetStatus.CLOSED) ?? []
   logger.info(`Updating ${existingLoans?.length} existing loans for pool ${poolId}`)
   const loanDetailsCalls: PoolMulticall[] = []
   existingLoans.forEach((loan) => {
@@ -312,31 +306,29 @@ async function updateLoans(
   })
   if (loanDetailsCalls.length > 0) {
     const loanDetailsResponses = await processCalls(loanDetailsCalls)
-    const loanDetails = {}
-    for (let i = 0; i < loanDetailsResponses.length; i++) {
-      if (loanDetailsResponses[i].result) {
-        if (!loanDetails[loanDetailsResponses[i].id]) {
-          loanDetails[loanDetailsResponses[i].id] = {}
-        }
-        if (loanDetailsResponses[i].type !== 'nftLocked') {
-          loanDetails[loanDetailsResponses[i].id].nftLocked = ShelfAbi__factory.createInterface().decodeFunctionResult(
-            'nftLocked',
-            loanDetailsResponses[i].result
-          )[0]
-        }
-        if (loanDetailsResponses[i].type === 'debt') {
-          loanDetails[loanDetailsResponses[i].id].debt = isAlt1AndAfterEndBlock
-            ? BigInt(0)
-            : PileAbi__factory.createInterface()
-                .decodeFunctionResult('debt', loanDetailsResponses[i].result)[0]
-                .toBigInt()
-        }
-        if (loanDetailsResponses[i].type === 'loanRates') {
-          loanDetails[loanDetailsResponses[i].id].loanRates = PileAbi__factory.createInterface().decodeFunctionResult(
-            'loanRates',
-            loanDetailsResponses[i].result
-          )[0]
-        }
+    const loanDetails: LoanDetails = {}
+    for (const loanDetailsResponse of loanDetailsResponses) {
+      const loanId = loanDetailsResponse.id
+      if (!loanDetailsResponse.result) continue
+
+      if (!loanDetails[loanId]) loanDetails[loanId] = {}
+
+      if (loanDetailsResponse.type !== 'nftLocked') {
+        loanDetails[loanId].nftLocked = ShelfAbi__factory.createInterface().decodeFunctionResult(
+          'nftLocked',
+          loanDetailsResponse.result
+        )[0]
+      }
+      if (loanDetailsResponse.type === 'debt') {
+        loanDetails[loanId].debt = isAlt1AndAfterEndBlock
+          ? BigInt(0)
+          : PileAbi__factory.createInterface().decodeFunctionResult('debt', loanDetailsResponse.result)[0].toBigInt()
+      }
+      if (loanDetailsResponse.type === 'loanRates') {
+        loanDetails[loanId].loanRates = PileAbi__factory.createInterface().decodeFunctionResult(
+          'loanRates',
+          loanDetailsResponse.result
+        )[0]
       }
     }
 
@@ -346,13 +338,13 @@ async function updateLoans(
     let sumInterestRatePerSec = BigInt(0)
     let sumBorrowsCount = BigInt(0)
     let sumRepaysCount = BigInt(0)
-    for (let i = 0; i < existingLoans.length; i++) {
-      const loan = existingLoans[i]
+    for (const existingLoan of existingLoans) {
+      const loan = existingLoan
       const loanIndex = loan.id.split('-')[1]
       const nftLocked = loanDetails[loanIndex].nftLocked
-      const prevDebt = loan.outstandingDebt || BigInt(0)
+      const prevDebt = loan.outstandingDebt ?? BigInt(0)
       const debt = loanDetails[loanIndex].debt
-      if (debt > BigInt(0)) {
+      if (debt && debt > BigInt(0)) {
         loan.status = AssetStatus.ACTIVE
       }
       // if the loan is not locked or the debt is 0 and the loan was active before, close it
@@ -362,44 +354,41 @@ async function updateLoans(
         await loan.save()
       }
       loan.outstandingDebt = debt
-      const currentDebt = loan.outstandingDebt || BigInt(0)
+      const currentDebt = loan.outstandingDebt ?? BigInt(0)
       const rateGroup = loanDetails[loanIndex].loanRates
       const pileContract = PileAbi__factory.connect(pile, api as unknown as Provider)
+      if (!rateGroup) throw new Error(`Missing rateGroup for loan ${loan.id}`)
       const rates = await pileContract.rates(rateGroup)
       loan.interestRatePerSec = rates.ratePerSecond.toBigInt()
 
       if (prevDebt > currentDebt) {
         loan.repaidAmountByPeriod = prevDebt - currentDebt
-        loan.totalRepaid = (loan.totalRepaid || BigInt(0)) + loan.repaidAmountByPeriod
-        loan.repaysCount = (loan.repaysCount || BigInt(0)) + BigInt(1)
+        loan.totalRepaid = (loan.totalRepaid ?? BigInt(0)) + loan.repaidAmountByPeriod
+        loan.repaysCount = (loan.repaysCount ?? BigInt(0)) + BigInt(1)
       }
       if (
         prevDebt * (loan.interestRatePerSec / BigInt(10) ** BigInt(27)) * BigInt(86400) <
-        (loan.outstandingDebt || BigInt(0))
+        (loan.outstandingDebt ?? BigInt(0))
       ) {
-        loan.borrowedAmountByPeriod = (loan.outstandingDebt || BigInt(0)) - prevDebt
-        loan.totalBorrowed = (loan.totalBorrowed || BigInt(0)) + loan.borrowedAmountByPeriod
-        loan.borrowsCount = (loan.borrowsCount || BigInt(0)) + BigInt(1)
+        loan.borrowedAmountByPeriod = (loan.outstandingDebt ?? BigInt(0)) - prevDebt
+        loan.totalBorrowed = (loan.totalBorrowed ?? BigInt(0)) + loan.borrowedAmountByPeriod
+        loan.borrowsCount = (loan.borrowsCount ?? BigInt(0)) + BigInt(1)
       }
       logger.info(`Updating loan ${loan.id} for pool ${poolId}`)
       await loan.save()
 
-      sumDebt += loan.outstandingDebt || BigInt(0)
-      sumBorrowed += loan.totalBorrowed || BigInt(0)
-      sumRepaid += loan.totalRepaid || BigInt(0)
-      sumInterestRatePerSec += (loan.interestRatePerSec || BigInt(0)) * (loan.outstandingDebt || BigInt(0))
-      sumBorrowsCount += loan.borrowsCount || BigInt(0)
-      sumRepaysCount += loan.repaysCount || BigInt(0)
+      sumDebt += loan.outstandingDebt ?? BigInt(0)
+      sumBorrowed += loan.totalBorrowed ?? BigInt(0)
+      sumRepaid += loan.totalRepaid ?? BigInt(0)
+      sumInterestRatePerSec += (loan.interestRatePerSec ?? BigInt(0)) * (loan.outstandingDebt ?? BigInt(0))
+      sumBorrowsCount += loan.borrowsCount ?? BigInt(0)
+      sumRepaysCount += loan.repaysCount ?? BigInt(0)
     }
 
     pool.sumDebt = sumDebt
     pool.sumBorrowedAmount = sumBorrowed
     pool.sumRepaidAmount = sumRepaid
-    if (sumDebt > BigInt(0)) {
-      pool.weightedAverageInterestRatePerSec = sumInterestRatePerSec / sumDebt
-    } else {
-      pool.weightedAverageInterestRatePerSec = BigInt(0)
-    }
+    pool.weightedAverageInterestRatePerSec = sumDebt > BigInt(0) ? sumInterestRatePerSec / sumDebt : BigInt(0)
     pool.sumBorrowsCount = sumBorrowsCount
     pool.sumRepaysCount = sumRepaysCount
     await pool.save()
@@ -430,11 +419,9 @@ async function getNewLoans(existingLoans: number[], shelfAddress: string) {
   return contractLoans.filter((loanIndex) => !existingLoans.includes(loanIndex))
 }
 
-function getLatestContract(contractArray, blockNumber) {
-  return contractArray.reduce(
-    (prev, current) =>
-      current.startBlock <= blockNumber && current.startBlock > (prev?.startBlock || 0) ? current : prev,
-    null
+function getLatestContract(contractArray: ContractArray[], blockNumber: number) {
+  return contractArray.reduce((prev, current: ContractArray) =>
+    current.startBlock <= blockNumber && current.startBlock > (prev?.startBlock ?? 0) ? current : prev
   )
 }
 
@@ -452,15 +439,39 @@ async function processCalls(callsArray: PoolMulticall[], chunkSize = 30): Promis
     const chunk = callChunks[i]
     const multicall = MulticallAbi__factory.connect(multicallAddress, api as unknown as Provider)
     // eslint-disable-next-line
-    let results: any[] = []
+    let results: [BigNumber, string[]] & {
+      blockNumber: BigNumber
+      returnData: string[]
+    }
     try {
       const calls = chunk.map((call) => call.call)
       results = await multicall.callStatic.aggregate(calls)
-      results[1].map((result, j) => (callsArray[i * chunkSize + j].result = result))
+      const [_blocknumber, returnData] = results
+      returnData.forEach((result, j) => (callsArray[i * chunkSize + j].result = result))
     } catch (e) {
       logger.error(`Error fetching chunk ${i}: ${e}`)
     }
   }
 
   return callsArray
+}
+
+interface PoolMulticall {
+  id: string
+  type: string
+  call: Multicall3.CallStruct
+  result: string
+}
+
+interface LoanDetails {
+  [loanId: string]: {
+    nftLocked?: string
+    debt?: bigint
+    loanRates?: bigint
+  }
+}
+
+interface ContractArray {
+  address: string | null
+  startBlock: number
 }

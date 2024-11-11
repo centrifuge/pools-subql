@@ -48,15 +48,9 @@ describe('Given a populated pool,', () => {
     set.mockReset()
     getByFields.mockReset()
     getByFields.mockReturnValue([pool])
-    await substrateStateSnapshotter<Pool, PoolSnapshot>(
-      'periodId',
-      periodId,
-      Pool,
-      PoolSnapshot,
-      block,
-      'isActive',
-      true
-    )
+    await substrateStateSnapshotter<Pool, PoolSnapshot>('periodId', periodId, Pool, PoolSnapshot, block, [
+      ['isActive', '=', true],
+    ])
     expect(store.getByFields).toHaveBeenNthCalledWith(
       1,
       'Pool',
@@ -78,8 +72,7 @@ describe('Given a populated pool,', () => {
       Pool,
       PoolSnapshot,
       block,
-      'type',
-      'ALL',
+      [['type', '=', 'ALL']],
       'poolId'
     )
     expect(store.set).toHaveBeenNthCalledWith(

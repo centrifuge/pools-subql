@@ -2,16 +2,18 @@ import { bnToBn, nToBigInt } from '@polkadot/util'
 import { paginatedGetter } from '../../helpers/paginatedGetter'
 import { OutstandingOrder } from '../../types'
 import { InvestorTransactionData } from './investorTransactionService'
+import { assertPropInitialized } from '../../helpers/validation'
 
 export class OutstandingOrderService extends OutstandingOrder {
   static init(data: InvestorTransactionData, investAmount: bigint, redeemAmount: bigint) {
+    assertPropInitialized(data, 'epochNumber', 'number')
     const oo = new this(
       `${data.poolId}-${data.trancheId}-${data.address}`,
       data.hash,
       data.address,
       data.poolId,
       `${data.poolId}-${data.trancheId}`,
-      data.epochNumber,
+      data.epochNumber!,
       data.timestamp,
       investAmount,
       redeemAmount

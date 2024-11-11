@@ -1,5 +1,5 @@
-import { EntityClass, paginatedGetter } from './paginatedGetter'
-import type { Entity } from '@subql/types-core'
+import { paginatedGetter } from './paginatedGetter'
+import type { Entity, FieldsExpression, FunctionPropertyNames, GetOptions } from '@subql/types-core'
 import { EthereumBlock } from '@subql/types-ethereum'
 import { SubstrateBlock } from '@subql/types'
 /**
@@ -16,43 +16,41 @@ import { SubstrateBlock } from '@subql/types'
  * @param resetPeriodStates - (optional) reset properties ending in ByPeriod to 0 after snapshot (defaults to true).
  * @returns A promise resolving when all state manipulations in the DB is completed
  */
-async function stateSnapshotter<T extends SnapshottableEntity, U extends SnapshottedEntityProps>(
-  relationshipField: ForeignKey,
+async function stateSnapshotter<T extends SnapshottableEntity, U extends SnapshottedEntity<T>>(
+  relationshipField: StringForeignKeys<SnapshotAdditions>,
   relationshipId: string,
   stateModel: EntityClass<T>,
   snapshotModel: EntityClass<U>,
   block: { number: number; timestamp: Date },
-  filterKey?: keyof T,
-  filterValue?: T[keyof T],
-  fkReferenceName?: ForeignKey,
+  filters?: FieldsExpression<EntityProps<T>>[],
+  fkReferenceField?: StringForeignKeys<U>,
   resetPeriodStates = true,
-  blockchainId: T['blockchainId'] = '0'
+  blockchainId = '0'
 ): Promise<void[]> {
   const entitySaves: Promise<void>[] = []
   logger.info(`Performing snapshots of ${stateModel.prototype._name} for blockchainId ${blockchainId}`)
-  const filter: Parameters<typeof paginatedGetter<T>>[1] = [['blockchainId', '=', blockchainId]]
-  if (filterKey && filterValue) filter.push([filterKey, '=', filterValue])
-  const stateEntities = (await paginatedGetter(stateModel, filter)) as SnapshottableEntity[]
+  const filter = [['blockchainId', '=', blockchainId]] as FieldsExpression<EntityProps<T>>[]
+  if (filters) filter.push(...filters)
+  const stateEntities = await paginatedGetter(stateModel, filter)
   if (stateEntities.length === 0) logger.info(`No ${stateModel.prototype._name} to snapshot!`)
   for (const stateEntity of stateEntities) {
     const blockNumber = block.number
-    const { id, ...copyStateEntity } = stateEntity
-    logger.info(`Snapshotting ${stateModel.prototype._name}: ${id}`)
-    const snapshotEntity: SnapshottedEntityProps = snapshotModel.create({
-      ...copyStateEntity,
-      id: `${id}-${blockNumber.toString()}`,
+    const snapshot: SnapshottedEntity<T> = {
+      ...stateEntity,
+      id: `${stateEntity.id}-${blockNumber}`,
       timestamp: block.timestamp,
       blockNumber: blockNumber,
       [relationshipField]: relationshipId,
-    })
-    if (fkReferenceName) snapshotEntity[fkReferenceName] = stateEntity.id
-
+    }
+    logger.info(`Snapshotting ${stateModel.prototype._name}: ${stateEntity.id}`)
+    const snapshotEntity = snapshotModel.create(snapshot as U)
+    if (fkReferenceField) snapshotEntity[fkReferenceField] = stateEntity.id as U[StringForeignKeys<U>]
     const propNames = Object.getOwnPropertyNames(stateEntity)
-    const propNamesToReset = propNames.filter((propName) => propName.endsWith('ByPeriod')) as ResettableKey[]
+    const propNamesToReset = propNames.filter((propName) => propName.endsWith('ByPeriod')) as ResettableKeys<T>[]
     if (resetPeriodStates) {
       for (const propName of propNamesToReset) {
-        logger.debug(`resetting ${stateEntity._name.toLowerCase()}.${propName} to 0`)
-        stateEntity[propName] = BigInt(0)
+        logger.debug(`resetting ${stateEntity._name?.toLowerCase()}.${propName} to 0`)
+        stateEntity[propName] = BigInt(0) as T[ResettableKeys<T>]
       }
       entitySaves.push(stateEntity.save())
     }
@@ -60,68 +58,85 @@ async function stateSnapshotter<T extends SnapshottableEntity, U extends Snapsho
   }
   return Promise.all(entitySaves)
 }
-export function evmStateSnapshotter<T extends SnapshottableEntity, U extends SnapshottedEntityProps>(
-  relationshipField: ForeignKey,
+export function evmStateSnapshotter<T extends SnapshottableEntity, U extends SnapshottedEntity<T>>(
+  relationshipField: StringForeignKeys<SnapshotAdditions>,
   relationshipId: string,
   stateModel: EntityClass<T>,
   snapshotModel: EntityClass<U>,
   block: EthereumBlock,
-  filterKey?: keyof T,
-  filterValue?: T[keyof T],
-  fkReferenceName?: ForeignKey,
+  filters?: FieldsExpression<EntityProps<T>>[],
+  fkReferenceName?: StringForeignKeys<U>,
   resetPeriodStates = true
 ): Promise<void[]> {
   const formattedBlock = { number: block.number, timestamp: new Date(Number(block.timestamp) * 1000) }
-  return stateSnapshotter<T, U>(
+  return stateSnapshotter(
     relationshipField,
     relationshipId,
     stateModel,
     snapshotModel,
     formattedBlock,
-    filterKey,
-    filterValue,
+    filters,
     fkReferenceName,
     resetPeriodStates,
     '1'
   )
 }
 
-export function substrateStateSnapshotter<T extends SnapshottableEntity, U extends SnapshottedEntityProps>(
-  relationshipField: ForeignKey,
+export function substrateStateSnapshotter<
+  T extends SnapshottableEntity,
+  U extends SnapshottedEntity<T>,
+>(
+  relationshipField: StringForeignKeys<SnapshotAdditions>,
   relationshipId: string,
   stateModel: EntityClass<T>,
   snapshotModel: EntityClass<U>,
   block: SubstrateBlock,
-  filterKey?: keyof T,
-  filterValue?: T[keyof T],
-  fkReferenceName?: ForeignKey,
+  filters?: FieldsExpression<EntityProps<T>>[],
+  fkReferenceName?: StringForeignKeys<U>,
   resetPeriodStates = true
 ): Promise<void[]> {
+  if (!block.timestamp) throw new Error('Missing block timestamp')
   const formattedBlock = { number: block.block.header.number.toNumber(), timestamp: block.timestamp }
-  return stateSnapshotter<T, U>(
+  return stateSnapshotter(
     relationshipField,
     relationshipId,
     stateModel,
     snapshotModel,
     formattedBlock,
-    filterKey,
-    filterValue,
+    filters,
     fkReferenceName,
     resetPeriodStates,
     '0'
   )
 }
 
-type ResettableKey = `${string}ByPeriod`
-type ForeignKey = `${string}Id`
+type ResettableKeyFormat = `${string}ByPeriod`
+type ForeignKeyFormat = `${string}Id`
+type ResettableKeys<T> = { [K in keyof T]: K extends ResettableKeyFormat ? K : never }[keyof T]
+type ForeignKeys<T> = { [K in keyof T]: K extends ForeignKeyFormat ? K : never }[keyof T]
+type StringFields<T> = { [K in keyof T]: T[K] extends string | undefined ? K : never }[keyof T]
+type StringForeignKeys<T> = NonNullable<ForeignKeys<T> & StringFields<T>>
 
 export interface SnapshottableEntity extends Entity {
+  save(): Promise<void>
   blockchainId: string
 }
 
-export interface SnapshottedEntityProps extends Entity {
+export interface SnapshotAdditions {
+  save(): Promise<void>
+  id: string
   blockNumber: number
   timestamp: Date
   periodId?: string
   epochId?: string
+}
+
+//type Entries<T> = { [K in keyof T]: [K, T[K]] }[keyof T][]
+export type EntityProps<E extends Entity> = Omit<E, NonNullable<FunctionPropertyNames<E>> | '_name'>
+export type SnapshottedEntity<E extends Entity> = SnapshotAdditions & Partial<Omit<{ [K in keyof E]: E[K] }, 'id'>>
+
+export interface EntityClass<T extends Entity> {
+  prototype: { _name: string }
+  getByFields(filter: FieldsExpression<EntityProps<T>>[], options: GetOptions<EntityProps<T>>): Promise<T[]>
+  create(record: EntityProps<T>): T
 }

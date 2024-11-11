@@ -12,7 +12,7 @@ import {
 } from '../../helpers/types'
 import { errorHandler, missingPool } from '../../helpers/errorHandler'
 import { PoolService } from '../services/poolService'
-import { AssetService, ONCHAIN_CASH_ASSET_ID } from '../services/assetService'
+import { AssetService, AssetSpecs, ONCHAIN_CASH_ASSET_ID } from '../services/assetService'
 import { AssetTransactionData, AssetTransactionService } from '../services/assetTransactionService'
 import { AccountService } from '../services/accountService'
 import { EpochService } from '../services/epochService'
@@ -21,26 +21,30 @@ import { bnToBn, nToBigInt } from '@polkadot/util'
 import { WAD } from '../../config'
 import { AssetPositionService } from '../services/assetPositionService'
 import { AssetCashflowService } from '../services/assetCashflowService'
+import { assertPropInitialized } from '../../helpers/validation'
 
 export const handleLoanCreated = errorHandler(_handleLoanCreated)
 async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedEvent>) {
   const [poolId, loanId, loanInfo] = event.event.data
+  const timestamp = event.block.timestamp
+  if (!timestamp) throw new Error(`Block ${event.block.block.header.number.toString()} has no timestamp`)
   logger.info(`Loan created event for pool: ${poolId.toString()} loan: ${loanId.toString()}`)
 
   const pool = await PoolService.getById(poolId.toString())
   if (!pool) throw missingPool
 
+  if (!event.extrinsic) throw new Error('Missing event extrinsic!')
   const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toHex())
 
   const isInternal = loanInfo.pricing.isInternal
-  const internalLoanPricing = isInternal ? loanInfo.pricing.asInternal : null
-  const externalLoanPricing = !isInternal ? loanInfo.pricing.asExternal : null
+  const internalLoanPricing = isInternal ? loanInfo.pricing.asInternal : undefined
+  const externalLoanPricing = !isInternal ? loanInfo.pricing.asExternal : undefined
 
   const assetType: AssetType =
-    isInternal && internalLoanPricing.valuationMethod.isCash ? AssetType.OffchainCash : AssetType.Other
+    isInternal && internalLoanPricing!.valuationMethod.isCash ? AssetType.OffchainCash : AssetType.Other
 
   const valuationMethod: AssetValuationMethod = isInternal
-    ? AssetValuationMethod[internalLoanPricing.valuationMethod.type]
+    ? AssetValuationMethod[internalLoanPricing!.valuationMethod.type]
     : AssetValuationMethod.Oracle
 
   const asset = await AssetService.init(
@@ -50,32 +54,32 @@ async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedEvent>) {
     valuationMethod,
     loanInfo.collateral[0].toBigInt(),
     loanInfo.collateral[1].toBigInt(),
-    event.block.timestamp
+    timestamp
   )
 
-  const assetSpecs = {
+  const assetSpecs: AssetSpecs = {
     advanceRate:
       internalLoanPricing && internalLoanPricing.maxBorrowAmount.isUpToOutstandingDebt
         ? internalLoanPricing.maxBorrowAmount.asUpToOutstandingDebt.advanceRate.toBigInt()
-        : null,
-    collateralValue: internalLoanPricing ? internalLoanPricing.collateralValue.toBigInt() : null,
+        : undefined,
+    collateralValue: internalLoanPricing ? internalLoanPricing.collateralValue.toBigInt() : undefined,
     probabilityOfDefault:
       internalLoanPricing && internalLoanPricing.valuationMethod.isDiscountedCashFlow
         ? internalLoanPricing.valuationMethod.asDiscountedCashFlow.probabilityOfDefault.toBigInt()
-        : null,
+        : undefined,
     lossGivenDefault:
       internalLoanPricing && internalLoanPricing.valuationMethod.isDiscountedCashFlow
         ? internalLoanPricing.valuationMethod.asDiscountedCashFlow.lossGivenDefault.toBigInt()
-        : null,
+        : undefined,
     discountRate:
       internalLoanPricing?.valuationMethod.isDiscountedCashFlow &&
       internalLoanPricing.valuationMethod.asDiscountedCashFlow.discountRate.isFixed
         ? internalLoanPricing.valuationMethod.asDiscountedCashFlow.discountRate.asFixed.ratePerYear.toBigInt()
-        : null,
+        : undefined,
     maturityDate: loanInfo.schedule.maturity.isFixed
       ? new Date(loanInfo.schedule.maturity.asFixed.date.toNumber() * 1000)
-      : null,
-    notional: !isInternal ? externalLoanPricing.notional.toBigInt() : null,
+      : undefined,
+    notional: !isInternal ? externalLoanPricing!.notional.toBigInt() : undefined,
   }
 
   await asset.updateAssetSpecs(assetSpecs)
@@ -83,7 +87,8 @@ async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedEvent>) {
   await asset.updateIpfsAssetName()
   await asset.save()
 
-  const epoch = await EpochService.getById(pool.id, pool.currentEpoch)
+  assertPropInitialized(pool, 'currentEpoch', 'number')
+  const epoch = await EpochService.getById(pool.id, pool.currentEpoch!)
   if (!epoch) throw new Error('Epoch not found!')
 
   const at = await AssetTransactionService.created({
@@ -92,7 +97,7 @@ async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedEvent>) {
     address: account.id,
     epochNumber: epoch.index,
     hash: event.extrinsic.extrinsic.hash.toString(),
-    timestamp: event.block.timestamp,
+    timestamp,
   })
   await at.save()
 
@@ -107,6 +112,8 @@ async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedEvent>) {
 export const handleLoanBorrowed = errorHandler(_handleLoanBorrowed)
 async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Promise<void> {
   const [poolId, loanId, borrowAmount] = event.event.data
+  const timestamp = event.block.timestamp
+  if (!timestamp) throw new Error(`Block ${event.block.block.header.number.toString()} has no timestamp`)
   const specVersion = api.runtimeVersion.specVersion.toNumber()
 
   const pool = await PoolService.getById(poolId.toString())
@@ -116,9 +123,11 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Pr
 
   logger.info(`Loan borrowed event for pool: ${poolId.toString()} amount: ${amount.toString()}`)
 
+  if (!event.extrinsic) throw new Error('Missing event extrinsic!')
   const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toHex())
 
-  const epoch = await EpochService.getById(pool.id, pool.currentEpoch)
+  assertPropInitialized(pool, 'currentEpoch', 'number')
+  const epoch = await EpochService.getById(pool.id, pool.currentEpoch!)
   if (!epoch) throw new Error('Epoch not found!')
 
   // Update loan amount
@@ -131,11 +140,11 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Pr
     address: account.id,
     epochNumber: epoch.index,
     hash: event.extrinsic.extrinsic.hash.toString(),
-    timestamp: event.block.timestamp,
+    timestamp,
     amount: amount,
     principalAmount: amount,
-    quantity: borrowAmount.isExternal ? borrowAmount.asExternal.quantity.toBigInt() : null,
-    settlementPrice: borrowAmount.isExternal ? borrowAmount.asExternal.settlementPrice.toBigInt() : null,
+    quantity: borrowAmount.isExternal ? borrowAmount.asExternal.quantity.toBigInt() : undefined,
+    settlementPrice: borrowAmount.isExternal ? borrowAmount.asExternal.settlementPrice.toBigInt() : undefined,
   }
 
   if (asset.isOffchainCash()) {
@@ -157,8 +166,8 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Pr
         asset.id,
         assetTransactionBaseData.hash,
         assetTransactionBaseData.timestamp,
-        assetTransactionBaseData.quantity,
-        assetTransactionBaseData.settlementPrice
+        assetTransactionBaseData.quantity!,
+        assetTransactionBaseData.settlementPrice!
       )
     }
 
@@ -182,6 +191,8 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Pr
 export const handleLoanRepaid = errorHandler(_handleLoanRepaid)
 async function _handleLoanRepaid(event: SubstrateEvent<LoanRepaidEvent>) {
   const [poolId, loanId, { principal, interest, unscheduled }] = event.event.data
+  const timestamp = event.block.timestamp
+  if (!timestamp) throw new Error(`Block ${event.block.block.header.number.toString()} has no timestamp`)
   const specVersion = api.runtimeVersion.specVersion.toNumber()
 
   const pool = await PoolService.getById(poolId.toString())
@@ -192,26 +203,27 @@ async function _handleLoanRepaid(event: SubstrateEvent<LoanRepaidEvent>) {
 
   logger.info(`Loan repaid event for pool: ${poolId.toString()} amount: ${amount.toString()}`)
 
+  if (!event.extrinsic) throw new Error('Missing event extrinsic!')
   const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toHex())
 
-  const epoch = await EpochService.getById(pool.id, pool.currentEpoch)
+  assertPropInitialized(pool, 'currentEpoch', 'number')
+  const epoch = await EpochService.getById(pool.id, pool.currentEpoch!)
   if (!epoch) throw new Error('Epoch not found!')
 
   const asset = await AssetService.getById(poolId.toString(), loanId.toString())
-
   const assetTransactionBaseData = {
     poolId: poolId.toString(),
     assetId: loanId.toString(),
     address: account.id,
     epochNumber: epoch.index,
     hash: event.extrinsic.extrinsic.hash.toString(),
-    timestamp: event.block.timestamp,
+    timestamp,
     amount: amount,
     principalAmount: principalAmount,
     interestAmount: interest.toBigInt(),
     unscheduledAmount: unscheduled.toBigInt(),
-    quantity: principal.isExternal ? principal.asExternal.quantity.toBigInt() : null,
-    settlementPrice: principal.isExternal ? principal.asExternal.settlementPrice.toBigInt() : null,
+    quantity: principal.isExternal ? principal.asExternal.quantity.toBigInt() : undefined,
+    settlementPrice: principal.isExternal ? principal.asExternal.settlementPrice.toBigInt() : undefined,
   }
 
   if (asset.isOffchainCash()) {
@@ -241,7 +253,10 @@ async function _handleLoanRepaid(event: SubstrateEvent<LoanRepaidEvent>) {
       await pool.increaseRealizedProfitFifo(realizedProfitFifo)
     }
 
-    const at = await AssetTransactionService.repaid({ ...assetTransactionBaseData, realizedProfitFifo })
+    const at = await AssetTransactionService.repaid({
+      ...assetTransactionBaseData,
+      realizedProfitFifo: realizedProfitFifo!,
+    })
     await at.save()
 
     // Update pool info
@@ -271,7 +286,7 @@ async function _handleLoanWrittenOff(event: SubstrateEvent<LoanWrittenOffEvent>)
   const pool = await PoolService.getById(poolId.toString())
   if (pool === undefined) throw missingPool
 
-  await pool.increaseWriteOff(asset.writtenOffAmountByPeriod)
+  await pool.increaseWriteOff(asset.writtenOffAmountByPeriod!)
   await pool.save()
 
   // Record cashflows
@@ -281,18 +296,22 @@ async function _handleLoanWrittenOff(event: SubstrateEvent<LoanWrittenOffEvent>)
 export const handleLoanClosed = errorHandler(_handleLoanClosed)
 async function _handleLoanClosed(event: SubstrateEvent<LoanClosedEvent>) {
   const [poolId, loanId] = event.event.data
+  const timestamp = event.block.timestamp
+  if (!timestamp) throw new Error(`Block ${event.block.block.header.number.toString()} has no timestamp`)
   logger.info(`Loan closed event for pool: ${poolId.toString()} loanId: ${loanId.toString()}`)
 
   const pool = await PoolService.getById(poolId.toString())
   if (pool === undefined) throw missingPool
 
+  if (!event.extrinsic) throw new Error('Missing event extrinsic!')
   const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toHex())
 
   const asset = await AssetService.getById(poolId.toString(), loanId.toString())
   await asset.close()
   await asset.save()
 
-  const epoch = await EpochService.getById(pool.id, pool.currentEpoch)
+  assertPropInitialized(pool, 'currentEpoch', 'number')
+  const epoch = await EpochService.getById(pool.id, pool.currentEpoch!)
   if (!epoch) throw new Error('Epoch not found!')
 
   const at = await AssetTransactionService.closed({
@@ -301,7 +320,7 @@ async function _handleLoanClosed(event: SubstrateEvent<LoanClosedEvent>) {
     address: account.id,
     epochNumber: epoch.index,
     hash: event.extrinsic.extrinsic.hash.toString(),
-    timestamp: event.block.timestamp,
+    timestamp,
   })
   await at.save()
 
@@ -313,6 +332,10 @@ export const handleLoanDebtTransferred = errorHandler(_handleLoanDebtTransferred
 async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransferred>) {
   const specVersion = api.runtimeVersion.specVersion.toNumber()
   const [poolId, fromLoanId, toLoanId, _repaidAmount, _borrowAmount] = event.event.data
+
+  const timestamp = event.block.timestamp
+  if (!timestamp) throw new Error(`Block ${event.block.block.header.number.toString()} has no timestamp`)
+
   const pool = await PoolService.getById(poolId.toString())
   if (!pool) throw missingPool
 
@@ -329,12 +352,14 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
       `to asset: ${toLoanId.toString()} amount: ${repaidAmount.toString()}`
   )
 
+  if (!event.extrinsic) throw new Error('Missing event extrinsic!')
   const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toHex())
 
   const fromAsset = await AssetService.getById(poolId.toString(), fromLoanId.toString())
   const toAsset = await AssetService.getById(poolId.toString(), toLoanId.toString())
 
-  const epoch = await EpochService.getById(pool.id, pool.currentEpoch)
+  assertPropInitialized(pool, 'currentEpoch', 'number')
+  const epoch = await EpochService.getById(pool.id, pool.currentEpoch!)
   if (!epoch) throw new Error('Epoch not found!')
 
   const txData: Omit<
@@ -345,7 +370,7 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
     address: account.id,
     epochNumber: epoch.index,
     hash: event.extrinsic.extrinsic.hash.toString(),
-    timestamp: event.block.timestamp,
+    timestamp,
   }
 
   if (fromAsset.isNonCash() && toAsset.isOffchainCash()) {
@@ -384,13 +409,13 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
       interestAmount: repaidInterestAmount,
       principalAmount: repaidPrincipalAmount,
       unscheduledAmount: repaidUnscheduledAmount,
-      quantity: _repaidAmount.principal.isExternal ? _repaidAmount.principal.asExternal.quantity.toBigInt() : null,
+      quantity: _repaidAmount.principal.isExternal ? _repaidAmount.principal.asExternal.quantity.toBigInt() : undefined,
       settlementPrice: _repaidAmount.principal.isExternal
         ? _repaidAmount.principal.asExternal.settlementPrice.toBigInt()
-        : null,
+        : undefined,
       fromAssetId: fromLoanId.toString(10),
       toAssetId: toLoanId.toString(10),
-      realizedProfitFifo,
+      realizedProfitFifo: realizedProfitFifo!,
     })
     await principalRepayment.save()
 
@@ -431,8 +456,8 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
       assetId: toLoanId.toString(10),
       amount: borrowPrincipalAmount,
       principalAmount: borrowPrincipalAmount,
-      quantity: _borrowAmount.isExternal ? _borrowAmount.asExternal.quantity.toBigInt() : null,
-      settlementPrice: _borrowAmount.isExternal ? _borrowAmount.asExternal.settlementPrice.toBigInt() : null,
+      quantity: _borrowAmount.isExternal ? _borrowAmount.asExternal.quantity.toBigInt() : undefined,
+      settlementPrice: _borrowAmount.isExternal ? _borrowAmount.asExternal.settlementPrice.toBigInt() : undefined,
       fromAssetId: fromLoanId.toString(10),
     })
     await purchaseTransaction.save()
@@ -447,8 +472,8 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
       assetId: toLoanId.toString(10),
       amount: borrowPrincipalAmount,
       principalAmount: borrowPrincipalAmount,
-      quantity: _borrowAmount.isExternal ? _borrowAmount.asExternal.quantity.toBigInt() : null,
-      settlementPrice: _borrowAmount.isExternal ? _borrowAmount.asExternal.settlementPrice.toBigInt() : null,
+      quantity: _borrowAmount.isExternal ? _borrowAmount.asExternal.quantity.toBigInt() : undefined,
+      settlementPrice: _borrowAmount.isExternal ? _borrowAmount.asExternal.settlementPrice.toBigInt() : undefined,
       fromAssetId: fromLoanId.toString(10),
       toAssetId: toLoanId.toString(10),
     })
@@ -460,6 +485,9 @@ export const handleLoanDebtTransferred1024 = errorHandler(_handleLoanDebtTransfe
 async function _handleLoanDebtTransferred1024(event: SubstrateEvent<LoanDebtTransferred1024>) {
   const [poolId, fromLoanId, toLoanId, _amount] = event.event.data
 
+  const timestamp = event.block.timestamp
+  if (!timestamp) throw new Error(`Block ${event.block.block.header.number.toString()} has no timestamp`)
+
   const pool = await PoolService.getById(poolId.toString())
   if (!pool) throw missingPool
 
@@ -469,12 +497,14 @@ async function _handleLoanDebtTransferred1024(event: SubstrateEvent<LoanDebtTran
       `to asset: ${toLoanId.toString()} amount: ${amount.toString()}`
   )
 
+  if (!event.extrinsic) throw new Error('Missing event extrinsic!')
   const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toHex())
 
   const fromAsset = await AssetService.getById(poolId.toString(), fromLoanId.toString())
   const toAsset = await AssetService.getById(poolId.toString(), toLoanId.toString())
 
-  const epoch = await EpochService.getById(pool.id, pool.currentEpoch)
+  assertPropInitialized(pool, 'currentEpoch', 'number')
+  const epoch = await EpochService.getById(pool.id, pool.currentEpoch!)
   if (!epoch) throw new Error('Epoch not found!')
 
   const txData: Omit<
@@ -485,12 +515,12 @@ async function _handleLoanDebtTransferred1024(event: SubstrateEvent<LoanDebtTran
     address: account.id,
     epochNumber: epoch.index,
     hash: event.extrinsic.extrinsic.hash.toString(),
-    timestamp: event.block.timestamp,
+    timestamp,
   }
 
   if (fromAsset.isNonCash() && toAsset.isOffchainCash()) {
     const quantity = nToBigInt(bnToBn(amount).mul(WAD).div(bnToBn(fromAsset.currentPrice)))
-    const realizedProfitFifo = await AssetPositionService.sellFifo(toAsset.id, quantity, toAsset.currentPrice)
+    const realizedProfitFifo = await AssetPositionService.sellFifo(toAsset.id, quantity, toAsset.currentPrice!)
 
     //Track repayment
     await fromAsset.activate()
@@ -534,7 +564,7 @@ async function _handleLoanDebtTransferred1024(event: SubstrateEvent<LoanDebtTran
     await epoch.save()
 
     const quantity = nToBigInt(bnToBn(amount).mul(WAD).div(bnToBn(toAsset.currentPrice)))
-    await AssetPositionService.buy(toAsset.id, txData.hash, txData.timestamp, quantity, toAsset.currentPrice)
+    await AssetPositionService.buy(toAsset.id, txData.hash, txData.timestamp, quantity, toAsset.currentPrice!)
 
     // purchase transaction
     const purchaseTransaction = await AssetTransactionService.borrowed({
@@ -554,6 +584,10 @@ async function _handleLoanDebtTransferred1024(event: SubstrateEvent<LoanDebtTran
 export const handleLoanDebtIncreased = errorHandler(_handleLoanDebtIncreased)
 async function _handleLoanDebtIncreased(event: SubstrateEvent<LoanDebtIncreased>) {
   const [poolId, loanId, _borrowAmount] = event.event.data
+
+  const timestamp = event.block.timestamp
+  if (!timestamp) throw new Error(`Block ${event.block.block.header.number.toString()} has no timestamp`)
+
   const pool = await PoolService.getById(poolId.toString())
   if (!pool) throw missingPool
 
@@ -564,11 +598,13 @@ async function _handleLoanDebtIncreased(event: SubstrateEvent<LoanDebtIncreased>
       `amount: ${borrowPrincipalAmount.toString()}`
   )
 
+  if (!event.extrinsic) throw new Error('Missing event extrinsic!')
   const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toHex())
 
   const asset = await AssetService.getById(poolId.toString(), loanId.toString())
 
-  const epoch = await EpochService.getById(pool.id, pool.currentEpoch)
+  assertPropInitialized(pool, 'currentEpoch', 'number')
+  const epoch = await EpochService.getById(pool.id, pool.currentEpoch!)
   if (!epoch) throw new Error('Epoch not found!')
 
   const txData: AssetTransactionData = {
@@ -576,12 +612,12 @@ async function _handleLoanDebtIncreased(event: SubstrateEvent<LoanDebtIncreased>
     address: account.id,
     epochNumber: epoch.index,
     hash: event.extrinsic.extrinsic.hash.toString(),
-    timestamp: event.block.timestamp,
+    timestamp,
     assetId: loanId.toString(10),
     amount: borrowPrincipalAmount,
     principalAmount: borrowPrincipalAmount,
-    quantity: _borrowAmount.isExternal ? _borrowAmount.asExternal.quantity.toBigInt() : null,
-    settlementPrice: _borrowAmount.isExternal ? _borrowAmount.asExternal.settlementPrice.toBigInt() : null,
+    quantity: _borrowAmount.isExternal ? _borrowAmount.asExternal.quantity.toBigInt() : undefined,
+    settlementPrice: _borrowAmount.isExternal ? _borrowAmount.asExternal.settlementPrice.toBigInt() : undefined,
   }
 
   //TODO: should be tracked separately as corrections
@@ -600,6 +636,9 @@ async function _handleLoanDebtIncreased(event: SubstrateEvent<LoanDebtIncreased>
 export const handleLoanDebtDecreased = errorHandler(_handleLoanDebtDecreased)
 async function _handleLoanDebtDecreased(event: SubstrateEvent<LoanDebtDecreased>) {
   const [poolId, loanId, _repaidAmount] = event.event.data
+  const timestamp = event.block.timestamp
+  if (!timestamp) throw new Error(`Block ${event.block.block.header.number.toString()} has no timestamp`)
+
   const pool = await PoolService.getById(poolId.toString())
   if (!pool) throw missingPool
 
@@ -613,11 +652,13 @@ async function _handleLoanDebtDecreased(event: SubstrateEvent<LoanDebtDecreased>
       `amount: ${repaidAmount.toString()}`
   )
 
+  if (!event.extrinsic) throw new Error('Missing event extrinsic!')
   const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toHex())
 
   const asset = await AssetService.getById(poolId.toString(), loanId.toString())
 
-  const epoch = await EpochService.getById(pool.id, pool.currentEpoch)
+  assertPropInitialized(pool, 'currentEpoch', 'number')
+  const epoch = await EpochService.getById(pool.id, pool.currentEpoch!)
   if (!epoch) throw new Error('Epoch not found!')
 
   const txData: AssetTransactionData = {
@@ -625,16 +666,16 @@ async function _handleLoanDebtDecreased(event: SubstrateEvent<LoanDebtDecreased>
     address: account.id,
     epochNumber: epoch.index,
     hash: event.extrinsic.extrinsic.hash.toString(),
-    timestamp: event.block.timestamp,
+    timestamp: timestamp,
     assetId: loanId.toString(10),
     amount: repaidAmount,
     interestAmount: repaidInterestAmount,
     principalAmount: repaidPrincipalAmount,
     unscheduledAmount: repaidUnscheduledAmount,
-    quantity: _repaidAmount.principal.isExternal ? _repaidAmount.principal.asExternal.quantity.toBigInt() : null,
+    quantity: _repaidAmount.principal.isExternal ? _repaidAmount.principal.asExternal.quantity.toBigInt() : undefined,
     settlementPrice: _repaidAmount.principal.isExternal
       ? _repaidAmount.principal.asExternal.settlementPrice.toBigInt()
-      : null,
+      : undefined,
   }
 
   //Track repayment

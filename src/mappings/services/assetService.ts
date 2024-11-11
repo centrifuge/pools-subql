@@ -5,6 +5,7 @@ import { ApiQueryLoansActiveLoans, LoanPricingAmount, NftItemMetadata } from '..
 import { Asset, AssetType, AssetValuationMethod, AssetStatus, AssetSnapshot } from '../../types'
 import { ActiveLoanData } from './poolService'
 import { cid, readIpfs } from '../../helpers/ipfsFetch'
+import { assertPropInitialized } from '../../helpers/validation'
 
 export const ONCHAIN_CASH_ASSET_ID = '0'
 export class AssetService extends Asset {
@@ -86,30 +87,37 @@ export class AssetService extends Asset {
 
   static async getByNftId(collectionId: string, itemId: string) {
     const asset = (
-      await AssetService.getByFields([
-        ['collateralNftClassId', '=', collectionId],
-        ['collateralNftItemId', '=', itemId],
-      ], { limit: 100 })
+      await AssetService.getByFields(
+        [
+          ['collateralNftClassId', '=', collectionId],
+          ['collateralNftItemId', '=', itemId],
+        ],
+        { limit: 100 }
+      )
     ).pop() as AssetService
     return asset
   }
 
   public borrow(amount: bigint) {
     logger.info(`Increasing borrowings for asset ${this.id} by ${amount}`)
-    this.borrowedAmountByPeriod += amount
+    assertPropInitialized(this, 'borrowedAmountByPeriod', 'bigint')
+    this.borrowedAmountByPeriod! += amount
   }
 
   public repay(amount: bigint) {
     logger.info(`Increasing repayments for asset ${this.id} by ${amount}`)
-    this.repaidAmountByPeriod += amount
+    assertPropInitialized(this, 'repaidAmountByPeriod', 'bigint')
+    this.repaidAmountByPeriod! += amount
   }
 
   public increaseQuantity(increase: bigint) {
-    this.outstandingQuantity += increase
+    assertPropInitialized(this, 'outstandingQuantity', 'bigint')
+    this.outstandingQuantity! += increase
   }
 
   public decreaseQuantity(decrease: bigint) {
-    this.outstandingQuantity -= decrease
+    assertPropInitialized(this, 'outstandingQuantity', 'bigint')
+    this.outstandingQuantity! -= decrease
   }
 
   public updateInterestRate(interestRatePerSec: bigint) {
@@ -156,18 +164,25 @@ export class AssetService extends Asset {
     Object.assign(this, activeAssetData)
 
     if (this.snapshot) {
-      const deltaRepaidInterestAmount = this.totalRepaid - this.snapshot.totalRepaidInterest
+      assertPropInitialized(this, 'totalRepaid', 'bigint')
+      assertPropInitialized(this, 'totalRepaidInterest', 'bigint')
+      const deltaRepaidInterestAmount = this.totalRepaid! - this.snapshot.totalRepaidInterest!
+
+      assertPropInitialized(this, 'outstandingInterest', 'bigint')
+      assertPropInitialized(this.snapshot, 'outstandingInterest', 'bigint')
       this.interestAccruedByPeriod =
-        this.outstandingInterest - this.snapshot.outstandingInterest + deltaRepaidInterestAmount
-      logger.info(`Updated outstanding debt for asset: ${this.id} to ${this.outstandingDebt.toString()}`)
+        this.outstandingInterest! - this.snapshot.outstandingInterest! + deltaRepaidInterestAmount
+      logger.info(`Updated outstanding interest for asset: ${this.id} to ${this.outstandingInterest!.toString()}`)
     }
   }
 
   public async updateItemMetadata() {
+    assertPropInitialized(this, 'collateralNftClassId', 'bigint')
+    assertPropInitialized(this, 'collateralNftItemId', 'bigint')
     logger.info(
       `Updating metadata for asset: ${this.id} with ` +
-        `collectionId ${this.collateralNftClassId.toString()}, ` +
-        `itemId: ${this.collateralNftItemId.toString()}`
+        `collectionId ${this.collateralNftClassId!.toString()}, ` +
+        `itemId: ${this.collateralNftItemId!.toString()}`
     )
     const itemMetadata = await api.query.uniques.instanceMetadataOf<Option<NftItemMetadata>>(
       this.collateralNftClassId,
@@ -176,8 +191,8 @@ export class AssetService extends Asset {
     if (itemMetadata.isNone) {
       throw new Error(
         `No metadata returned for asset: ${this.id} with ` +
-          `collectionId ${this.collateralNftClassId.toString()}, ` +
-          `itemId: ${this.collateralNftItemId.toString()}`
+          `collectionId ${this.collateralNftClassId!.toString()}, ` +
+          `itemId: ${this.collateralNftItemId!.toString()}`
       )
     }
 
@@ -211,7 +226,10 @@ export class AssetService extends Asset {
       logger.warn(`No metadata field set for asset ${this.id}`)
       return
     }
-    const metadata: AssetIpfsMetadata = await readIpfs<AssetIpfsMetadata>(this.metadata.match(cid)[0]).catch((err) => {
+    const matchedCid = this.metadata.match(cid)
+    if (!matchedCid || matchedCid.length !== 1) throw new Error(`Could not read stored fetadata for object ${this.id}`)
+
+    const metadata = await readIpfs<AssetIpfsMetadata>(matchedCid[0]).catch((err) => {
       logger.error(`Request for metadata failed: ${err}`)
       return undefined
     })
@@ -250,20 +268,25 @@ export class AssetService extends Asset {
     logger.info(
       `Updating unrealizedProfit for asset ${this.id} with atMarketPrice: ${atMarketPrice}, atNotional: ${atNotional}`
     )
-    this.unrealizedProfitByPeriod = atMarketPrice - this.unrealizedProfitAtMarketPrice
+    assertPropInitialized(this, 'unrealizedProfitAtMarketPrice', 'bigint')
+    this.unrealizedProfitByPeriod = atMarketPrice - this.unrealizedProfitAtMarketPrice!
     this.unrealizedProfitAtMarketPrice = atMarketPrice
     this.unrealizedProfitAtNotional = atNotional
   }
 
   public increaseRealizedProfitFifo(increase: bigint) {
-    this.sumRealizedProfitFifo += increase
+    assertPropInitialized(this, 'sumRealizedProfitFifo', 'bigint')
+    this.sumRealizedProfitFifo! += increase
   }
 
   public async loadSnapshot(periodStart: Date) {
-    const snapshots = await AssetSnapshot.getByFields([
-      ['assetId', '=', this.id],
-      ['periodId', '=', periodStart.toISOString()],
-    ], { limit: 100 })
+    const snapshots = await AssetSnapshot.getByFields(
+      [
+        ['assetId', '=', this.id],
+        ['periodId', '=', periodStart.toISOString()],
+      ],
+      { limit: 100 }
+    )
     if (snapshots.length !== 1) {
       logger.warn(`Unable to load snapshot for asset ${this.id} for period ${periodStart.toISOString()}`)
       return
@@ -276,9 +299,9 @@ export class AssetService extends Asset {
   }
 }
 
-interface AssetSpecs {
-  advanceRate: bigint
-  collateralValue: bigint
+export interface AssetSpecs {
+  advanceRate?: bigint
+  collateralValue?: bigint
   probabilityOfDefault?: bigint
   lossGivenDefault?: bigint
   discountRate?: bigint

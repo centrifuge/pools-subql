@@ -167,11 +167,11 @@ export class InvestorTransactionService extends InvestorTransaction {
   }
 
   static computeTokenAmount(data: InvestorTransactionData) {
-    return data.price ? nToBigInt(bnToBn(data.amount).mul(WAD).div(bnToBn(data.price))) : null
+    return data.price ? nToBigInt(bnToBn(data.amount).mul(WAD).div(bnToBn(data.price))) : undefined
   }
 
   static computeCurrencyAmount(data: InvestorTransactionData) {
-    return data.price ? nToBigInt(bnToBn(data.amount).mul(bnToBn(data.price)).div(WAD)) : null
+    return data.price ? nToBigInt(bnToBn(data.amount).mul(bnToBn(data.price)).div(WAD)) : undefined
   }
 
   static computeFulfilledAmount(data: InvestorTransactionData) {

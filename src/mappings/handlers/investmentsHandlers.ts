@@ -8,10 +8,13 @@ import { OutstandingOrderService } from '../services/outstandingOrderService'
 import { InvestorTransactionData, InvestorTransactionService } from '../services/investorTransactionService'
 import { AccountService } from '../services/accountService'
 import { TrancheBalanceService } from '../services/trancheBalanceService'
+import { assertPropInitialized } from '../../helpers/validation'
 
 export const handleInvestOrderUpdated = errorHandler(_handleInvestOrderUpdated)
 async function _handleInvestOrderUpdated(event: SubstrateEvent<OrderUpdatedEvent>): Promise<void> {
   const [investmentId, , address, newAmount] = event.event.data
+  const timestamp = event.block.timestamp
+  if (!timestamp) throw new Error(`Block ${event.block.block.header.number.toString()} has no timestamp`)
   const poolId = Array.isArray(investmentId) ? investmentId[0] : investmentId.poolId
   const trancheId = Array.isArray(investmentId) ? investmentId[1] : investmentId.trancheId
   logger.info(
@@ -29,6 +32,7 @@ async function _handleInvestOrderUpdated(event: SubstrateEvent<OrderUpdatedEvent
   // Update tranche price
   await tranche.updatePriceFromRuntime(event.block.block.header.number.toNumber())
 
+  if (!event.extrinsic) throw new Error('Missing event extrinsic')
   const orderData: InvestorTransactionData = {
     poolId: poolId.toString(),
     trancheId: trancheId.toString(),
@@ -38,7 +42,7 @@ async function _handleInvestOrderUpdated(event: SubstrateEvent<OrderUpdatedEvent
     amount: newAmount.toBigInt(),
     price: tranche.tokenPrice,
     fee: BigInt(0),
-    timestamp: event.block.timestamp,
+    timestamp,
   }
 
   if (orderData.amount > BigInt(0)) {
@@ -62,7 +66,9 @@ async function _handleInvestOrderUpdated(event: SubstrateEvent<OrderUpdatedEvent
   await tranche.save()
 
   // Update epochState outstanding total
-  const epoch = await EpochService.getById(poolId.toString(), pool.currentEpoch)
+  assertPropInitialized(pool, 'currentEpoch', 'number')
+  const epoch = await EpochService.getById(poolId.toString(), pool.currentEpoch!)
+  if (!epoch) throw new Error('Epoch not found!')
   await epoch.updateOutstandingInvestOrders(trancheId.toHex(), orderData.amount, oldAmount)
   await epoch.saveWithStates()
 
@@ -75,6 +81,8 @@ async function _handleInvestOrderUpdated(event: SubstrateEvent<OrderUpdatedEvent
 export const handleRedeemOrderUpdated = errorHandler(_handleRedeemOrderUpdated)
 async function _handleRedeemOrderUpdated(event: SubstrateEvent<OrderUpdatedEvent>): Promise<void> {
   const [investmentId, , address, amount] = event.event.data
+  const timestamp = event.block.timestamp
+  if (!timestamp) throw new Error(`Block ${event.block.block.header.number.toString()} has no timestamp`)
   const poolId = Array.isArray(investmentId) ? investmentId[0] : investmentId.poolId
   const trancheId = Array.isArray(investmentId) ? investmentId[1] : investmentId.trancheId
   logger.info(
@@ -92,6 +100,7 @@ async function _handleRedeemOrderUpdated(event: SubstrateEvent<OrderUpdatedEvent
 
   await tranche.updatePriceFromRuntime(event.block.block.header.number.toNumber())
 
+  if (!event.extrinsic) throw new Error('Missing event extrinsic')
   const orderData: InvestorTransactionData = {
     poolId: poolId.toString(),
     trancheId: trancheId.toString(),
@@ -101,7 +110,7 @@ async function _handleRedeemOrderUpdated(event: SubstrateEvent<OrderUpdatedEvent
     amount: amount.toBigInt(),
     price: tranche.tokenPrice,
     fee: BigInt(0),
-    timestamp: event.block.timestamp,
+    timestamp,
   }
 
   if (amount.toBigInt() > BigInt(0)) {
@@ -125,8 +134,10 @@ async function _handleRedeemOrderUpdated(event: SubstrateEvent<OrderUpdatedEvent
   await tranche.save()
 
   // Update epochState outstanding total
-  const epoch = await EpochService.getById(poolId.toString(), pool.currentEpoch)
-  await epoch.updateOutstandingRedeemOrders(trancheId.toHex(), orderData.amount, oldAmount, tranche.tokenPrice)
+  assertPropInitialized(pool, 'currentEpoch', 'number')
+  const epoch = await EpochService.getById(poolId.toString(), pool.currentEpoch!)
+  if (!epoch) throw new Error('Epoch not found')
+  await epoch.updateOutstandingRedeemOrders(trancheId.toHex(), orderData.amount, oldAmount, tranche.tokenPrice!)
   await epoch.saveWithStates()
 
   // Update trancheBalance
@@ -138,8 +149,11 @@ async function _handleRedeemOrderUpdated(event: SubstrateEvent<OrderUpdatedEvent
 export const handleInvestOrdersCollected = errorHandler(_handleInvestOrdersCollected)
 async function _handleInvestOrdersCollected(event: SubstrateEvent<InvestOrdersCollectedEvent>): Promise<void> {
   const [investmentId, address, , investCollection] = event.event.data
+  const timestamp = event.block.timestamp
+  if (!timestamp) throw new Error(`Block ${event.block.block.header.number.toString()} has no timestamp`)
   const poolId = Array.isArray(investmentId) ? investmentId[0] : investmentId.poolId
   const trancheId = Array.isArray(investmentId) ? investmentId[1] : investmentId.trancheId
+  if (!event.extrinsic) throw new Error('Missing event extrinsic')
   logger.info(
     `Orders collected for tranche ${poolId.toString()}-${trancheId.toString()}. ` +
       `Address: ${address.toHex()} at ` +
@@ -164,13 +178,13 @@ async function _handleInvestOrdersCollected(event: SubstrateEvent<InvestOrdersCo
 
   const { payoutInvestmentInvest } = investCollection
 
-  const orderData = {
+  const orderData: InvestorTransactionData = {
     poolId: poolId.toString(),
     trancheId: trancheId.toString(),
     epochNumber: endEpochId,
     address: account.id,
     hash: event.extrinsic.extrinsic.hash.toString(),
-    timestamp: event.block.timestamp,
+    timestamp: timestamp,
     price: tranche.tokenPrice,
     amount: payoutInvestmentInvest.toBigInt(),
   }
@@ -189,8 +203,11 @@ async function _handleInvestOrdersCollected(event: SubstrateEvent<InvestOrdersCo
 export const handleRedeemOrdersCollected = errorHandler(_handleRedeemOrdersCollected)
 async function _handleRedeemOrdersCollected(event: SubstrateEvent<RedeemOrdersCollectedEvent>): Promise<void> {
   const [investmentId, address, , redeemCollection] = event.event.data
+  const timestamp = event.block.timestamp
+  if (!timestamp) throw new Error(`Block ${event.block.block.header.number.toString()} has no timestamp`)
   const poolId = Array.isArray(investmentId) ? investmentId[0] : investmentId.poolId
   const trancheId = Array.isArray(investmentId) ? investmentId[1] : investmentId.trancheId
+  if (!event.extrinsic) throw new Error('Missing event extrinsic')
   logger.info(
     `Orders collected for tranche ${poolId.toString()}-${trancheId.toString()}. ` +
       `Address: ${address.toHex()} ` +
@@ -216,13 +233,13 @@ async function _handleRedeemOrdersCollected(event: SubstrateEvent<RedeemOrdersCo
 
   const { payoutInvestmentRedeem } = redeemCollection
 
-  const orderData = {
+  const orderData: InvestorTransactionData = {
     poolId: poolId.toString(),
     trancheId: trancheId.toString(),
     epochNumber: endEpochId,
     address: account.id,
     hash: event.extrinsic.extrinsic.hash.toString(),
-    timestamp: event.block.timestamp,
+    timestamp,
     price: tranche.tokenPrice,
     amount: payoutInvestmentRedeem.toBigInt(),
   }

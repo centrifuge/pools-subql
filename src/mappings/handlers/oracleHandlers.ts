@@ -6,9 +6,9 @@ import { OracleTransactionData, OracleTransactionService } from '../services/ora
 export const handleOracleFed = errorHandler(_handleOracleFed)
 async function _handleOracleFed(event: SubstrateEvent<OracleFedEvent>) {
   const [feeder, key, value] = event.event.data
-
+  const timestamp = event.block.timestamp
+  if (!timestamp) throw new Error(`Block ${event.block.block.header.number.toString()} has no timestamp`)
   let formattedKey: string
-
   switch (key.type) {
     case 'Isin': {
       formattedKey = key.asIsin.toUtf8()
@@ -20,15 +20,16 @@ async function _handleOracleFed(event: SubstrateEvent<OracleFedEvent>) {
       break
     }
     default:
-      logger.warn(`Oracle feed: ${feeder.toString()} key: ${formattedKey} value: ${value.toString()}`)
+      logger.warn(`Oracle feed: ${feeder.toString()} key: ${key.type.toString()} value: ${value.toString()}`)
       return
   }
 
   logger.info(`Oracle feeder: ${feeder.toString()} key: ${formattedKey} value: ${value.toString()}`)
 
+  if (!event.extrinsic) throw new Error('Missing event extrinsic')
   const oracleTxData: OracleTransactionData = {
     hash: event.extrinsic.extrinsic.hash.toString(),
-    timestamp: event.block.timestamp,
+    timestamp,
     key: formattedKey,
     value: value.toBigInt(),
   }
