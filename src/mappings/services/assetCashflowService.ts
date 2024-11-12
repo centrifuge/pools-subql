@@ -1,8 +1,4 @@
-import type { ApiAt } from '../../@types/gobal'
-import { ExtendedCall } from '../../helpers/types'
 import { AssetCashflow } from '../../types/models/AssetCashflow'
-
-const cfgApi = api as ApiAt
 
 export class AssetCashflowService extends AssetCashflow {
   static init(assetId: string, timestamp: Date, principal: bigint, interest: bigint) {
@@ -12,13 +8,12 @@ export class AssetCashflowService extends AssetCashflow {
   }
 
   static async recordAssetCashflows(_assetId: string) {
-    const specVersion = cfgApi.runtimeVersion.specVersion.toNumber()
+    const specVersion = api.runtimeVersion.specVersion.toNumber()
     if (specVersion < 1103) return
     const [poolId, assetId] = _assetId.split('-')
     logger.info(`Recording AssetCashflows for Asset ${_assetId}`)
-    const apiCall = cfgApi.call as ExtendedCall
-    logger.info(`Calling runtime API loanscfgApi.expectedCashflows(${poolId}, ${assetId})`)
-    const response = await apiCall.loansApi.expectedCashflows(poolId, assetId)
+    logger.info(`Calling runtime API loansapi.expectedCashflows(${poolId}, ${assetId})`)
+    const response = await api.call.loansApi.expectedCashflows(poolId, assetId)
     logger.info(JSON.stringify(response))
     if(!response.isOk) return
     await this.clearAssetCashflows(_assetId)

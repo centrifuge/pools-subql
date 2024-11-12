@@ -1,18 +1,15 @@
-import { ApiAt } from '../../@types/gobal'
 import { errorLogger } from '../../helpers/errorHandler'
-import { ExtendedCall } from '../../helpers/types'
 import { TrancheService } from './trancheService'
-const cfgApi = api as ApiAt
 
-cfgApi.query['ormlTokens'] = {
+api.query['ormlTokens'] = {
   totalIssuance: jest.fn(() => ({ toBigInt: () => BigInt('9999000000000000000000') })),
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as any
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-cfgApi['runtimeVersion'] = { specVersion: { toNumber: () => 1029 } } as any
+api['runtimeVersion'] = { specVersion: { toNumber: () => 1029 } } as any
 
-cfgApi.call['poolsApi'] = {
+api.call['poolsApi'] = {
   trancheTokenPrices: jest.fn(() => ({
     isSome: true,
     isNone: false,
@@ -65,7 +62,7 @@ describe('Given a new tranche, when initialised', () => {
 
   test('when the supply data is fetched, then the correct values are fetched and set', async () => {
     await tranches[0].updateSupply()
-    expect(cfgApi.query.ormlTokens.totalIssuance).toHaveBeenCalledWith({ Tranche: [poolId, trancheIds[0]] })
+    expect(api.query.ormlTokens.totalIssuance).toHaveBeenCalledWith({ Tranche: [poolId, trancheIds[0]] })
     expect(tranches[0]).toMatchObject({ tokenSupply: BigInt('9999000000000000000000') })
   })
 
@@ -78,13 +75,13 @@ describe('Given a new tranche, when initialised', () => {
 describe('Given an existing tranche,', () => {
   test('when the runtime price is updated, then the value is fetched and set correctly', async () => {
     await tranches[0].updatePriceFromRuntime(4058351).catch(errorLogger)
-    expect((api.call as ExtendedCall).poolsApi.trancheTokenPrices).toHaveBeenCalled()
+    expect(api.call.poolsApi.trancheTokenPrices).toHaveBeenCalled()
     expect(tranches[0].tokenPrice).toBe(BigInt('2000000000000000000'))
   })
 
   test('when a 0 runtime price is delivered, then the value is skipped and logged', async () => {
     await tranches[1].updatePriceFromRuntime(4058352).catch(errorLogger)
-    expect((api.call as ExtendedCall).poolsApi.trancheTokenPrices).toHaveBeenCalled()
+    expect(api.call.poolsApi.trancheTokenPrices).toHaveBeenCalled()
     expect(logger.error).toHaveBeenCalled()
     expect(tranches[1].tokenPrice).toBe(BigInt('1000000000000000000'))
   })

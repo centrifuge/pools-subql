@@ -162,7 +162,7 @@ export class InvestorTransactionService extends InvestorTransaction {
   }
 
   static async getById(hash: string) {
-    const tx = (await this.get(hash)) as InvestorTransactionService
+    const tx = (await this.get(hash)) as InvestorTransactionService | undefined
     return tx
   }
 

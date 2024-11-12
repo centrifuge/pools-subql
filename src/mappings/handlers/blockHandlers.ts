@@ -1,31 +1,20 @@
 import { SubstrateBlock } from '@subql/types'
 import { getPeriodStart, TimekeeperService } from '../../helpers/timekeeperService'
 import { errorHandler } from '../../helpers/errorHandler'
-import { substrateStateSnapshotter } from '../../helpers/stateSnapshot'
+import { statesSnapshotter } from '../../helpers/stateSnapshot'
 import { SNAPSHOT_INTERVAL_SECONDS } from '../../config'
 import { PoolService } from '../services/poolService'
 import { TrancheService } from '../services/trancheService'
 import { AssetService } from '../services/assetService'
 import { PoolFeeService } from '../services/poolFeeService'
 import { PoolFeeTransactionService } from '../services/poolFeeTransactionService'
-import {
-  Asset,
-  AssetSnapshot,
-  Pool,
-  PoolFee,
-  PoolFeeSnapshot,
-  PoolSnapshot,
-  Tranche,
-  TrancheSnapshot,
-} from '../../types/models'
+import { AssetSnapshot, PoolFeeSnapshot, PoolSnapshot, TrancheSnapshot } from '../../types/models'
 import { AssetPositionService } from '../services/assetPositionService'
 import { EpochService } from '../services/epochService'
 import { SnapshotPeriodService } from '../services/snapshotPeriodService'
 import { TrancheBalanceService } from '../services/trancheBalanceService'
 import { InvestorPositionService } from '../services/investorPositionService'
-import { ApiAt } from '../../@types/gobal'
 
-const cfgApi = api as ApiAt
 const timekeeper = TimekeeperService.init()
 
 export const handleBlock = errorHandler(_handleBlock)
@@ -37,7 +26,7 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
   const newPeriod = (await timekeeper).processBlock(block.timestamp)
 
   if (newPeriod) {
-    const specVersion = cfgApi.runtimeVersion.specVersion.toNumber()
+    const specVersion = api.runtimeVersion.specVersion.toNumber()
     logger.info(
       `# It's a new period on block ${blockNumber}: ${block.timestamp.toISOString()} (specVersion: ${specVersion})`
     )
@@ -53,6 +42,11 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
     const quarter = Math.floor(period.month / 3)
     const beginningOfQuarter = new Date(period.year, quarter * 3, 1)
     const beginningOfYear = new Date(period.year, 0, 1)
+
+    const poolsToSnapshot: PoolService[] = []
+    const tranchesToSnapshot: TrancheService[] = []
+    const assetsToSnapshot: AssetService[] = []
+    const poolFeesToSnapshot: PoolFeeService[] = []
 
     // Update Pool States
     const pools = await PoolService.getCfgActivePools()
@@ -83,6 +77,7 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
         await tranche.computeYieldAnnualized('yield30DaysAnnualized', period.start, daysAgo30)
         await tranche.computeYieldAnnualized('yield90DaysAnnualized', period.start, daysAgo90)
         await tranche.save()
+        tranchesToSnapshot.push(tranche)
 
         // Compute TrancheBalances Unrealized Profit
         const trancheBalances = (await TrancheBalanceService.getByTrancheId(tranche.id, {
@@ -105,7 +100,7 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
       pool.resetUnrealizedProfit()
       for (const loanId in activeLoanData) {
         const asset = await AssetService.getById(pool.id, loanId)
-        if(!asset) continue
+        if (!asset) continue
         if (!asset.currentPrice) throw new Error('Asset current price not set')
         if (!asset.notional) throw new Error('Asset notional not set')
         await asset.loadSnapshot(lastPeriodStart)
@@ -115,6 +110,7 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
           await AssetPositionService.computeUnrealizedProfitAtPrice(asset.id, asset.notional)
         )
         await asset.save()
+        assetsToSnapshot.push(asset)
 
         if (typeof asset.interestAccruedByPeriod !== 'bigint')
           throw new Error('Asset interest accrued by period not set')
@@ -158,6 +154,7 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
         }
         await poolFee.updateAccruals(pending, disbursement)
         await poolFee.save()
+        poolFeesToSnapshot.push(poolFee)
 
         if (typeof poolFee.sumAccruedAmountByPeriod !== 'bigint')
           throw new Error('Pool fee sum accrued amount by period not set')
@@ -177,47 +174,16 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
       const sumPoolFeesPendingAmount = await PoolFeeService.computeSumPendingFees(pool.id)
       await pool.updateSumPoolFeesPendingAmount(sumPoolFeesPendingAmount)
       await pool.save()
+      poolsToSnapshot.push(pool)
       logger.info(`## Pool ${pool.id} states update completed!`)
     }
 
     logger.info('## Performing snapshots...')
-    //Perform Snapshots and reset accumulators
-    await substrateStateSnapshotter(
-      'periodId',
-      period.id,
-      Pool,
-      PoolSnapshot,
-      block,
-      [['isActive', '=', true]],
-      'poolId'
-    )
-    await substrateStateSnapshotter(
-      'periodId',
-      period.id,
-      Tranche,
-      TrancheSnapshot,
-      block,
-      [['isActive', '=', true]],
-      'trancheId'
-    )
-    await substrateStateSnapshotter(
-      'periodId',
-      period.id,
-      Asset,
-      AssetSnapshot,
-      block,
-      [['isActive', '=', true]],
-      'assetId'
-    )
-    await substrateStateSnapshotter(
-      'periodId',
-      period.id,
-      PoolFee,
-      PoolFeeSnapshot,
-      block,
-      [['isActive', '=', true]],
-      'poolFeeId'
-    )
+    const blockInfo = { number: block.block.header.number.toNumber(), timestamp: block.timestamp }
+    await statesSnapshotter('periodId', period.id, pools, PoolSnapshot, blockInfo, 'poolId')
+    await statesSnapshotter('periodId', period.id, tranchesToSnapshot, TrancheSnapshot, blockInfo, 'trancheId')
+    await statesSnapshotter('periodId', period.id, assetsToSnapshot, AssetSnapshot, blockInfo, 'assetId')
+    await statesSnapshotter('periodId', period.id, poolFeesToSnapshot, PoolFeeSnapshot, blockInfo, 'poolFeeId')
     logger.info('## Snapshotting completed!')
 
     //Update tracking of period and continue

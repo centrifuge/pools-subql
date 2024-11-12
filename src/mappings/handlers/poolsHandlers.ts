@@ -11,8 +11,8 @@ import { TrancheBalanceService } from '../services/trancheBalanceService'
 import { BlockchainService, LOCAL_CHAIN_ID } from '../services/blockchainService'
 import { AssetService, ONCHAIN_CASH_ASSET_ID } from '../services/assetService'
 import { AssetTransactionData, AssetTransactionService } from '../services/assetTransactionService'
-import { substrateStateSnapshotter } from '../../helpers/stateSnapshot'
-import { Pool, PoolSnapshot } from '../../types'
+import { statesSnapshotter } from '../../helpers/stateSnapshot'
+import { PoolSnapshot } from '../../types'
 import { InvestorPositionService } from '../services/investorPositionService'
 import { PoolFeeService } from '../services/poolFeeService'
 import { assertPropInitialized } from '../../helpers/validation'
@@ -178,7 +178,7 @@ async function _handleEpochExecuted(event: SubstrateEvent<EpochClosedExecutedEve
   if (!timestamp) throw new Error(`Block ${event.block.block.header.number.toString()} has no timestamp`)
   logger.info(
     `Epoch ${epochId.toString()} executed event for pool ${poolId.toString()} ` +
-      `at block ${event.block.block.header.number.toString()}`
+      `at block ${event.block.block.header.number.toString()} wit hash ${event.block.hash.toHex()}`
   )
 
   const pool = await PoolService.getById(poolId.toString())
@@ -334,13 +334,12 @@ async function _handleEpochExecuted(event: SubstrateEvent<EpochClosedExecutedEve
 
   await Promise.all(assetTransactionSaves)
 
-  await substrateStateSnapshotter(
+  await statesSnapshotter(
     'epochId',
     epoch.id,
-    Pool,
+    [pool],
     PoolSnapshot,
-    event.block,
-    [['isActive', '=', true]],
+    { timestamp, number: event.block.block.header.number.toNumber() },
     'poolId',
     false
   )

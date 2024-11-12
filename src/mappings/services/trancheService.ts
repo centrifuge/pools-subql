@@ -2,12 +2,8 @@ import { u128 } from '@polkadot/types'
 import { bnToBn, nToBigInt } from '@polkadot/util'
 import { paginatedGetter } from '../../helpers/paginatedGetter'
 import { WAD } from '../../config'
-import { ExtendedCall } from '../../helpers/types'
 import { Tranche, TrancheSnapshot } from '../../types'
 import { TrancheData } from './poolService'
-import { ApiAt } from '../../@types/gobal'
-
-const cfgApi = api as ApiAt
 
 const MAINNET_CHAINID = '0xb3db41421702df9a7fcac62b53ffeac85f7853cc4e689e0b93aeb3db18c09d82'
 
@@ -81,13 +77,13 @@ export class TrancheService extends Tranche {
   public async updateSupply() {
     logger.info(`Updating supply for tranche ${this.id}`)
     const requestPayload = { Tranche: [this.poolId, this.trancheId] }
-    const supplyResponse = await cfgApi.query.ormlTokens.totalIssuance<u128>(requestPayload)
+    const supplyResponse = await api.query.ormlTokens.totalIssuance<u128>(requestPayload)
     this.tokenSupply = supplyResponse.toBigInt()
     return this
   }
 
   public async updatePrice(price: bigint, block?: number) {
-    const specVersion = cfgApi.runtimeVersion.specVersion.toNumber()
+    const specVersion = api.runtimeVersion.specVersion.toNumber()
     if (MAINNET_CHAINID === chainId && !!block) {
       if (block < 4058350) return this.updatePriceFixDecimalError(price, block)
       if (specVersion >= 1025 && specVersion < 1029) return await this.updatePriceFixForFees(price)
@@ -109,8 +105,7 @@ export class TrancheService extends Tranche {
 
   private async updatePriceFixForFees(price: bigint) {
     // fix token price not accounting for fees
-    const apiCall = api.call as ExtendedCall
-    const navResponse = await apiCall.poolsApi.nav(this.poolId)
+    const navResponse = await api.call.poolsApi.nav(this.poolId)
     if (navResponse.isEmpty) {
       logger.warn(`No NAV response! Saving inaccurate price: ${price} `)
       this.tokenPrice = price
@@ -131,8 +126,7 @@ export class TrancheService extends Tranche {
     logger.info(`Querying token price for tranche ${this.id} from runtime`)
     const { poolId } = this
 
-    const apiCall = api.call as ExtendedCall
-    const tokenPricesReq = await apiCall.poolsApi.trancheTokenPrices(poolId)
+    const tokenPricesReq = await api.call.poolsApi.trancheTokenPrices(poolId)
     if (tokenPricesReq.isNone) return this
     if (typeof this.index !== 'number') throw new Error('Index is not a number')
     const tokenPrice = tokenPricesReq.unwrap()[this.index].toBigInt()

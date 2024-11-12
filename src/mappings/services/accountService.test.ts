@@ -1,11 +1,9 @@
-import { ApiAt } from '../../@types/gobal'
 import { AccountService } from './accountService'
 
-const cfgApi = api as ApiAt
-
 global.getNodeEvmChainId = () => Promise.resolve('2030')
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-cfgApi.query['evmChainId'] = { chainId: jest.fn(() => ({ toString: () => '2030' })) } as any
+api.query['evmChainId'] = { chainId: jest.fn(() => ({ toString: () => '2030' })) } as any
 
 test('Account is created in database', async () => {
   const id = 'ABCDE'

@@ -1,4 +1,4 @@
-import { AssetStatus, AssetType, AssetValuationMethod, Pool, PoolSnapshot } from '../../types'
+import { AssetStatus, AssetType, AssetValuationMethod, PoolSnapshot } from '../../types'
 import { EthereumBlock } from '@subql/types-ethereum'
 import { DAIName, DAISymbol, DAIMainnetAddress, multicallAddress, tinlakePools } from '../../config'
 import { errorHandler, missingPool } from '../../helpers/errorHandler'
@@ -15,7 +15,7 @@ import {
 } from '../../types/contracts'
 import { TimekeeperService, getPeriodStart } from '../../helpers/timekeeperService'
 import { AssetService } from '../services/assetService'
-import { evmStateSnapshotter } from '../../helpers/stateSnapshot'
+import { BlockInfo, statesSnapshotter } from '../../helpers/stateSnapshot'
 import { Multicall3 } from '../../types/contracts/MulticallAbi'
 import type { Provider } from '@ethersproject/providers'
 import type { BigNumber } from '@ethersproject/bignumber'
@@ -42,16 +42,23 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
   await snapshotPeriod.save()
 
   // update pool states
-  const processedPools: PoolService[] = []
+  const processedPools: Record<
+    PoolService['id'],
+    {
+      pool: PoolService
+      tinlakePool:  typeof tinlakePools[0]
+      latestNavFeed?: ContractArray
+      latestReserve?: ContractArray
+    }
+  > = {}
   const poolUpdateCalls: PoolMulticall[] = []
 
   for (const tinlakePool of tinlakePools) {
     if (blockNumber < tinlakePool.startBlock) continue
     const pool = await PoolService.getOrSeed(tinlakePool.id, false, false, blockchain.id)
-    processedPools.push(pool)
-
     const latestNavFeed = getLatestContract(tinlakePool.navFeed, blockNumber)
     const latestReserve = getLatestContract(tinlakePool.reserve, blockNumber)
+    processedPools[pool.id] = { pool, latestNavFeed, latestReserve, tinlakePool }
 
     // initialize new pool
     if (!pool.isActive) {
@@ -100,15 +107,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
   })
 
   for (const callResult of callResults) {
-    // const tinlakePool = tinlakePools.find((p) => p.id === callResult.id)
-    // if (!tinlakePool) throw missingPool
-    const pool = processedPools.find( p => callResult.id === p.id)
-    if (!pool) throw missingPool
-
-    const tinlakePool = tinlakePools.find((p) => p.id === pool.id)
-    const latestNavFeed = getLatestContract(tinlakePool!.navFeed, blockNumber)
-    const latestReserve = getLatestContract(tinlakePool!.navFeed, blockNumber)
-
+    const { pool, latestNavFeed, latestReserve, tinlakePool } = processedPools[callResult.id]
     // Update pool vurrentNav
     if (callResult.type === 'currentNAV' && latestNavFeed) {
       const currentNAV =
@@ -121,7 +120,6 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
           ? BigInt(0)
           : (pool.portfolioValuation ?? BigInt(0)) + (pool.totalReserve ?? BigInt(0))
       await pool.updateNormalizedNAV()
-      await pool.save()
       logger.info(`Updating pool ${pool.id} with portfolioValuation: ${pool.portfolioValuation}`)
     }
 
@@ -134,7 +132,6 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
       pool.totalReserve = totalBalance
       pool.netAssetValue = (pool.portfolioValuation ?? BigInt(0)) + (pool.totalReserve ?? BigInt(0))
       await pool.updateNormalizedNAV()
-      await pool.save()
       logger.info(`Updating pool ${pool.id} with totalReserve: ${pool.totalReserve}`)
     }
 
@@ -149,19 +146,14 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
         latestNavFeed.address
       )
     }
+
+    await pool.save()
   }
 
   // Take snapshots
-  await evmStateSnapshotter<Pool, PoolSnapshot>(
-    'periodId',
-    snapshotPeriod.id,
-    Pool,
-    PoolSnapshot,
-    block,
-    [['isActive', '=', true]],
-    'poolId'
-  )
-  //await evmStateSnapshotter<Asset,AssetSnapshot>('Asset', 'AssetSnapshot', block, 'isActive', true, 'assetId')
+  const blockInfo: BlockInfo = { timestamp: date, number: block.number }
+  const poolsToSnapshot: PoolService[] = Object.values(processedPools).map(e => e.pool)
+  await statesSnapshotter('periodId', snapshotPeriod.id, poolsToSnapshot, PoolSnapshot, blockInfo, 'poolId')
 
   //Update tracking of period and continue
   await (await timekeeper).update(snapshotPeriod.start)
@@ -188,7 +180,7 @@ async function updateLoans(
   logger.info(`Found ${newLoans.length} new loans for pool ${poolId}`)
 
   const pool = await PoolService.getById(poolId)
-  if(!pool) throw missingPool
+  if (!pool) throw missingPool
   const isAlt1AndAfterEndBlock = poolId === ALT_1_POOL_ID && blockNumber > ALT_1_END_BLOCK
 
   const nftIdCalls: PoolMulticall[] = []

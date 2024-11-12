@@ -1,8 +1,5 @@
-import { ApiAt } from '../../@types/gobal'
 import { AssetType, AssetValuationMethod } from '../../types'
 import { AssetService } from './assetService'
-
-const cfgApi = api as ApiAt
 
 const poolId = '1111111111'
 const loanId = 'ABCD'
@@ -11,12 +8,12 @@ const nftItemId = BigInt(2)
 const timestamp = new Date()
 const metadata = 'AAAAAA'
 
-cfgApi.query['uniques'] = {
+api.query['uniques']= {
   instanceMetadataOf: jest.fn(() => ({
     isNone: false,
     unwrap: () => ({ data: { toUtf8: () => metadata } }),
   })),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as any
 
 const loan = AssetService.init(
@@ -44,7 +41,7 @@ describe('Given a new loan, when initialised', () => {
 
   test('when the metadata is fetched, then the correct values are set', async () => {
     await loan.updateItemMetadata()
-    expect(cfgApi.query.uniques.instanceMetadataOf).toHaveBeenCalledWith(nftClassId, nftItemId)
+    expect(api.query.uniques.instanceMetadataOf).toHaveBeenCalledWith(nftClassId, nftItemId)
     expect(loan.metadata).toBe(metadata)
   })
 

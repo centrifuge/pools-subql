@@ -82,10 +82,45 @@ export function evmStateSnapshotter<T extends SnapshottableEntity, U extends Sna
   )
 }
 
-export function substrateStateSnapshotter<
-  T extends SnapshottableEntity,
-  U extends SnapshottedEntity<T>,
->(
+export async function statesSnapshotter<T extends SnapshottableEntity, U extends SnapshottedEntity<T>>(
+  relationshipField: StringForeignKeys<SnapshotAdditions>,
+  relationshipId: string,
+  stateEntities: T[],
+  snapshotModel: EntityClass<U>,
+  blockInfo: BlockInfo,
+  fkReferenceField?: StringForeignKeys<U>,
+  resetPeriodStates = true
+): Promise<void[]> {
+  const entitySaves: Promise<void>[] = []
+  logger.info(`Performing ${snapshotModel.prototype._name}`)
+  if (stateEntities.length === 0) logger.info('Nothing to snapshot!')
+  for (const stateEntity of stateEntities) {
+    const blockNumber = blockInfo.number
+    const snapshot: SnapshottedEntity<T> = {
+      ...stateEntity,
+      id: `${stateEntity.id}-${blockNumber}`,
+      timestamp: blockInfo.timestamp,
+      blockNumber: blockNumber,
+      [relationshipField]: relationshipId,
+    }
+    logger.info(`Creating ${snapshotModel.prototype._name} for: ${stateEntity.id}`)
+    const snapshotEntity = snapshotModel.create(snapshot as U)
+    if (fkReferenceField) snapshotEntity[fkReferenceField] = stateEntity.id as U[StringForeignKeys<U>]
+    const propNames = Object.getOwnPropertyNames(stateEntity)
+    const propNamesToReset = propNames.filter((propName) => propName.endsWith('ByPeriod')) as ResettableKeys<T>[]
+    if (resetPeriodStates) {
+      for (const propName of propNamesToReset) {
+        logger.debug(`resetting ${stateEntity._name?.toLowerCase()}.${propName} to 0`)
+        stateEntity[propName] = BigInt(0) as T[ResettableKeys<T>]
+      }
+      entitySaves.push(stateEntity.save())
+    }
+    entitySaves.push(snapshotEntity.save())
+  }
+  return Promise.all(entitySaves)
+}
+
+export function substrateStateSnapshotter<T extends SnapshottableEntity, U extends SnapshottedEntity<T>>(
   relationshipField: StringForeignKeys<SnapshotAdditions>,
   relationshipId: string,
   stateModel: EntityClass<T>,
@@ -139,4 +174,9 @@ export interface EntityClass<T extends Entity> {
   prototype: { _name: string }
   getByFields(filter: FieldsExpression<EntityProps<T>>[], options: GetOptions<EntityProps<T>>): Promise<T[]>
   create(record: EntityProps<T>): T
+}
+
+export interface BlockInfo {
+  number: number
+  timestamp: Date
 }

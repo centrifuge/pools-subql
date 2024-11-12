@@ -22,9 +22,6 @@ import { WAD } from '../../config'
 import { AssetPositionService } from '../services/assetPositionService'
 import { AssetCashflowService } from '../services/assetCashflowService'
 import { assertPropInitialized } from '../../helpers/validation'
-import { ApiAt } from '../../@types/gobal'
-
-const cfgApi = api as ApiAt
 
 export const handleLoanCreated = errorHandler(_handleLoanCreated)
 async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedEvent>) {
@@ -117,7 +114,7 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Pr
   const [poolId, loanId, borrowAmount] = event.event.data
   const timestamp = event.block.timestamp
   if (!timestamp) throw new Error(`Block ${event.block.block.header.number.toString()} has no timestamp`)
-  const specVersion = cfgApi.runtimeVersion.specVersion.toNumber()
+  const specVersion = api.runtimeVersion.specVersion.toNumber()
 
   const pool = await PoolService.getById(poolId.toString())
   if (!pool) throw missingPool
@@ -198,7 +195,7 @@ async function _handleLoanRepaid(event: SubstrateEvent<LoanRepaidEvent>) {
   const [poolId, loanId, { principal, interest, unscheduled }] = event.event.data
   const timestamp = event.block.timestamp
   if (!timestamp) throw new Error(`Block ${event.block.block.header.number.toString()} has no timestamp`)
-  const specVersion = cfgApi.runtimeVersion.specVersion.toNumber()
+  const specVersion = api.runtimeVersion.specVersion.toNumber()
 
   const pool = await PoolService.getById(poolId.toString())
   if (!pool) throw missingPool
@@ -338,7 +335,7 @@ async function _handleLoanClosed(event: SubstrateEvent<LoanClosedEvent>) {
 
 export const handleLoanDebtTransferred = errorHandler(_handleLoanDebtTransferred)
 async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransferred>) {
-  const specVersion = cfgApi.runtimeVersion.specVersion.toNumber()
+  const specVersion = api.runtimeVersion.specVersion.toNumber()
   const [poolId, fromLoanId, toLoanId, _repaidAmount, _borrowAmount] = event.event.data
 
   const timestamp = event.block.timestamp

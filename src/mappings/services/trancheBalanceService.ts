@@ -21,7 +21,7 @@ export class TrancheBalanceService extends TrancheBalance {
 
   static async getById(address: string, poolId: string, trancheId: string) {
     const trancheBalance = await this.get(`${address}-${poolId}-${trancheId}`)
-    return trancheBalance as TrancheBalanceService
+    return trancheBalance as TrancheBalanceService | undefined
   }
 
   static getOrInit = async (address: string, poolId: string, trancheId: string) => {

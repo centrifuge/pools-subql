@@ -5,10 +5,6 @@ import { WAD } from '../../config'
 import { OrdersFulfillment } from '../../helpers/types'
 import { Epoch, EpochState } from '../../types'
 import { assertPropInitialized } from '../../helpers/validation'
-import { ApiAt } from '../../@types/gobal'
-
-const cfgApi = api as ApiAt
-
 export class EpochService extends Epoch {
   private states: EpochState[]
 
@@ -69,23 +65,27 @@ export class EpochService extends Epoch {
   }
 
   public async executeEpoch(timestamp: Date) {
+    const specVersion = api.runtimeVersion.specVersion.toNumber()
     logger.info(`Updating Epoch OrderFulfillmentData for pool ${this.poolId} on epoch ${this.index}`)
     this.executedAt = timestamp
 
     for (const epochState of this.states) {
       logger.info(`Fetching data for tranche: ${epochState.trancheId}`)
-      const trancheCurrency = [this.poolId, epochState.trancheId]
+      const trancheCurrency =
+        specVersion < 1400
+          ? { poolId: this.poolId, trancheId: epochState.trancheId }
+          : [this.poolId, epochState.trancheId]
       const [investOrderId, redeemOrderId] = await Promise.all([
-        cfgApi.query.investments.investOrderId<u64>(trancheCurrency),
-        cfgApi.query.investments.redeemOrderId<u64>(trancheCurrency),
+        api.query.investments.investOrderId<u64>(trancheCurrency),
+        api.query.investments.redeemOrderId<u64>(trancheCurrency),
       ])
       logger.info(`investOrderId: ${investOrderId.toNumber()}, redeemOrderId: ${redeemOrderId.toNumber()}`)
       const [investOrderFulfillment, redeemOrderFulfillment] = await Promise.all([
-        cfgApi.query.investments.clearedInvestOrders<Option<OrdersFulfillment>>(
+        api.query.investments.clearedInvestOrders<Option<OrdersFulfillment>>(
           trancheCurrency,
           investOrderId.toNumber() - 1
         ),
-        cfgApi.query.investments.clearedRedeemOrders<Option<OrdersFulfillment>>(
+        api.query.investments.clearedRedeemOrders<Option<OrdersFulfillment>>(
           trancheCurrency,
           redeemOrderId.toNumber() - 1
         ),
