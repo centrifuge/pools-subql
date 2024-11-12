@@ -167,12 +167,12 @@ export class PoolService extends Pool {
     return metadata.pool?.poolFees ?? []
   }
 
-  public async getIpfsPoolFeeMetadata(): Promise<PoolIpfsMetadata['pool']['poolFees']> {
+  public async getIpfsPoolFeeMetadata(): Promise<Required<PoolIpfsMetadata['pool']>['poolFees']> {
     if (!this.metadata) return logger.warn('No IPFS metadata')
     const matchedMetadata = this.metadata.match(cid)
     if (!matchedMetadata || matchedMetadata.length !== 1) throw new Error('Unable to read metadata')
     const metadata = await readIpfs<PoolIpfsMetadata>(matchedMetadata[0])
-    return metadata.pool.poolFees
+    return metadata.pool.poolFees ?? []
   }
 
   public async getIpfsPoolFeeName(poolFeeId: string): Promise<string> {
