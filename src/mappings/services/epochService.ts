@@ -5,6 +5,9 @@ import { WAD } from '../../config'
 import { OrdersFulfillment } from '../../helpers/types'
 import { Epoch, EpochState } from '../../types'
 import { assertPropInitialized } from '../../helpers/validation'
+import { ApiAt } from '../../@types/gobal'
+
+const cfgApi = api as ApiAt
 
 export class EpochService extends Epoch {
   private states: EpochState[]
@@ -73,16 +76,16 @@ export class EpochService extends Epoch {
       logger.info(`Fetching data for tranche: ${epochState.trancheId}`)
       const trancheCurrency = [this.poolId, epochState.trancheId]
       const [investOrderId, redeemOrderId] = await Promise.all([
-        api.query.investments.investOrderId<u64>(trancheCurrency),
-        api.query.investments.redeemOrderId<u64>(trancheCurrency),
+        cfgApi.query.investments.investOrderId<u64>(trancheCurrency),
+        cfgApi.query.investments.redeemOrderId<u64>(trancheCurrency),
       ])
       logger.info(`investOrderId: ${investOrderId.toNumber()}, redeemOrderId: ${redeemOrderId.toNumber()}`)
       const [investOrderFulfillment, redeemOrderFulfillment] = await Promise.all([
-        api.query.investments.clearedInvestOrders<Option<OrdersFulfillment>>(
+        cfgApi.query.investments.clearedInvestOrders<Option<OrdersFulfillment>>(
           trancheCurrency,
           investOrderId.toNumber() - 1
         ),
-        api.query.investments.clearedRedeemOrders<Option<OrdersFulfillment>>(
+        cfgApi.query.investments.clearedRedeemOrders<Option<OrdersFulfillment>>(
           trancheCurrency,
           redeemOrderId.toNumber() - 1
         ),
@@ -105,7 +108,7 @@ export class EpochService extends Epoch {
       )
       epochState.sumFulfilledRedeemOrdersCurrency = this.computeCurrencyAmount(
         epochState.sumFulfilledRedeemOrders,
-        epochState.tokenPrice
+        epochState.tokenPrice!
       )
       assertPropInitialized(this, 'sumInvestedAmount', 'bigint')
       this.sumInvestedAmount! += epochState.sumFulfilledInvestOrders

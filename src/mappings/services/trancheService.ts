@@ -5,6 +5,9 @@ import { WAD } from '../../config'
 import { ExtendedCall } from '../../helpers/types'
 import { Tranche, TrancheSnapshot } from '../../types'
 import { TrancheData } from './poolService'
+import { ApiAt } from '../../@types/gobal'
+
+const cfgApi = api as ApiAt
 
 const MAINNET_CHAINID = '0xb3db41421702df9a7fcac62b53ffeac85f7853cc4e689e0b93aeb3db18c09d82'
 
@@ -58,33 +61,33 @@ export class TrancheService extends Tranche {
   }
 
   static async getById(poolId: string, trancheId: string) {
-    const tranche = (await this.get(`${poolId}-${trancheId}`)) as TrancheService
+    const tranche = (await this.get(`${poolId}-${trancheId}`)) as TrancheService | undefined
     return tranche
   }
 
   static async getByPoolId(poolId: string): Promise<TrancheService[]> {
-    const tranches = await paginatedGetter<Tranche>(this, [['poolId', '=', poolId]]) as TrancheService[]
+    const tranches = (await paginatedGetter<Tranche>(this, [['poolId', '=', poolId]])) as TrancheService[]
     return tranches
   }
 
   static async getActivesByPoolId(poolId: string): Promise<TrancheService[]> {
-    const tranches = await paginatedGetter<Tranche>(this, [
+    const tranches = (await paginatedGetter<Tranche>(this, [
       ['poolId', '=', poolId],
       ['isActive', '=', true],
-    ]) as TrancheService[]
+    ])) as TrancheService[]
     return tranches
   }
 
   public async updateSupply() {
     logger.info(`Updating supply for tranche ${this.id}`)
     const requestPayload = { Tranche: [this.poolId, this.trancheId] }
-    const supplyResponse = await api.query.ormlTokens.totalIssuance<u128>(requestPayload)
+    const supplyResponse = await cfgApi.query.ormlTokens.totalIssuance<u128>(requestPayload)
     this.tokenSupply = supplyResponse.toBigInt()
     return this
   }
 
   public async updatePrice(price: bigint, block?: number) {
-    const specVersion = api.runtimeVersion.specVersion.toNumber()
+    const specVersion = cfgApi.runtimeVersion.specVersion.toNumber()
     if (MAINNET_CHAINID === chainId && !!block) {
       if (block < 4058350) return this.updatePriceFixDecimalError(price, block)
       if (specVersion >= 1025 && specVersion < 1029) return await this.updatePriceFixForFees(price)

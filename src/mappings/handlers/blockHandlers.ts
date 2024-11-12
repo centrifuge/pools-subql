@@ -23,7 +23,9 @@ import { EpochService } from '../services/epochService'
 import { SnapshotPeriodService } from '../services/snapshotPeriodService'
 import { TrancheBalanceService } from '../services/trancheBalanceService'
 import { InvestorPositionService } from '../services/investorPositionService'
+import { ApiAt } from '../../@types/gobal'
 
+const cfgApi = api as ApiAt
 const timekeeper = TimekeeperService.init()
 
 export const handleBlock = errorHandler(_handleBlock)
@@ -35,7 +37,7 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
   const newPeriod = (await timekeeper).processBlock(block.timestamp)
 
   if (newPeriod) {
-    const specVersion = api.runtimeVersion.specVersion.toNumber()
+    const specVersion = cfgApi.runtimeVersion.specVersion.toNumber()
     logger.info(
       `# It's a new period on block ${blockNumber}: ${block.timestamp.toISOString()} (specVersion: ${specVersion})`
     )
@@ -103,6 +105,7 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
       pool.resetUnrealizedProfit()
       for (const loanId in activeLoanData) {
         const asset = await AssetService.getById(pool.id, loanId)
+        if(!asset) continue
         if (!asset.currentPrice) throw new Error('Asset current price not set')
         if (!asset.notional) throw new Error('Asset notional not set')
         await asset.loadSnapshot(lastPeriodStart)

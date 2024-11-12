@@ -6,6 +6,9 @@ import { Asset, AssetType, AssetValuationMethod, AssetStatus, AssetSnapshot } fr
 import { ActiveLoanData } from './poolService'
 import { cid, readIpfs } from '../../helpers/ipfsFetch'
 import { assertPropInitialized } from '../../helpers/validation'
+import { ApiAt } from '../../@types/gobal'
+
+const cfgApi = api as ApiAt
 
 export const ONCHAIN_CASH_ASSET_ID = '0'
 export class AssetService extends Asset {
@@ -81,7 +84,7 @@ export class AssetService extends Asset {
   }
 
   static async getById(poolId: string, assetId: string) {
-    const asset = (await this.get(`${poolId}-${assetId}`)) as AssetService
+    const asset = (await this.get(`${poolId}-${assetId}`)) as AssetService | undefined
     return asset
   }
 
@@ -94,7 +97,7 @@ export class AssetService extends Asset {
         ],
         { limit: 100 }
       )
-    ).pop() as AssetService
+    ).pop() as AssetService | undefined
     return asset
   }
 
@@ -157,7 +160,7 @@ export class AssetService extends Asset {
 
   public async updateActiveAssetData(activeAssetData: ActiveLoanData[keyof ActiveLoanData]) {
     // Current price was always 0 until spec version 1025
-    const specVersion = api.runtimeVersion.specVersion.toNumber()
+    const specVersion = cfgApi.runtimeVersion.specVersion.toNumber()
     if (specVersion < 1025) delete activeAssetData.currentPrice
 
     // Set all active asset values
@@ -184,7 +187,7 @@ export class AssetService extends Asset {
         `collectionId ${this.collateralNftClassId!.toString()}, ` +
         `itemId: ${this.collateralNftItemId!.toString()}`
     )
-    const itemMetadata = await api.query.uniques.instanceMetadataOf<Option<NftItemMetadata>>(
+    const itemMetadata = await cfgApi.query.uniques.instanceMetadataOf<Option<NftItemMetadata>>(
       this.collateralNftClassId,
       this.collateralNftItemId
     )
@@ -250,7 +253,7 @@ export class AssetService extends Asset {
 
   public async updateExternalAssetPricingFromState() {
     logger.info(`Executing state call loans.activeLoans to update asset ${this.id} pricing information`)
-    const loansCall = await api.query.loans.activeLoans<ApiQueryLoansActiveLoans>(this.poolId)
+    const loansCall = await cfgApi.query.loans.activeLoans<ApiQueryLoansActiveLoans>(this.poolId)
     const assetTuple = loansCall.find((tuple) => tuple[0].toString(10) === this.id.split('-')[1])
     if (!assetTuple) throw new Error(`Asset ${this.id} not found in pool active loans!`)
     const loanData = assetTuple[1]

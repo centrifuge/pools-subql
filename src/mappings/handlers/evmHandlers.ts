@@ -7,7 +7,7 @@ import { PoolService } from '../services/poolService'
 import { TrancheService } from '../services/trancheService'
 import { InvestorTransactionData, InvestorTransactionService } from '../services/investorTransactionService'
 import { CurrencyService } from '../services/currencyService'
-import { BlockchainService, LOCAL_CHAIN_ID } from '../services/blockchainService'
+import { BlockchainService } from '../services/blockchainService'
 import { CurrencyBalanceService } from '../services/currencyBalanceService'
 import type { Provider } from '@ethersproject/providers'
 import { TrancheBalanceService } from '../services/trancheBalanceService'
@@ -15,7 +15,7 @@ import { escrows } from '../../config'
 import { InvestorPositionService } from '../services/investorPositionService'
 import { getPeriodStart } from '../../helpers/timekeeperService'
 
-const _ethApi = api as unknown as Provider
+const _ethApi = api as Provider
 //const networkPromise = typeof ethApi.getNetwork === 'function' ? ethApi.getNetwork() : null
 
 export const handleEvmDeployTranche = errorHandler(_handleEvmDeployTranche)
@@ -24,7 +24,6 @@ async function _handleEvmDeployTranche(event: DeployTrancheLog): Promise<void> {
   const [_poolId, _trancheId, tokenAddress] = event.args
   const poolManagerAddress = event.address
 
-  await BlockchainService.getOrInit(LOCAL_CHAIN_ID)
   const chainId = await getNodeEvmChainId()
   if (!chainId) throw new Error('Unable to retrieve chainId')
   const evmBlockchain = await BlockchainService.getOrInit(chainId)
@@ -79,6 +78,7 @@ async function _handleEvmTransfer(event: TransferLog): Promise<void> {
   if (!evmToken.poolId || !evmToken.trancheId) throw new Error('This is not a tranche token')
   const trancheId = evmToken.trancheId.split('-')[1]
   const tranche = await TrancheService.getById(evmToken.poolId, trancheId)
+  if (!tranche) throw new Error('Tranche not found!')
 
   const orderData: Omit<InvestorTransactionData, 'address'> = {
     poolId: evmToken.poolId,

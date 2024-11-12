@@ -3,6 +3,9 @@ import { AssetMetadata } from '@polkadot/types/interfaces'
 import { Currency } from '../../types/models/Currency'
 import { WAD_DIGITS } from '../../config'
 import type { TokensCurrencyId } from '../../helpers/types'
+import { ApiAt } from '../../@types/gobal'
+
+const cfgApi = api as ApiAt
 
 export class CurrencyService extends Currency {
   static init(chainId: string, currencyId: string, decimals: number, symbol?: string, name?: string) {
@@ -20,7 +23,7 @@ export class CurrencyService extends Currency {
     let currency: CurrencyService = (await this.get(id)) as CurrencyService
     if (!currency) {
       const enumPayload = formatEnumPayload(currencyType, ...currencyValue)
-      const assetMetadata = (await api.query.ormlAssetRegistry.metadata(enumPayload)) as Option<AssetMetadata>
+      const assetMetadata = (await cfgApi.query.ormlAssetRegistry.metadata(enumPayload)) as Option<AssetMetadata>
       const decimals = assetMetadata.isSome ? assetMetadata.unwrap().decimals.toNumber() : WAD_DIGITS
       const symbol = assetMetadata.isSome ? assetMetadata.unwrap().symbol.toUtf8() : undefined
       const name = assetMetadata.isSome ? assetMetadata.unwrap().name.toUtf8() : undefined

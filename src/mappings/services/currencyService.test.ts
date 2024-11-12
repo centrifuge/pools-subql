@@ -1,9 +1,11 @@
+import { ApiAt } from '../../@types/gobal'
 import { CurrencyService } from './currencyService'
 
+const cfgApi = api as ApiAt
 const entityName = 'Currency'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-api.query['ormlAssetRegistry'] = { metadata: jest.fn(() => ({ isSome: false })) } as any
+cfgApi.query['ormlAssetRegistry'] = { metadata: jest.fn(() => ({ isSome: false })) } as any
 
 const stdDecimals = 18
 

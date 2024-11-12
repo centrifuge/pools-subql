@@ -40,7 +40,7 @@ export class PoolFeeService extends PoolFee {
     blockchain = '0'
   ) {
     const { poolId, feeId } = data
-    let poolFee = (await this.get(`${poolId}-${feeId}`)) as PoolFeeService
+    let poolFee = (await this.get(`${poolId}-${feeId}`)) as PoolFeeService | undefined
     if (!poolFee) {
       poolFee = this.init(data, type, status, blockchain)
     } else {
@@ -50,7 +50,7 @@ export class PoolFeeService extends PoolFee {
   }
 
   static getById(poolId: string, feeId: string) {
-    return this.get(`${poolId}-${feeId}`) as Promise<PoolFeeService>
+    return this.get(`${poolId}-${feeId}`) as Promise<PoolFeeService | undefined>
   }
 
   static async propose(data: PoolFeeData, type: keyof typeof PoolFeeType) {

@@ -22,6 +22,9 @@ import { WAD } from '../../config'
 import { AssetPositionService } from '../services/assetPositionService'
 import { AssetCashflowService } from '../services/assetCashflowService'
 import { assertPropInitialized } from '../../helpers/validation'
+import { ApiAt } from '../../@types/gobal'
+
+const cfgApi = api as ApiAt
 
 export const handleLoanCreated = errorHandler(_handleLoanCreated)
 async function _handleLoanCreated(event: SubstrateEvent<LoanCreatedEvent>) {
@@ -114,7 +117,7 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Pr
   const [poolId, loanId, borrowAmount] = event.event.data
   const timestamp = event.block.timestamp
   if (!timestamp) throw new Error(`Block ${event.block.block.header.number.toString()} has no timestamp`)
-  const specVersion = api.runtimeVersion.specVersion.toNumber()
+  const specVersion = cfgApi.runtimeVersion.specVersion.toNumber()
 
   const pool = await PoolService.getById(poolId.toString())
   if (!pool) throw missingPool
@@ -132,6 +135,8 @@ async function _handleLoanBorrowed(event: SubstrateEvent<LoanBorrowedEvent>): Pr
 
   // Update loan amount
   const asset = await AssetService.getById(poolId.toString(), loanId.toString())
+  if (!asset) throw new Error('Unable to retrieve asset!')
+
   await asset.activate()
 
   const assetTransactionBaseData = {
@@ -193,7 +198,7 @@ async function _handleLoanRepaid(event: SubstrateEvent<LoanRepaidEvent>) {
   const [poolId, loanId, { principal, interest, unscheduled }] = event.event.data
   const timestamp = event.block.timestamp
   if (!timestamp) throw new Error(`Block ${event.block.block.header.number.toString()} has no timestamp`)
-  const specVersion = api.runtimeVersion.specVersion.toNumber()
+  const specVersion = cfgApi.runtimeVersion.specVersion.toNumber()
 
   const pool = await PoolService.getById(poolId.toString())
   if (!pool) throw missingPool
@@ -211,6 +216,7 @@ async function _handleLoanRepaid(event: SubstrateEvent<LoanRepaidEvent>) {
   if (!epoch) throw new Error('Epoch not found!')
 
   const asset = await AssetService.getById(poolId.toString(), loanId.toString())
+  if (!asset) throw new Error('Unable to retrieve asset!')
   const assetTransactionBaseData = {
     poolId: poolId.toString(),
     assetId: loanId.toString(),
@@ -280,6 +286,7 @@ async function _handleLoanWrittenOff(event: SubstrateEvent<LoanWrittenOffEvent>)
   logger.info(`Loan writtenoff event for pool: ${poolId.toString()} loanId: ${loanId.toString()}`)
   const { percentage, penalty } = status
   const asset = await AssetService.getById(poolId.toString(), loanId.toString())
+  if (!asset) throw new Error('Unable to retrieve asset!')
   await asset.writeOff(percentage.toBigInt(), penalty.toBigInt())
   await asset.save()
 
@@ -307,6 +314,7 @@ async function _handleLoanClosed(event: SubstrateEvent<LoanClosedEvent>) {
   const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toHex())
 
   const asset = await AssetService.getById(poolId.toString(), loanId.toString())
+  if (!asset) throw new Error('Unable to retrieve asset!')
   await asset.close()
   await asset.save()
 
@@ -330,7 +338,7 @@ async function _handleLoanClosed(event: SubstrateEvent<LoanClosedEvent>) {
 
 export const handleLoanDebtTransferred = errorHandler(_handleLoanDebtTransferred)
 async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransferred>) {
-  const specVersion = api.runtimeVersion.specVersion.toNumber()
+  const specVersion = cfgApi.runtimeVersion.specVersion.toNumber()
   const [poolId, fromLoanId, toLoanId, _repaidAmount, _borrowAmount] = event.event.data
 
   const timestamp = event.block.timestamp
@@ -356,7 +364,9 @@ async function _handleLoanDebtTransferred(event: SubstrateEvent<LoanDebtTransfer
   const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toHex())
 
   const fromAsset = await AssetService.getById(poolId.toString(), fromLoanId.toString())
+  if (!fromAsset) throw new Error('Unable to retrieve fromAsset!')
   const toAsset = await AssetService.getById(poolId.toString(), toLoanId.toString())
+  if (!toAsset) throw new Error('Unable to retrieve toAsset!')
 
   assertPropInitialized(pool, 'currentEpoch', 'number')
   const epoch = await EpochService.getById(pool.id, pool.currentEpoch!)
@@ -501,7 +511,9 @@ async function _handleLoanDebtTransferred1024(event: SubstrateEvent<LoanDebtTran
   const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toHex())
 
   const fromAsset = await AssetService.getById(poolId.toString(), fromLoanId.toString())
+  if (!fromAsset) throw new Error('Unable to retrieve fromAsset!')
   const toAsset = await AssetService.getById(poolId.toString(), toLoanId.toString())
+  if (!toAsset) throw new Error('Unable to retrieve toAsset!')
 
   assertPropInitialized(pool, 'currentEpoch', 'number')
   const epoch = await EpochService.getById(pool.id, pool.currentEpoch!)
@@ -602,6 +614,7 @@ async function _handleLoanDebtIncreased(event: SubstrateEvent<LoanDebtIncreased>
   const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toHex())
 
   const asset = await AssetService.getById(poolId.toString(), loanId.toString())
+  if (!asset) throw new Error('Unable to retrieve asset!')
 
   assertPropInitialized(pool, 'currentEpoch', 'number')
   const epoch = await EpochService.getById(pool.id, pool.currentEpoch!)
@@ -656,6 +669,7 @@ async function _handleLoanDebtDecreased(event: SubstrateEvent<LoanDebtDecreased>
   const account = await AccountService.getOrInit(event.extrinsic.extrinsic.signer.toHex())
 
   const asset = await AssetService.getById(poolId.toString(), loanId.toString())
+  if (!asset) throw new Error('Unable to retrieve asset!')
 
   assertPropInitialized(pool, 'currentEpoch', 'number')
   const epoch = await EpochService.getById(pool.id, pool.currentEpoch!)

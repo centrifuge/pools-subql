@@ -1,6 +1,8 @@
+import { ApiAt } from '../../@types/gobal'
 import { PoolService } from './poolService'
+const cfgApi = api as ApiAt
 
-api.query['poolSystem'] = {
+cfgApi.query['poolSystem'] = {
   pool: jest.fn(() => ({
     isSome: true,
     isNone: false,
@@ -21,7 +23,7 @@ api.query['poolSystem'] = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as any
 
-api.query['poolRegistry'] = {
+cfgApi.query['poolRegistry'] = {
   poolMetadata: jest.fn(() => ({
     isSome: true,
     isNone: false,
@@ -30,7 +32,7 @@ api.query['poolRegistry'] = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as any
 
-api.query['loans'] = {
+cfgApi.query['loans'] = {
   portfolioValuation: jest.fn(() => ({
     value: {
       toBigInt: () => BigInt(100000000000000),
@@ -69,7 +71,7 @@ describe('Given a new pool, when initialised', () => {
 
   test('when the pool data is initialised, then the correct values are fetched and set', async () => {
     await pool.initData()
-    expect(api.query.poolSystem.pool).toBeCalledWith(poolId)
+    expect(cfgApi.query.poolSystem.pool).toBeCalledWith(poolId)
     expect(pool).toMatchObject({
       currencyId: 'AUSD',
       metadata: 'AAA',
@@ -87,13 +89,13 @@ describe('Given a new pool, when initialised', () => {
 describe('Given an existing pool,', () => {
   test.skip('when the nav is updated, then the value is fetched and set correctly', async () => {
     await pool.updateNAV()
-    expect(api.query.loans.portfolioValuation).toHaveBeenCalled()
+    expect(cfgApi.query.loans.portfolioValuation).toHaveBeenCalled()
     expect(pool.portfolioValuation).toBe(BigInt(100000000000000))
   })
 
   test('when the pool state is updated, then the values are fetched and set correctly', async () => {
     await pool.updateState()
-    expect(api.query.poolSystem.pool).toHaveBeenCalledWith(poolId)
+    expect(cfgApi.query.poolSystem.pool).toHaveBeenCalledWith(poolId)
     expect(pool).toMatchObject({
       totalReserve: BigInt(91000000000000),
       availableReserve: BigInt(92000000000000),

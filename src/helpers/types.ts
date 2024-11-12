@@ -3,6 +3,7 @@ import { AugmentedCall, AugmentedRpc, PromiseRpcResult } from '@polkadot/api/typ
 import { Enum, Null, Struct, u128, u32, u64, U8aFixed, Option, Vec, Bytes, Result, bool } from '@polkadot/types'
 import { AccountId32, Perquintill, Balance } from '@polkadot/types/interfaces'
 import { ITuple, Observable } from '@polkadot/types/types'
+import type { ApiAt } from '../@types/gobal'
 
 export interface PoolDetails extends Struct {
   reserve: { total: u128; available: u128; max: u128 }
@@ -503,7 +504,7 @@ export type PoolFeesList = Vec<PoolFeesOfBucket>
 
 export type OracleFedEvent = ITuple<[feeder: DevelopmentRuntimeOriginCaller, key: OracleKey, value: u128]>
 
-export type ExtendedRpc = typeof api.rpc & {
+export type ExtendedRpc = ApiAt['rpc'] & {
   pools: {
     trancheTokenPrice: PromiseRpcResult<
       AugmentedRpc<(poolId: number | string, trancheId: number[]) => Observable<u128>>
@@ -512,7 +513,7 @@ export type ExtendedRpc = typeof api.rpc & {
   }
 }
 
-export type ExtendedCall = typeof api.call & {
+export type ExtendedCall = ApiAt['call'] & {
   loansApi: {
     portfolio: AugmentedCall<'promise', (poolId: string) => Observable<Vec<ITuple<[u64, LoanInfoActivePortfolio]>>>>
     expectedCashflows: AugmentedCall<

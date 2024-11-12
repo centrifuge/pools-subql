@@ -1,16 +1,18 @@
+import { ApiAt } from '../../@types/gobal'
 import { errorLogger } from '../../helpers/errorHandler'
 import { ExtendedCall } from '../../helpers/types'
 import { TrancheService } from './trancheService'
+const cfgApi = api as ApiAt
 
-api.query['ormlTokens'] = {
+cfgApi.query['ormlTokens'] = {
   totalIssuance: jest.fn(() => ({ toBigInt: () => BigInt('9999000000000000000000') })),
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as any
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-api['runtimeVersion'] = { specVersion: { toNumber: ()=> 1029 } } as any
+cfgApi['runtimeVersion'] = { specVersion: { toNumber: () => 1029 } } as any
 
-api.call['poolsApi'] = {
+cfgApi.call['poolsApi'] = {
   trancheTokenPrices: jest.fn(() => ({
     isSome: true,
     isNone: false,
@@ -56,14 +58,14 @@ describe('Given a new tranche, when initialised', () => {
   test('then reset accumulators are set to 0', () => {
     const resetAccumulators = Object.getOwnPropertyNames(tranches[0]).filter((prop) => prop.endsWith('ByPeriod'))
     for (const resetAccumulator of resetAccumulators) {
-      expect(tranches[0][resetAccumulator as keyof typeof tranches[0]]).toBe(BigInt(0))
-      expect(tranches[1][resetAccumulator as keyof typeof tranches[1]]).toBe(BigInt(0))
+      expect(tranches[0][resetAccumulator as keyof (typeof tranches)[0]]).toBe(BigInt(0))
+      expect(tranches[1][resetAccumulator as keyof (typeof tranches)[1]]).toBe(BigInt(0))
     }
   })
 
   test('when the supply data is fetched, then the correct values are fetched and set', async () => {
     await tranches[0].updateSupply()
-    expect(api.query.ormlTokens.totalIssuance).toHaveBeenCalledWith({ Tranche: [poolId, trancheIds[0]] })
+    expect(cfgApi.query.ormlTokens.totalIssuance).toHaveBeenCalledWith({ Tranche: [poolId, trancheIds[0]] })
     expect(tranches[0]).toMatchObject({ tokenSupply: BigInt('9999000000000000000000') })
   })
 

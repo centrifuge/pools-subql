@@ -55,6 +55,8 @@ async function _handlePoolCreated(event: SubstrateEvent<PoolCreatedEvent>): Prom
 
   for (const { id: feeId, name } of poolFeesMetadata) {
     const poolFee = await PoolFeeService.getById(pool.id, feeId.toString(10))
+    if (!poolFee) throw new Error('poolFee not found!')
+
     await poolFee.setName(name)
     await poolFee.save()
   }

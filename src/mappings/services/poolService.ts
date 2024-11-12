@@ -16,6 +16,9 @@ import { EpochService } from './epochService'
 import { WAD_DIGITS } from '../../config'
 import { CurrencyService } from './currencyService'
 import { assertPropInitialized } from '../../helpers/validation'
+import { ApiAt } from '../../@types/gobal'
+
+const cfgApi = api as ApiAt
 
 export class PoolService extends Pool {
   static seed(poolId: string, blockchain = '0') {
@@ -134,8 +137,8 @@ export class PoolService extends Pool {
   public async initData() {
     logger.info(`Initialising data for pool: ${this.id}`)
     const [poolReq, metadataReq] = await Promise.all([
-      api.query.poolSystem.pool<Option<PoolDetails>>(this.id),
-      api.query.poolRegistry.poolMetadata<Option<PoolMetadata>>(this.id),
+      cfgApi.query.poolSystem.pool<Option<PoolDetails>>(this.id),
+      cfgApi.query.poolRegistry.poolMetadata<Option<PoolMetadata>>(this.id),
     ])
 
     if (poolReq.isNone) throw new Error('No pool data available to create the pool')
@@ -186,7 +189,7 @@ export class PoolService extends Pool {
   }
 
   static async getById(poolId: string) {
-    return this.get(poolId) as Promise<PoolService>
+    return this.get(poolId) as Promise<PoolService | undefined>
   }
 
   static async getAll() {
@@ -204,7 +207,7 @@ export class PoolService extends Pool {
   }
 
   public async updateState() {
-    const poolResponse = await api.query.poolSystem.pool<Option<PoolDetails>>(this.id)
+    const poolResponse = await cfgApi.query.poolSystem.pool<Option<PoolDetails>>(this.id)
     logger.info(`Updating state for pool: ${this.id}`)
     if (poolResponse.isSome) {
       const poolData = poolResponse.unwrap()
@@ -216,8 +219,8 @@ export class PoolService extends Pool {
   }
 
   public async updateNAV() {
-    const specVersion = api.runtimeVersion.specVersion.toNumber()
-    const specName = api.runtimeVersion.specName.toString()
+    const specVersion = cfgApi.runtimeVersion.specVersion.toNumber()
+    const specName = cfgApi.runtimeVersion.specName.toString()
     switch (specName) {
       case 'centrifuge-devel':
         await (specVersion < 1038 ? this.updateNAVQuery() : this.updateNAVCall())
@@ -236,7 +239,7 @@ export class PoolService extends Pool {
     assertPropInitialized(this, 'portfolioValuation', 'bigint')
     assertPropInitialized(this, 'totalReserve', 'bigint')
 
-    const navResponse = await api.query.loans.portfolioValuation<NavDetails>(this.id)
+    const navResponse = await cfgApi.query.loans.portfolioValuation<NavDetails>(this.id)
     const newPortfolioValuation = navResponse.value.toBigInt() - this.offchainCashValue!
 
     this.deltaPortfolioValuationByPeriod = newPortfolioValuation - this.portfolioValuation!
@@ -396,7 +399,7 @@ export class PoolService extends Pool {
 
   public async fetchTranchesFrom1400(): Promise<TrancheData[]> {
     logger.info(`Fetching tranches for pool: ${this.id} with specVersion >= 1400`)
-    const poolResponse = await api.query.poolSystem.pool<Option<PoolDetails>>(this.id)
+    const poolResponse = await cfgApi.query.poolSystem.pool<Option<PoolDetails>>(this.id)
     if (poolResponse.isNone) throw new Error('Unable to fetch pool data!')
     const poolData = poolResponse.unwrap()
     const { ids, tranches } = poolData.tranches
@@ -428,7 +431,7 @@ export class PoolService extends Pool {
 
   public async fetchTranchesBefore1400(): Promise<TrancheData[]> {
     logger.info(`Fetching tranches for pool: ${this.id} with specVersion < 1400`)
-    const poolResponse = await api.query.poolSystem.pool<Option<PoolDetails>>(this.id)
+    const poolResponse = await cfgApi.query.poolSystem.pool<Option<PoolDetails>>(this.id)
     if (poolResponse.isNone) throw new Error('Unable to fetch pool data!')
     const poolData = poolResponse.unwrap()
     const { ids, tranches } = poolData.tranches
@@ -459,7 +462,7 @@ export class PoolService extends Pool {
   }
 
   public async getTranches() {
-    const specVersion = api.runtimeVersion.specVersion.toNumber()
+    const specVersion = cfgApi.runtimeVersion.specVersion.toNumber()
     let tranches: TrancheData[]
     if (specVersion >= 1400) {
       tranches = await this.fetchTranchesFrom1400()
@@ -530,9 +533,9 @@ export class PoolService extends Pool {
   }
 
   public async getAccruedFees() {
-    const apiCall = api.call as ExtendedCall
-    const specVersion = api.runtimeVersion.specVersion.toNumber()
-    const specName = api.runtimeVersion.specName.toString()
+    const apiCall = cfgApi.call as ExtendedCall
+    const specVersion = cfgApi.runtimeVersion.specVersion.toNumber()
+    const specName = cfgApi.runtimeVersion.specName.toString()
     switch (specName) {
       case 'centrifuge-devel':
         if (specVersion < 1040) return []

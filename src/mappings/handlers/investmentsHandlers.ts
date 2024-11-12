@@ -28,6 +28,7 @@ async function _handleInvestOrderUpdated(event: SubstrateEvent<OrderUpdatedEvent
 
   const account = await AccountService.getOrInit(address.toHex())
   const tranche = await TrancheService.getById(poolId.toString(), trancheId.toHex())
+  if (!tranche) throw new Error('Tranche not found!')
 
   // Update tranche price
   await tranche.updatePriceFromRuntime(event.block.block.header.number.toNumber())
@@ -97,6 +98,7 @@ async function _handleRedeemOrderUpdated(event: SubstrateEvent<OrderUpdatedEvent
   const account = await AccountService.getOrInit(address.toHex())
 
   const tranche = await TrancheService.getById(poolId.toString(), trancheId.toHex())
+  if (!tranche) throw new Error('Tranche not found!')
 
   await tranche.updatePriceFromRuntime(event.block.block.header.number.toNumber())
 
@@ -171,6 +173,7 @@ async function _handleInvestOrdersCollected(event: SubstrateEvent<InvestOrdersCo
   logger.info(`Collection for ending epoch: ${endEpochId}`)
 
   const tranche = await TrancheService.getById(poolId.toString(), trancheId.toHex())
+  if (!tranche) throw new Error('Tranche not found!')
 
   // Update tranche price
   await tranche.updatePriceFromRuntime(event.block.block.header.number.toNumber())
@@ -226,6 +229,7 @@ async function _handleRedeemOrdersCollected(event: SubstrateEvent<RedeemOrdersCo
   logger.info(`Collection for ending epoch: ${endEpochId}`)
 
   const tranche = await TrancheService.getById(poolId.toString(), trancheId.toHex())
+  if (!tranche) throw new Error('Tranche not found!')
 
   // Update tranche price
   await tranche.updatePriceFromRuntime(event.block.block.header.number.toNumber())
