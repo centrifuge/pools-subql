@@ -1,5 +1,4 @@
 import { errorLogger } from '../../helpers/errorHandler'
-import { ExtendedCall } from '../../helpers/types'
 import { TrancheService } from './trancheService'
 
 api.query['ormlTokens'] = {
@@ -8,7 +7,7 @@ api.query['ormlTokens'] = {
 } as any
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-api['runtimeVersion'] = { specVersion: { toNumber: ()=> 1029 } } as any
+api['runtimeVersion'] = { specVersion: { toNumber: () => 1029 } } as any
 
 api.call['poolsApi'] = {
   trancheTokenPrices: jest.fn(() => ({
@@ -56,8 +55,8 @@ describe('Given a new tranche, when initialised', () => {
   test('then reset accumulators are set to 0', () => {
     const resetAccumulators = Object.getOwnPropertyNames(tranches[0]).filter((prop) => prop.endsWith('ByPeriod'))
     for (const resetAccumulator of resetAccumulators) {
-      expect(tranches[0][resetAccumulator]).toBe(BigInt(0))
-      expect(tranches[1][resetAccumulator]).toBe(BigInt(0))
+      expect(tranches[0][resetAccumulator as keyof (typeof tranches)[0]]).toBe(BigInt(0))
+      expect(tranches[1][resetAccumulator as keyof (typeof tranches)[1]]).toBe(BigInt(0))
     }
   })
 
@@ -76,13 +75,13 @@ describe('Given a new tranche, when initialised', () => {
 describe('Given an existing tranche,', () => {
   test('when the runtime price is updated, then the value is fetched and set correctly', async () => {
     await tranches[0].updatePriceFromRuntime(4058351).catch(errorLogger)
-    expect((api.call as ExtendedCall).poolsApi.trancheTokenPrices).toHaveBeenCalled()
+    expect(api.call.poolsApi.trancheTokenPrices).toHaveBeenCalled()
     expect(tranches[0].tokenPrice).toBe(BigInt('2000000000000000000'))
   })
 
   test('when a 0 runtime price is delivered, then the value is skipped and logged', async () => {
     await tranches[1].updatePriceFromRuntime(4058352).catch(errorLogger)
-    expect((api.call as ExtendedCall).poolsApi.trancheTokenPrices).toHaveBeenCalled()
+    expect(api.call.poolsApi.trancheTokenPrices).toHaveBeenCalled()
     expect(logger.error).toHaveBeenCalled()
     expect(tranches[1].tokenPrice).toBe(BigInt('1000000000000000000'))
   })

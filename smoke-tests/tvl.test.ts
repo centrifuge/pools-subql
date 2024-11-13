@@ -12,6 +12,6 @@ describe('TVL at known intervals', () => {
       { poolSnapshots(filter: { periodStart: { equalTo: "${sampleDate}" } }) { aggregates { sum { normalizedNAV } } } }
     `)
     const { normalizedNAV } = response.data.poolSnapshots.aggregates.sum
-    expect(normalizedNAV).toBe(knownTVL[sampleDate])
+    expect(normalizedNAV).toBe(knownTVL[sampleDate as keyof typeof knownTVL])
   })
 })

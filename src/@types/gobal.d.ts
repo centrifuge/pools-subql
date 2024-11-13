@@ -1,4 +1,15 @@
-export {}
-declare global {
-  function getNodeEvmChainId(): Promise<string>
+import { ApiPromise } from '@polkadot/api'
+import type { Provider } from '@ethersproject/providers'
+import { ApiDecoration } from '@polkadot/api/types'
+import '@subql/types-core/dist/global'
+import { ExtendedCall, ExtendedRpc } from '../helpers/types'
+export type ApiAt = ApiDecoration<'promise'> & {
+  rpc: ApiPromise['rpc'] & ExtendedRpc
+  call: ApiPromise['call'] & ExtendedCall
 }
+declare global {
+  const api: ApiAt & Provider
+  const unsafeApi: ApiPromise | undefined
+  function getNodeEvmChainId(): Promise<string | undefined>
+}
+export {}

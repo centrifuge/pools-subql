@@ -2,7 +2,6 @@ import { u128 } from '@polkadot/types'
 import { bnToBn, nToBigInt } from '@polkadot/util'
 import { paginatedGetter } from '../../helpers/paginatedGetter'
 import { WAD } from '../../config'
-import { ExtendedCall } from '../../helpers/types'
 import { Tranche, TrancheSnapshot } from '../../types'
 import { TrancheData } from './poolService'
 
@@ -58,21 +57,21 @@ export class TrancheService extends Tranche {
   }
 
   static async getById(poolId: string, trancheId: string) {
-    const tranche = (await this.get(`${poolId}-${trancheId}`)) as TrancheService
+    const tranche = (await this.get(`${poolId}-${trancheId}`)) as TrancheService | undefined
     return tranche
   }
 
   static async getByPoolId(poolId: string): Promise<TrancheService[]> {
-    const tranches = await paginatedGetter<Tranche>(this, [['poolId', '=', poolId]])
-    return tranches as TrancheService[]
+    const tranches = (await paginatedGetter<Tranche>(this, [['poolId', '=', poolId]])) as TrancheService[]
+    return tranches
   }
 
   static async getActivesByPoolId(poolId: string): Promise<TrancheService[]> {
-    const tranches = await paginatedGetter<Tranche>(this, [
+    const tranches = (await paginatedGetter<Tranche>(this, [
       ['poolId', '=', poolId],
       ['isActive', '=', true],
-    ])
-    return tranches as TrancheService[]
+    ])) as TrancheService[]
+    return tranches
   }
 
   public async updateSupply() {
@@ -106,8 +105,7 @@ export class TrancheService extends Tranche {
 
   private async updatePriceFixForFees(price: bigint) {
     // fix token price not accounting for fees
-    const apiCall = api.call as ExtendedCall
-    const navResponse = await apiCall.poolsApi.nav(this.poolId)
+    const navResponse = await api.call.poolsApi.nav(this.poolId)
     if (navResponse.isEmpty) {
       logger.warn(`No NAV response! Saving inaccurate price: ${price} `)
       this.tokenPrice = price
@@ -128,9 +126,9 @@ export class TrancheService extends Tranche {
     logger.info(`Querying token price for tranche ${this.id} from runtime`)
     const { poolId } = this
 
-    const apiCall = api.call as ExtendedCall
-    const tokenPricesReq = await apiCall.poolsApi.trancheTokenPrices(poolId)
+    const tokenPricesReq = await api.call.poolsApi.trancheTokenPrices(poolId)
     if (tokenPricesReq.isNone) return this
+    if (typeof this.index !== 'number') throw new Error('Index is not a number')
     const tokenPrice = tokenPricesReq.unwrap()[this.index].toBigInt()
     logger.info(`Token price: ${tokenPrice.toString()}`)
     if (tokenPrice <= BigInt(0)) throw new Error(`Zero or negative price returned for tranche: ${this.id}`)
@@ -150,7 +148,7 @@ export class TrancheService extends Tranche {
         `pool ${this.poolId} with reference date ${referencePeriodStart}`
     )
 
-    let trancheSnapshot: TrancheSnapshot
+    let trancheSnapshot: TrancheSnapshot | undefined
     if (referencePeriodStart) {
       const trancheSnapshots = await TrancheSnapshot.getByPeriodId(referencePeriodStart.toISOString(), { limit: 100 })
       if (trancheSnapshots.length === 0) {
@@ -159,20 +157,20 @@ export class TrancheService extends Tranche {
       }
 
       trancheSnapshot = trancheSnapshots.find((snapshot) => snapshot.trancheId === `${this.poolId}-${this.trancheId}`)
-      if (trancheSnapshot === undefined) {
+      if (!trancheSnapshot) {
         logger.warn(
           `No tranche snapshot found tranche ${this.poolId}-${this.trancheId} with ` +
             `reference date ${referencePeriodStart}`
         )
         return this
       }
-      if (typeof this.tokenPrice !== 'bigint') {
+      if (!this.tokenPrice) {
         logger.warn('Price information missing')
         return this
       }
     }
     const priceCurrent = bnToBn(this.tokenPrice)
-    const priceOld = referencePeriodStart ? bnToBn(trancheSnapshot.tokenPrice) : WAD
+    const priceOld = referencePeriodStart ? bnToBn(trancheSnapshot!.tokenPrice) : WAD
     this[yieldField] = nToBigInt(priceCurrent.mul(WAD).div(priceOld).sub(WAD))
     logger.info(`Price: ${priceOld} to ${priceCurrent} = ${this[yieldField]}`)
     return this
@@ -217,6 +215,8 @@ export class TrancheService extends Tranche {
 
   public updateOutstandingInvestOrders = (newAmount: bigint, oldAmount: bigint) => {
     logger.info(`Updating outstanding investment orders by period for tranche ${this.id}`)
+    if (typeof this.sumOutstandingInvestOrdersByPeriod !== 'bigint')
+      throw new Error('sumOutstandingInvestOrdersByPeriod not initialized')
     this.sumOutstandingInvestOrdersByPeriod = this.sumOutstandingInvestOrdersByPeriod + newAmount - oldAmount
     logger.info(`to ${this.sumOutstandingInvestOrdersByPeriod}`)
     return this
@@ -224,6 +224,8 @@ export class TrancheService extends Tranche {
 
   public updateOutstandingRedeemOrders(newAmount: bigint, oldAmount: bigint) {
     logger.info(`Updating outstanding investment orders by period for tranche ${this.id}`)
+    if (typeof this.sumOutstandingRedeemOrdersByPeriod !== 'bigint')
+      throw new Error('sumOutstandingRedeemOrdersByPeriod not initialized')
     this.sumOutstandingRedeemOrdersByPeriod = this.sumOutstandingRedeemOrdersByPeriod + newAmount - oldAmount
     this.sumOutstandingRedeemOrdersCurrencyByPeriod = this.computeCurrencyAmount(
       this.sumOutstandingRedeemOrdersByPeriod
@@ -234,6 +236,8 @@ export class TrancheService extends Tranche {
 
   public updateFulfilledInvestOrders(amount: bigint) {
     logger.info(`Updating fulfilled investment orders by period for tranche ${this.id}`)
+    if (typeof this.sumFulfilledInvestOrdersByPeriod !== 'bigint')
+      throw new Error('sumFulfilledInvestOrdersByPeriod not initialized')
     this.sumFulfilledInvestOrdersByPeriod = this.sumFulfilledInvestOrdersByPeriod + amount
     logger.info(`to ${this.sumFulfilledInvestOrdersByPeriod}`)
     return this
@@ -241,6 +245,9 @@ export class TrancheService extends Tranche {
 
   public updateFulfilledRedeemOrders(amount: bigint) {
     logger.info(`Updating fulfilled redeem orders by period for tranche ${this.id}`)
+    if (typeof this.sumFulfilledRedeemOrdersByPeriod !== 'bigint')
+      throw new Error('sumFulfilledRedeemOrdersByPeriod not initialized')
+
     this.sumFulfilledRedeemOrdersByPeriod = this.sumFulfilledRedeemOrdersByPeriod + amount
     this.sumFulfilledRedeemOrdersCurrencyByPeriod = this.computeCurrencyAmount(this.sumFulfilledRedeemOrdersByPeriod)
     logger.info(`to ${this.sumFulfilledRedeemOrdersByPeriod}`)
@@ -277,4 +284,4 @@ export class TrancheService extends Tranche {
   }
 }
 
-type BigIntFields<T> = { [K in keyof T]: T[K] extends bigint ? K : never }[keyof T]
+type BigIntFields<T> = { [K in keyof Required<T>]: Required<T>[K] extends bigint ? K : never }[keyof Required<T>]

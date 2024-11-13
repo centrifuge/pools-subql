@@ -63,7 +63,7 @@ describe('Given a new pool, when initialised', () => {
   test('then reset accumulators are set to 0', () => {
     const resetAccumulators = Object.getOwnPropertyNames(pool).filter((prop) => prop.endsWith('ByPeriod'))
     for (const resetAccumulator of resetAccumulators) {
-      expect(pool[resetAccumulator]).toBe(BigInt(0))
+      expect(pool[resetAccumulator as keyof typeof pool]).toBe(BigInt(0))
     }
   })
 

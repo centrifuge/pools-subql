@@ -4,7 +4,7 @@ import { u64 } from '@polkadot/types'
 import { WAD } from '../../config'
 import { OrdersFulfillment } from '../../helpers/types'
 import { Epoch, EpochState } from '../../types'
-
+import { assertPropInitialized } from '../../helpers/validation'
 export class EpochService extends Epoch {
   private states: EpochState[]
 
@@ -65,12 +65,16 @@ export class EpochService extends Epoch {
   }
 
   public async executeEpoch(timestamp: Date) {
+    const specVersion = api.runtimeVersion.specVersion.toNumber()
     logger.info(`Updating Epoch OrderFulfillmentData for pool ${this.poolId} on epoch ${this.index}`)
     this.executedAt = timestamp
 
     for (const epochState of this.states) {
       logger.info(`Fetching data for tranche: ${epochState.trancheId}`)
-      const trancheCurrency = [this.poolId, epochState.trancheId]
+      const trancheCurrency =
+        specVersion < 1400
+          ? { poolId: this.poolId, trancheId: epochState.trancheId }
+          : [this.poolId, epochState.trancheId]
       const [investOrderId, redeemOrderId] = await Promise.all([
         api.query.investments.investOrderId<u64>(trancheCurrency),
         api.query.investments.redeemOrderId<u64>(trancheCurrency),
@@ -104,11 +108,13 @@ export class EpochService extends Epoch {
       )
       epochState.sumFulfilledRedeemOrdersCurrency = this.computeCurrencyAmount(
         epochState.sumFulfilledRedeemOrders,
-        epochState.tokenPrice
+        epochState.tokenPrice!
       )
+      assertPropInitialized(this, 'sumInvestedAmount', 'bigint')
+      this.sumInvestedAmount! += epochState.sumFulfilledInvestOrders
 
-      this.sumInvestedAmount += epochState.sumFulfilledInvestOrders
-      this.sumRedeemedAmount += epochState.sumFulfilledRedeemOrdersCurrency
+      assertPropInitialized(this, 'sumRedeemedAmount', 'bigint')
+      this.sumRedeemedAmount! += epochState.sumFulfilledRedeemOrdersCurrency
     }
     return this
   }
@@ -117,7 +123,8 @@ export class EpochService extends Epoch {
     logger.info(`Updating outstanding invest orders for epoch ${this.id}`)
     const trancheState = this.states.find((epochState) => epochState.trancheId === trancheId)
     if (trancheState === undefined) throw new Error(`No epochState with could be found for tranche: ${trancheId}`)
-    trancheState.sumOutstandingInvestOrders = trancheState.sumOutstandingInvestOrders + newAmount - oldAmount
+    assertPropInitialized(trancheState, 'sumOutstandingInvestOrders', 'bigint')
+    trancheState.sumOutstandingInvestOrders = trancheState.sumOutstandingInvestOrders! + newAmount - oldAmount
     return this
   }
 
@@ -125,7 +132,8 @@ export class EpochService extends Epoch {
     logger.info(`Updating outstanding redeem orders for epoch ${this.id}`)
     const trancheState = this.states.find((trancheState) => trancheState.trancheId === trancheId)
     if (trancheState === undefined) throw new Error(`No epochState with could be found for tranche: ${trancheId}`)
-    trancheState.sumOutstandingRedeemOrders = trancheState.sumOutstandingRedeemOrders + newAmount - oldAmount
+    assertPropInitialized(trancheState, 'sumOutstandingRedeemOrders', 'bigint')
+    trancheState.sumOutstandingRedeemOrders = trancheState.sumOutstandingRedeemOrders! + newAmount - oldAmount
     trancheState.sumOutstandingRedeemOrdersCurrency = this.computeCurrencyAmount(
       trancheState.sumOutstandingRedeemOrders,
       tokenPrice
@@ -139,17 +147,22 @@ export class EpochService extends Epoch {
 
   public increaseBorrowings(amount: bigint) {
     logger.info(`Increasing borrowings for epoch ${this.id} of ${amount}`)
-    this.sumBorrowedAmount += amount
+    assertPropInitialized(this, 'sumBorrowedAmount', 'bigint')
+    this.sumBorrowedAmount! += amount
+    return this
   }
 
   public increaseRepayments(amount: bigint) {
     logger.info(`Increasing repayments for epoch ${this.id} of ${amount}`)
-    this.sumRepaidAmount += amount
+    assertPropInitialized(this, 'sumRepaidAmount', 'bigint')
+    this.sumRepaidAmount! += amount
+    return this
   }
 
   public increasePaidFees(paidAmount: bigint) {
     logger.info(`Increasing paid fees for epoch ${this.id} by ${paidAmount.toString(10)}`)
-    this.sumPoolFeesPaidAmount += paidAmount
+    assertPropInitialized(this, 'sumPoolFeesPaidAmount', 'bigint')
+    this.sumPoolFeesPaidAmount! += paidAmount
     return this
   }
 }

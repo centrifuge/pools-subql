@@ -12,7 +12,7 @@ export class CurrencyBalanceService extends CurrencyBalance {
   static async getById(address: string, currency: string) {
     const id = `${address}-${currency}`
     const currencyBalance = await this.get(id)
-    return currencyBalance as CurrencyBalanceService
+    return currencyBalance as CurrencyBalanceService | undefined
   }
 
   static async getOrInit(address: string, currency: string) {

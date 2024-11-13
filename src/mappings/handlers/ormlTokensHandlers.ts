@@ -13,6 +13,8 @@ import { InvestorPositionService } from '../services/investorPositionService'
 export const handleTokenTransfer = errorHandler(_handleTokenTransfer)
 async function _handleTokenTransfer(event: SubstrateEvent<TokensTransferEvent>): Promise<void> {
   const [_currency, from, to, amount] = event.event.data
+  const timestamp = event.block.timestamp
+  if (!timestamp) throw new Error('Timestamp missing from block')
 
   // Skip token transfers from and to excluded addresses
   const fromAddress = String.fromCharCode(...from.toU8a())
@@ -36,12 +38,12 @@ async function _handleTokenTransfer(event: SubstrateEvent<TokensTransferEvent>):
 
   // TRANCHE TOKEN TRANSFERS BETWEEN INVESTORS
   if (_currency.isTranche && !isFromExcludedAddress && !isToExcludedAddress) {
-    const pool = await PoolService.getById(_currency.asTranche[0].toString())
+    const poolId = Array.isArray(_currency.asTranche) ? _currency.asTranche[0] : _currency.asTranche.poolId
+    const trancheId = Array.isArray(_currency.asTranche) ? _currency.asTranche[1] : _currency.asTranche.trancheId
+    const pool = await PoolService.getById(poolId.toString())
     if (!pool) throw missingPool
-
-    const tranche = await TrancheService.getById(pool.id, _currency.asTranche[1].toString())
-    if (!tranche) throw missingPool
-
+    const tranche = await TrancheService.getById(pool.id, trancheId.toString())
+    if (!tranche) throw Error('Tranche not found!')
     logger.info(
       `Tranche Token transfer between investors tor tranche: ${pool.id}-${tranche.trancheId}. ` +
         `from: ${from.toHex()} to: ${to.toHex()} amount: ${amount.toString()} ` +
@@ -51,13 +53,13 @@ async function _handleTokenTransfer(event: SubstrateEvent<TokensTransferEvent>):
     // Update tranche price
     await tranche.updatePriceFromRuntime(event.block.block.header.number.toNumber())
     await tranche.save()
-
+    if (!event.extrinsic) throw new Error('Missing extrinsic in event')
     const orderData = {
       poolId: pool.id,
       trancheId: tranche.trancheId,
       epochNumber: pool.currentEpoch,
       hash: event.extrinsic.extrinsic.hash.toString(),
-      timestamp: event.block.timestamp,
+      timestamp: timestamp,
       price: tranche.tokenPrice,
       amount: amount.toBigInt(),
     }
@@ -68,8 +70,8 @@ async function _handleTokenTransfer(event: SubstrateEvent<TokensTransferEvent>):
     const profit = await InvestorPositionService.sellFifo(
       txOut.accountId,
       txOut.trancheId,
-      txOut.tokenAmount,
-      txOut.tokenPrice
+      txOut.tokenAmount!,
+      txOut.tokenPrice!
     )
     await txOut.setRealizedProfitFifo(profit)
     await txOut.save()
@@ -81,8 +83,8 @@ async function _handleTokenTransfer(event: SubstrateEvent<TokensTransferEvent>):
       txIn.trancheId,
       txIn.hash,
       txIn.timestamp,
-      txIn.tokenAmount,
-      txIn.tokenPrice
+      txIn.tokenAmount!,
+      txIn.tokenPrice!
     )
     await txIn.save()
   }

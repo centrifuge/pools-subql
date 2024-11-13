@@ -8,12 +8,12 @@ const nftItemId = BigInt(2)
 const timestamp = new Date()
 const metadata = 'AAAAAA'
 
-api.query['uniques'] = {
+api.query['uniques']= {
   instanceMetadataOf: jest.fn(() => ({
     isNone: false,
     unwrap: () => ({ data: { toUtf8: () => metadata } }),
   })),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as any
 
 const loan = AssetService.init(
@@ -35,7 +35,7 @@ describe('Given a new loan, when initialised', () => {
   test('then reset accumulators are set to 0', () => {
     const resetAccumulators = Object.getOwnPropertyNames(loan).filter((prop) => prop.endsWith('ByPeriod'))
     for (const resetAccumulator of resetAccumulators) {
-      expect(loan[resetAccumulator]).toBe(BigInt(0))
+      expect(loan[resetAccumulator as keyof typeof loan]).toBe(BigInt(0))
     }
   })
 

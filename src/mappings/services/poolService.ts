@@ -1,7 +1,6 @@
 import { Option, u128, Vec } from '@polkadot/types'
 import { paginatedGetter } from '../../helpers/paginatedGetter'
 import type {
-  ExtendedCall,
   NavDetails,
   PoolDetails,
   PoolFeesList,
@@ -15,6 +14,7 @@ import { cid, readIpfs } from '../../helpers/ipfsFetch'
 import { EpochService } from './epochService'
 import { WAD_DIGITS } from '../../config'
 import { CurrencyService } from './currencyService'
+import { assertPropInitialized } from '../../helpers/validation'
 
 export class PoolService extends Pool {
   static seed(poolId: string, blockchain = '0') {
@@ -140,7 +140,7 @@ export class PoolService extends Pool {
     if (poolReq.isNone) throw new Error('No pool data available to create the pool')
 
     const poolData = poolReq.unwrap()
-    this.metadata = metadataReq.isSome ? metadataReq.unwrap().metadata.toUtf8() : null
+    this.metadata = metadataReq.isSome ? metadataReq.unwrap().metadata.toUtf8() : undefined
     this.minEpochTime = poolData.parameters.minEpochTime.toNumber()
     this.maxPortfolioValuationAge = poolData.parameters.maxNavAge.toNumber()
     return this
@@ -151,26 +151,27 @@ export class PoolService extends Pool {
     this.metadata = metadata
   }
 
-  public async initIpfsMetadata(): Promise<PoolIpfsMetadata['pool']['poolFees']> {
+  public async initIpfsMetadata(): Promise<Required<PoolIpfsMetadata['pool']>['poolFees']> {
     if (!this.metadata) {
       logger.warn('No IPFS metadata')
-      return
+      return []
     }
-    const metadata = await readIpfs<PoolIpfsMetadata>(this.metadata.match(cid)[0])
+    const matchedMetadata = this.metadata.match(cid)
+    if (!matchedMetadata || matchedMetadata.length !== 1) throw new Error('Unable to read metadata')
+    const metadata = await readIpfs<PoolIpfsMetadata>(matchedMetadata[0])
     this.name = metadata.pool.name
     this.assetClass = metadata.pool.asset.class
     this.assetSubclass = metadata.pool.asset.subClass
     this.icon = metadata.pool.icon.uri
-    return metadata.pool.poolFees ?? []
+    return metadata.pool?.poolFees ?? []
   }
 
-  public async getIpfsPoolFeeMetadata(): Promise<PoolIpfsMetadata['pool']['poolFees']> {
+  public async getIpfsPoolFeeMetadata(): Promise<Required<PoolIpfsMetadata['pool']>['poolFees']> {
     if (!this.metadata) return logger.warn('No IPFS metadata')
-    const metadata = await readIpfs<PoolIpfsMetadata>(this.metadata.match(cid)[0])
-    if (!metadata.pool.poolFees) {
-      return null
-    }
-    return metadata.pool.poolFees
+    const matchedMetadata = this.metadata.match(cid)
+    if (!matchedMetadata || matchedMetadata.length !== 1) throw new Error('Unable to read metadata')
+    const metadata = await readIpfs<PoolIpfsMetadata>(matchedMetadata[0])
+    return metadata.pool.poolFees ?? []
   }
 
   public async getIpfsPoolFeeName(poolFeeId: string): Promise<string> {
@@ -178,13 +179,13 @@ export class PoolService extends Pool {
     const poolFeeMetadata = await this.getIpfsPoolFeeMetadata()
     if (!poolFeeMetadata) {
       logger.warn('Missing poolFee object in pool metadata!')
-      return null
+      return ''
     }
-    return poolFeeMetadata.find((elem) => elem.id.toString(10) === poolFeeId)?.name ?? null
+    return poolFeeMetadata.find((elem) => elem.id.toString(10) === poolFeeId)?.name ?? ''
   }
 
   static async getById(poolId: string) {
-    return this.get(poolId) as Promise<PoolService>
+    return this.get(poolId) as Promise<PoolService | undefined>
   }
 
   static async getAll() {
@@ -230,15 +231,19 @@ export class PoolService extends Pool {
 
   private async updateNAVQuery() {
     logger.info(`Updating portfolio valuation for pool: ${this.id} (state)`)
-    const navResponse = await api.query.loans.portfolioValuation<NavDetails>(this.id)
-    const newPortfolioValuation = navResponse.value.toBigInt() - this.offchainCashValue
+    assertPropInitialized(this, 'offchainCashValue', 'bigint')
+    assertPropInitialized(this, 'portfolioValuation', 'bigint')
+    assertPropInitialized(this, 'totalReserve', 'bigint')
 
-    this.deltaPortfolioValuationByPeriod = newPortfolioValuation - this.portfolioValuation
+    const navResponse = await api.query.loans.portfolioValuation<NavDetails>(this.id)
+    const newPortfolioValuation = navResponse.value.toBigInt() - this.offchainCashValue!
+
+    this.deltaPortfolioValuationByPeriod = newPortfolioValuation - this.portfolioValuation!
     this.portfolioValuation = newPortfolioValuation
 
     // The query was only used before fees were introduced,
     // so NAV == portfolioValuation + offchainCashValue + totalReserve
-    this.netAssetValue = newPortfolioValuation + this.offchainCashValue + this.totalReserve
+    this.netAssetValue = newPortfolioValuation + this.offchainCashValue! + this.totalReserve!
 
     logger.info(
       `portfolio valuation: ${this.portfolioValuation.toString(10)} delta: ${this.deltaPortfolioValuationByPeriod}`
@@ -248,16 +253,19 @@ export class PoolService extends Pool {
 
   private async updateNAVCall() {
     logger.info(`Updating portfolio valuation for pool: ${this.id} (runtime)`)
-    const apiCall = api.call as ExtendedCall
-    const navResponse = await apiCall.poolsApi.nav(this.id)
+
+    assertPropInitialized(this, 'offchainCashValue', 'bigint')
+    assertPropInitialized(this, 'portfolioValuation', 'bigint')
+
+    const navResponse = await api.call.poolsApi.nav(this.id)
     if (navResponse.isEmpty) {
       logger.warn('Empty pv response')
       return
     }
     const newNAV = navResponse.unwrap().total.toBigInt()
-    const newPortfolioValuation = navResponse.unwrap().navAum.toBigInt() - this.offchainCashValue
+    const newPortfolioValuation = navResponse.unwrap().navAum.toBigInt() - this.offchainCashValue!
 
-    this.deltaPortfolioValuationByPeriod = newPortfolioValuation - this.portfolioValuation
+    this.deltaPortfolioValuationByPeriod = newPortfolioValuation - this.portfolioValuation!
     this.portfolioValuation = newPortfolioValuation
     this.netAssetValue = newNAV
 
@@ -268,7 +276,10 @@ export class PoolService extends Pool {
   }
 
   public async updateNormalizedNAV() {
-    const currency = await CurrencyService.get(this.currencyId)
+    assertPropInitialized(this, 'currencyId', 'string')
+    assertPropInitialized(this, 'netAssetValue', 'bigint')
+
+    const currency = await CurrencyService.get(this.currencyId!)
     if (!currency) throw new Error(`No currency with Id ${this.currencyId} found!`)
     const digitsMismatch = WAD_DIGITS - currency.decimals
     if (digitsMismatch === 0) {
@@ -276,16 +287,18 @@ export class PoolService extends Pool {
       return this
     }
     if (digitsMismatch > 0) {
-      this.normalizedNAV = BigInt(this.netAssetValue.toString(10) + '0'.repeat(digitsMismatch))
+      this.normalizedNAV = BigInt(this.netAssetValue!.toString(10) + '0'.repeat(digitsMismatch))
     } else {
-      this.normalizedNAV = BigInt(this.netAssetValue.toString(10).substring(0, WAD_DIGITS))
+      this.normalizedNAV = BigInt(this.netAssetValue!.toString(10).substring(0, WAD_DIGITS))
     }
     return this
   }
 
   public increaseNumberOfAssets() {
-    this.sumNumberOfAssetsByPeriod += BigInt(1)
-    this.sumNumberOfAssets += BigInt(1)
+    assertPropInitialized(this, 'sumNumberOfAssetsByPeriod', 'bigint')
+    assertPropInitialized(this, 'sumNumberOfAssets', 'bigint')
+    this.sumNumberOfAssetsByPeriod! += BigInt(1)
+    this.sumNumberOfAssets! += BigInt(1)
   }
 
   public updateNumberOfActiveAssets(numberOfActiveAssets: bigint) {
@@ -293,8 +306,10 @@ export class PoolService extends Pool {
   }
 
   public increaseBorrowings(borrowedAmount: bigint) {
-    this.sumBorrowedAmountByPeriod += borrowedAmount
-    this.sumBorrowedAmount += borrowedAmount
+    assertPropInitialized(this, 'sumBorrowedAmountByPeriod', 'bigint')
+    assertPropInitialized(this, 'sumBorrowedAmount', 'bigint')
+    this.sumBorrowedAmountByPeriod! += borrowedAmount
+    this.sumBorrowedAmount! += borrowedAmount
   }
 
   public increaseRepayments(
@@ -302,27 +317,47 @@ export class PoolService extends Pool {
     interestRepaidAmount: bigint,
     unscheduledRepaidAmount: bigint
   ) {
-    this.sumRepaidAmountByPeriod += principalRepaidAmount + interestRepaidAmount + unscheduledRepaidAmount
-    this.sumRepaidAmount += principalRepaidAmount + interestRepaidAmount + unscheduledRepaidAmount
-    this.sumPrincipalRepaidAmountByPeriod += principalRepaidAmount
-    this.sumPrincipalRepaidAmount += principalRepaidAmount
-    this.sumInterestRepaidAmountByPeriod += interestRepaidAmount
-    this.sumInterestRepaidAmount += interestRepaidAmount
-    this.sumUnscheduledRepaidAmountByPeriod += unscheduledRepaidAmount
-    this.sumUnscheduledRepaidAmount += unscheduledRepaidAmount
+    assertPropInitialized(this, 'sumRepaidAmountByPeriod', 'bigint')
+    this.sumRepaidAmountByPeriod! += principalRepaidAmount + interestRepaidAmount + unscheduledRepaidAmount
+
+    assertPropInitialized(this, 'sumRepaidAmount', 'bigint')
+    this.sumRepaidAmount! += principalRepaidAmount + interestRepaidAmount + unscheduledRepaidAmount
+
+    assertPropInitialized(this, 'sumPrincipalRepaidAmountByPeriod', 'bigint')
+    this.sumPrincipalRepaidAmountByPeriod! += principalRepaidAmount
+
+    assertPropInitialized(this, 'sumPrincipalRepaidAmount', 'bigint')
+    this.sumPrincipalRepaidAmount! += principalRepaidAmount
+
+    assertPropInitialized(this, 'sumInterestRepaidAmountByPeriod', 'bigint')
+    this.sumInterestRepaidAmountByPeriod! += interestRepaidAmount
+
+    assertPropInitialized(this, 'sumInterestRepaidAmount', 'bigint')
+    this.sumInterestRepaidAmount! += interestRepaidAmount
+
+    assertPropInitialized(this, 'sumUnscheduledRepaidAmountByPeriod', 'bigint')
+    this.sumUnscheduledRepaidAmountByPeriod! += unscheduledRepaidAmount
+
+    assertPropInitialized(this, 'sumUnscheduledRepaidAmount', 'bigint')
+    this.sumUnscheduledRepaidAmount! += unscheduledRepaidAmount
   }
 
   public increaseRepayments1024(repaidAmount: bigint) {
-    this.sumRepaidAmountByPeriod += repaidAmount
-    this.sumRepaidAmount += repaidAmount
+    assertPropInitialized(this, 'sumRepaidAmountByPeriod', 'bigint')
+    this.sumRepaidAmountByPeriod! += repaidAmount
+
+    assertPropInitialized(this, 'sumRepaidAmount', 'bigint')
+    this.sumRepaidAmount! += repaidAmount
   }
 
   public increaseInvestments(currencyAmount: bigint) {
-    this.sumInvestedAmountByPeriod += currencyAmount
+    assertPropInitialized(this, 'sumInvestedAmountByPeriod', 'bigint')
+    this.sumInvestedAmountByPeriod! += currencyAmount
   }
 
   public increaseRedemptions(currencyAmount: bigint) {
-    this.sumRedeemedAmountByPeriod += currencyAmount
+    assertPropInitialized(this, 'sumRedeemedAmountByPeriod', 'bigint')
+    this.sumRedeemedAmountByPeriod! += currencyAmount
   }
 
   public closeEpoch(epochId: number) {
@@ -341,17 +376,20 @@ export class PoolService extends Pool {
 
   public increaseDebtOverdue(amount: bigint) {
     logger.info(`Increasing sumDebtOverdue by ${amount}`)
-    this.sumDebtOverdue += amount
+    assertPropInitialized(this, 'sumDebtOverdue', 'bigint')
+    this.sumDebtOverdue! += amount
   }
 
   public increaseWriteOff(amount: bigint) {
     logger.info(`Increasing writeOff by ${amount}`)
-    this.sumDebtWrittenOffByPeriod += amount
+    assertPropInitialized(this, 'sumDebtWrittenOffByPeriod', 'bigint')
+    this.sumDebtWrittenOffByPeriod! += amount
   }
 
   public increaseInterestAccrued(amount: bigint) {
     logger.info(`Increasing interestAccrued by ${amount}`)
-    this.sumInterestAccruedByPeriod += amount
+    assertPropInitialized(this, 'sumInterestAccruedByPeriod', 'bigint')
+    this.sumInterestAccruedByPeriod! += amount
   }
 
   public async fetchTranchesFrom1400(): Promise<TrancheData[]> {
@@ -430,9 +468,8 @@ export class PoolService extends Pool {
   }
 
   public async getPortfolio(): Promise<ActiveLoanData> {
-    const apiCall = api.call as ExtendedCall
     logger.info(`Querying runtime loansApi.portfolio for pool: ${this.id}`)
-    const portfolioData = await apiCall.loansApi.portfolio(this.id)
+    const portfolioData = await api.call.loansApi.portfolio(this.id)
     logger.info(`${portfolioData.length} assets found.`)
     return portfolioData.reduce<ActiveLoanData>((obj, current) => {
       const [assetId, asset] = current
@@ -450,10 +487,10 @@ export class PoolService extends Pool {
         },
       } = asset
 
-      const actualMaturityDate = maturity.isFixed ? new Date(maturity.asFixed.date.toNumber() * 1000) : null
+      const actualMaturityDate = maturity.isFixed ? new Date(maturity.asFixed.date.toNumber() * 1000) : undefined
       const timeToMaturity = actualMaturityDate
         ? Math.round((actualMaturityDate.valueOf() - Date.now().valueOf()) / 1000)
-        : null
+        : undefined
 
       obj[assetId.toString(10)] = {
         outstandingPrincipal: outstandingPrincipal.toBigInt(),
@@ -480,17 +517,16 @@ export class PoolService extends Pool {
     const poolId = this.id
     let tokenPrices: Vec<u128>
     try {
-      const apiRes = await (api.call as ExtendedCall).poolsApi.trancheTokenPrices(poolId)
-      tokenPrices = apiRes.isSome ? apiRes.unwrap() : undefined
+      const apiRes = await api.call.poolsApi.trancheTokenPrices(poolId)
+      tokenPrices = apiRes.unwrap()
     } catch (err) {
       logger.error(`Unable to fetch tranche token prices for pool: ${this.id}: ${err}`)
-      tokenPrices = undefined
+      return undefined
     }
     return tokenPrices
   }
 
   public async getAccruedFees() {
-    const apiCall = api.call as ExtendedCall
     const specVersion = api.runtimeVersion.specVersion.toNumber()
     const specName = api.runtimeVersion.specName.toString()
     switch (specName) {
@@ -502,8 +538,14 @@ export class PoolService extends Pool {
         break
     }
     logger.info(`Querying runtime poolFeesApi.listFees for pool ${this.id}`)
-    const poolFeesListRequest = await apiCall.poolFeesApi.listFees(this.id)
-    const poolFeesList = poolFeesListRequest.unwrapOr(<PoolFeesList>[])
+    const poolFeesListRequest = await api.call.poolFeesApi.listFees(this.id)
+    let poolFeesList: PoolFeesList
+    try {
+      poolFeesList = poolFeesListRequest.unwrap()
+    } catch (error) {
+      console.error(error)
+      return []
+    }
     const fees = poolFeesList.flatMap((poolFee) => poolFee.fees.filter((fee) => fee.amounts.feeType.isFixed))
     const accruedFees = fees.map((fee): [feeId: string, pending: bigint, disbursement: bigint] => [
       fee.id.toString(),
@@ -515,29 +557,41 @@ export class PoolService extends Pool {
 
   public increaseChargedFees(chargedAmount: bigint) {
     logger.info(`Increasing charged fees for pool ${this.id} by ${chargedAmount.toString(10)}`)
-    this.sumPoolFeesChargedAmountByPeriod += chargedAmount
-    this.sumPoolFeesChargedAmount += chargedAmount
+    assertPropInitialized(this, 'sumPoolFeesChargedAmountByPeriod', 'bigint')
+    this.sumPoolFeesChargedAmountByPeriod! += chargedAmount
+
+    assertPropInitialized(this, 'sumPoolFeesChargedAmount', 'bigint')
+    this.sumPoolFeesChargedAmount! += chargedAmount
     return this
   }
 
   public decreaseChargedFees(unchargedAmount: bigint) {
     logger.info(`Decreasing charged fees for pool ${this.id} by ${unchargedAmount.toString(10)}`)
-    this.sumPoolFeesChargedAmountByPeriod -= unchargedAmount
-    this.sumPoolFeesChargedAmount -= unchargedAmount
+    assertPropInitialized(this, 'sumPoolFeesChargedAmountByPeriod', 'bigint')
+    this.sumPoolFeesChargedAmountByPeriod! -= unchargedAmount
+
+    assertPropInitialized(this, 'sumPoolFeesChargedAmount', 'bigint')
+    this.sumPoolFeesChargedAmount! -= unchargedAmount
     return this
   }
 
   public increaseAccruedFees(accruedAmount: bigint) {
     logger.info(`Increasing accrued fees for pool ${this.id} by ${accruedAmount.toString(10)}`)
-    this.sumPoolFeesAccruedAmountByPeriod += accruedAmount
-    this.sumPoolFeesAccruedAmount += accruedAmount
+    assertPropInitialized(this, 'sumPoolFeesAccruedAmountByPeriod', 'bigint')
+    this.sumPoolFeesAccruedAmountByPeriod! += accruedAmount
+
+    assertPropInitialized(this, 'sumPoolFeesAccruedAmount', 'bigint')
+    this.sumPoolFeesAccruedAmount! += accruedAmount
     return this
   }
 
   public increasePaidFees(paidAmount: bigint) {
     logger.info(`Increasing paid fees for pool ${this.id} by ${paidAmount.toString(10)}`)
-    this.sumPoolFeesPaidAmountByPeriod += paidAmount
-    this.sumPoolFeesPaidAmount += paidAmount
+    assertPropInitialized(this, 'sumPoolFeesPaidAmountByPeriod', 'bigint')
+    this.sumPoolFeesPaidAmountByPeriod! += paidAmount
+
+    assertPropInitialized(this, 'sumPoolFeesPaidAmount', 'bigint')
+    this.sumPoolFeesPaidAmount! += paidAmount
     return this
   }
 
@@ -548,7 +602,8 @@ export class PoolService extends Pool {
 
   public increaseOffchainCashValue(amount: bigint) {
     logger.info(`Increasing offchainCashValue for pool ${this.id} by ${amount.toString(10)}`)
-    this.offchainCashValue += amount
+    assertPropInitialized(this, 'offchainCashValue', 'bigint')
+    this.offchainCashValue! += amount
   }
 
   public updateSumPoolFeesPendingAmount(pendingAmount: bigint) {
@@ -558,7 +613,8 @@ export class PoolService extends Pool {
 
   public increaseRealizedProfitFifo(amount: bigint) {
     logger.info(`Increasing umRealizedProfitFifoByPeriod for pool ${this.id} by ${amount.toString(10)}`)
-    this.sumRealizedProfitFifoByPeriod += amount
+    assertPropInitialized(this, 'sumRealizedProfitFifoByPeriod', 'bigint')
+    this.sumRealizedProfitFifoByPeriod! += amount
   }
 
   public resetUnrealizedProfit() {
@@ -568,11 +624,14 @@ export class PoolService extends Pool {
     this.sumUnrealizedProfitByPeriod = BigInt(0)
   }
 
-  public increaseUnrealizedProfit(atMarket: bigint, atNotional: bigint, byPeriod) {
+  public increaseUnrealizedProfit(atMarket: bigint, atNotional: bigint, byPeriod: bigint) {
     logger.info(`Increasing unrealizedProfit for pool ${this.id} atMarket: ${atMarket}, atNotional: ${atNotional}`)
-    this.sumUnrealizedProfitAtMarketPrice += atMarket
-    this.sumUnrealizedProfitAtNotional += atNotional
-    this.sumUnrealizedProfitByPeriod += byPeriod
+    assertPropInitialized(this, 'sumUnrealizedProfitAtMarketPrice', 'bigint')
+    assertPropInitialized(this, 'sumUnrealizedProfitAtNotional', 'bigint')
+    assertPropInitialized(this, 'sumUnrealizedProfitByPeriod', 'bigint')
+    this.sumUnrealizedProfitAtMarketPrice! += atMarket
+    this.sumUnrealizedProfitAtNotional! += atNotional
+    this.sumUnrealizedProfitByPeriod! += byPeriod
   }
 }
 
@@ -582,9 +641,9 @@ export interface ActiveLoanData {
     outstandingInterest: bigint
     outstandingDebt: bigint
     presentValue: bigint
-    currentPrice: bigint
-    actualMaturityDate: Date
-    timeToMaturity: number
+    currentPrice: bigint | undefined
+    actualMaturityDate: Date | undefined
+    timeToMaturity: number | undefined
     actualOriginationDate: Date
     writeOffPercentage: bigint
     totalBorrowed: bigint

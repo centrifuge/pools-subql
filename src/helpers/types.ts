@@ -106,20 +106,26 @@ export interface EpochSolution extends Enum {
   }
 }
 
+export interface TokensStakingCurrency extends Enum {
+  readonly isBlockRewards: boolean
+  readonly type: 'BlockRewards'
+}
+
 export interface TokensCurrencyId extends Enum {
-  isNative: boolean
-  asNative: null
-  isTranche: boolean
-  asTranche: TrancheCurrency | TrancheCurrencyBefore1400
-  isAUSD: boolean
-  asAUSD: null
-  isForeignAsset: boolean
-  asForeignAsset: u32
-  isStaking: boolean
-  asStaking: Enum
-  isLocalAsset: boolean
-  asLocalAsset: u32
-  type: 'Native' | 'Tranche' | 'Ausd' | 'ForeignAsset' | 'Staking' | 'LocalAsset'
+  readonly isNative: boolean
+  readonly asNative: unknown
+  readonly isTranche: boolean
+  readonly asTranche: TrancheCurrency | TrancheCurrencyBefore1400
+  readonly isAusd: boolean
+  readonly asAusd: unknown
+  readonly isForeignAsset: boolean
+  readonly asForeignAsset: u32
+  readonly isStaking: boolean
+  readonly asStaking: TokensStakingCurrency
+  readonly isLocalAsset: boolean
+  readonly asLocalAsset: u32
+  readonly type: 'Native' | 'Tranche' | 'Ausd' | 'ForeignAsset' | 'Staking' | 'LocalAsset'
+  get value(): TrancheCurrency & TrancheCurrencyBefore1400 & u32 & TokensStakingCurrency
 }
 
 export interface TrancheSolution extends Struct {
@@ -497,7 +503,7 @@ export type PoolFeesList = Vec<PoolFeesOfBucket>
 
 export type OracleFedEvent = ITuple<[feeder: DevelopmentRuntimeOriginCaller, key: OracleKey, value: u128]>
 
-export type ExtendedRpc = typeof api.rpc & {
+export type ExtendedRpc = {
   pools: {
     trancheTokenPrice: PromiseRpcResult<
       AugmentedRpc<(poolId: number | string, trancheId: number[]) => Observable<u128>>
@@ -506,7 +512,7 @@ export type ExtendedRpc = typeof api.rpc & {
   }
 }
 
-export type ExtendedCall = typeof api.call & {
+export type ExtendedCall = {
   loansApi: {
     portfolio: AugmentedCall<'promise', (poolId: string) => Observable<Vec<ITuple<[u64, LoanInfoActivePortfolio]>>>>
     expectedCashflows: AugmentedCall<

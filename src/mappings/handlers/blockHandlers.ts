@@ -1,23 +1,14 @@
 import { SubstrateBlock } from '@subql/types'
 import { getPeriodStart, TimekeeperService } from '../../helpers/timekeeperService'
 import { errorHandler } from '../../helpers/errorHandler'
-import { substrateStateSnapshotter } from '../../helpers/stateSnapshot'
+import { statesSnapshotter } from '../../helpers/stateSnapshot'
 import { SNAPSHOT_INTERVAL_SECONDS } from '../../config'
 import { PoolService } from '../services/poolService'
 import { TrancheService } from '../services/trancheService'
 import { AssetService } from '../services/assetService'
 import { PoolFeeService } from '../services/poolFeeService'
 import { PoolFeeTransactionService } from '../services/poolFeeTransactionService'
-import {
-  Asset,
-  AssetSnapshot,
-  Pool,
-  PoolFee,
-  PoolFeeSnapshot,
-  PoolSnapshot,
-  Tranche,
-  TrancheSnapshot,
-} from '../../types/models'
+import { AssetSnapshot, PoolFeeSnapshot, PoolSnapshot, TrancheSnapshot } from '../../types/models'
 import { AssetPositionService } from '../services/assetPositionService'
 import { EpochService } from '../services/epochService'
 import { SnapshotPeriodService } from '../services/snapshotPeriodService'
@@ -28,6 +19,8 @@ const timekeeper = TimekeeperService.init()
 
 export const handleBlock = errorHandler(_handleBlock)
 async function _handleBlock(block: SubstrateBlock): Promise<void> {
+  if (!block.timestamp) throw new Error('Missing block timestamp')
+
   const blockPeriodStart = getPeriodStart(block.timestamp)
   const blockNumber = block.block.header.number.toNumber()
   const newPeriod = (await timekeeper).processBlock(block.timestamp)
@@ -50,11 +43,18 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
     const beginningOfQuarter = new Date(period.year, quarter * 3, 1)
     const beginningOfYear = new Date(period.year, 0, 1)
 
+    const poolsToSnapshot: PoolService[] = []
+    const tranchesToSnapshot: TrancheService[] = []
+    const assetsToSnapshot: AssetService[] = []
+    const poolFeesToSnapshot: PoolFeeService[] = []
+
     // Update Pool States
     const pools = await PoolService.getCfgActivePools()
     for (const pool of pools) {
       logger.info(` ## Updating pool ${pool.id} states...`)
+      if (!pool.currentEpoch) throw new Error('Pool currentEpoch not set')
       const currentEpoch = await EpochService.getById(pool.id, pool.currentEpoch)
+      if (!currentEpoch) throw new Error(`Current epoch ${pool.currentEpoch} for pool ${pool.id} not found`)
       await pool.updateState()
       await pool.resetDebtOverdue()
 
@@ -63,9 +63,9 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
       const trancheData = await pool.getTranches()
       const trancheTokenPrices = await pool.getTrancheTokenPrices()
       for (const tranche of tranches) {
-        const index = tranche.index
-        if (trancheTokenPrices)
-          await tranche.updatePrice(trancheTokenPrices[index].toBigInt(), block.block.header.number.toNumber())
+        if (typeof tranche.index !== 'number') throw new Error('Tranche index not set')
+        if (!trancheTokenPrices) break
+        await tranche.updatePrice(trancheTokenPrices[tranche.index].toBigInt(), block.block.header.number.toNumber())
         await tranche.updateSupply()
         await tranche.updateDebt(trancheData[tranche.trancheId].debt)
         await tranche.computeYield('yieldSinceLastPeriod', lastPeriodStart)
@@ -77,12 +77,14 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
         await tranche.computeYieldAnnualized('yield30DaysAnnualized', period.start, daysAgo30)
         await tranche.computeYieldAnnualized('yield90DaysAnnualized', period.start, daysAgo90)
         await tranche.save()
+        tranchesToSnapshot.push(tranche)
 
         // Compute TrancheBalances Unrealized Profit
         const trancheBalances = (await TrancheBalanceService.getByTrancheId(tranche.id, {
           limit: 100,
         })) as TrancheBalanceService[]
         for (const trancheBalance of trancheBalances) {
+          if (!tranche.tokenPrice) throw new Error('Tranche token price not set')
           const unrealizedProfit = await InvestorPositionService.computeUnrealizedProfitAtPrice(
             trancheBalance.accountId,
             tranche.id,
@@ -98,6 +100,9 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
       pool.resetUnrealizedProfit()
       for (const loanId in activeLoanData) {
         const asset = await AssetService.getById(pool.id, loanId)
+        if (!asset) continue
+        if (!asset.currentPrice) throw new Error('Asset current price not set')
+        if (!asset.notional) throw new Error('Asset notional not set')
         await asset.loadSnapshot(lastPeriodStart)
         await asset.updateActiveAssetData(activeLoanData[loanId])
         await asset.updateUnrealizedProfit(
@@ -105,15 +110,33 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
           await AssetPositionService.computeUnrealizedProfitAtPrice(asset.id, asset.notional)
         )
         await asset.save()
+        assetsToSnapshot.push(asset)
+
+        if (typeof asset.interestAccruedByPeriod !== 'bigint')
+          throw new Error('Asset interest accrued by period not set')
         await pool.increaseInterestAccrued(asset.interestAccruedByPeriod)
-        if (asset.isNonCash())
+
+        if (asset.isNonCash()) {
+          if (typeof asset.unrealizedProfitAtMarketPrice !== 'bigint')
+            throw new Error('Asset unrealized profit at market price not set')
+          if (typeof asset.unrealizedProfitAtNotional !== 'bigint')
+            throw new Error('Asset unrealized profit at notional not set')
+          if (typeof asset.unrealizedProfitByPeriod !== 'bigint')
+            throw new Error('Asset unrealized profit by period not set')
           pool.increaseUnrealizedProfit(
             asset.unrealizedProfitAtMarketPrice,
             asset.unrealizedProfitAtNotional,
             asset.unrealizedProfitByPeriod
           )
-        if (asset.isBeyondMaturity(block.timestamp)) pool.increaseDebtOverdue(asset.outstandingDebt)
-        if (asset.isOffchainCash()) pool.increaseOffchainCashValue(asset.presentValue)
+        }
+        if (asset.isBeyondMaturity(block.timestamp)) {
+          if (typeof asset.outstandingDebt !== 'bigint') throw new Error('Asset outstanding debt not set')
+          pool.increaseDebtOverdue(asset.outstandingDebt)
+        }
+        if (asset.isOffchainCash()) {
+          if (typeof asset.presentValue !== 'bigint') throw new Error('Asset present value not set')
+          pool.increaseOffchainCashValue(asset.presentValue)
+        }
       }
       await pool.updateNumberOfActiveAssets(BigInt(Object.keys(activeLoanData).length))
 
@@ -131,7 +154,10 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
         }
         await poolFee.updateAccruals(pending, disbursement)
         await poolFee.save()
+        poolFeesToSnapshot.push(poolFee)
 
+        if (typeof poolFee.sumAccruedAmountByPeriod !== 'bigint')
+          throw new Error('Pool fee sum accrued amount by period not set')
         await pool.increaseAccruedFees(poolFee.sumAccruedAmountByPeriod)
 
         const poolFeeTransaction = PoolFeeTransactionService.accrue({
@@ -148,33 +174,16 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
       const sumPoolFeesPendingAmount = await PoolFeeService.computeSumPendingFees(pool.id)
       await pool.updateSumPoolFeesPendingAmount(sumPoolFeesPendingAmount)
       await pool.save()
+      poolsToSnapshot.push(pool)
       logger.info(`## Pool ${pool.id} states update completed!`)
     }
 
     logger.info('## Performing snapshots...')
-    //Perform Snapshots and reset accumulators
-    await substrateStateSnapshotter('periodId', period.id, Pool, PoolSnapshot, block, 'isActive', true, 'poolId')
-    await substrateStateSnapshotter(
-      'periodId',
-      period.id,
-      Tranche,
-      TrancheSnapshot,
-      block,
-      'isActive',
-      true,
-      'trancheId'
-    )
-    await substrateStateSnapshotter('periodId', period.id, Asset, AssetSnapshot, block, 'isActive', true, 'assetId')
-    await substrateStateSnapshotter(
-      'periodId',
-      period.id,
-      PoolFee,
-      PoolFeeSnapshot,
-      block,
-      'isActive',
-      true,
-      'poolFeeId'
-    )
+    const blockInfo = { number: block.block.header.number.toNumber(), timestamp: block.timestamp }
+    await statesSnapshotter('periodId', period.id, pools, PoolSnapshot, blockInfo, 'poolId')
+    await statesSnapshotter('periodId', period.id, tranchesToSnapshot, TrancheSnapshot, blockInfo, 'trancheId')
+    await statesSnapshotter('periodId', period.id, assetsToSnapshot, AssetSnapshot, blockInfo, 'assetId')
+    await statesSnapshotter('periodId', period.id, poolFeesToSnapshot, PoolFeeSnapshot, blockInfo, 'poolFeeId')
     logger.info('## Snapshotting completed!')
 
     //Update tracking of period and continue

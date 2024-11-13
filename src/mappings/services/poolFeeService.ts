@@ -1,3 +1,4 @@
+import { assertPropInitialized } from '../../helpers/validation'
 import { PoolFeeStatus, PoolFeeType } from '../../types'
 import { PoolFee } from '../../types/models'
 
@@ -39,7 +40,7 @@ export class PoolFeeService extends PoolFee {
     blockchain = '0'
   ) {
     const { poolId, feeId } = data
-    let poolFee = (await this.get(`${poolId}-${feeId}`)) as PoolFeeService
+    let poolFee = (await this.get(`${poolId}-${feeId}`)) as PoolFeeService | undefined
     if (!poolFee) {
       poolFee = this.init(data, type, status, blockchain)
     } else {
@@ -49,7 +50,7 @@ export class PoolFeeService extends PoolFee {
   }
 
   static getById(poolId: string, feeId: string) {
-    return this.get(`${poolId}-${feeId}`) as Promise<PoolFeeService>
+    return this.get(`${poolId}-${feeId}`) as Promise<PoolFeeService | undefined>
   }
 
   static async propose(data: PoolFeeData, type: keyof typeof PoolFeeType) {
@@ -77,8 +78,13 @@ export class PoolFeeService extends PoolFee {
   public charge(data: Omit<PoolFeeData, 'amount'> & Required<Pick<PoolFeeData, 'amount' | 'pending'>>) {
     logger.info(`Charging PoolFee ${data.feeId} with amount ${data.amount.toString(10)}`)
     if (!this.isActive) throw new Error('Unable to charge inactive PolFee')
-    this.sumChargedAmount += data.amount
-    this.sumChargedAmountByPeriod += data.amount
+
+    assertPropInitialized(this, 'sumChargedAmount', 'bigint')
+    this.sumChargedAmount! += data.amount
+
+    assertPropInitialized(this, 'sumChargedAmountByPeriod', 'bigint')
+    this.sumChargedAmountByPeriod! += data.amount
+
     this.pendingAmount = data.pending
     return this
   }
@@ -86,8 +92,13 @@ export class PoolFeeService extends PoolFee {
   public uncharge(data: Omit<PoolFeeData, 'amount'> & Required<Pick<PoolFeeData, 'amount' | 'pending'>>) {
     logger.info(`Uncharging PoolFee ${data.feeId} with amount ${data.amount.toString(10)}`)
     if (!this.isActive) throw new Error('Unable to uncharge inactive PolFee')
-    this.sumChargedAmount -= data.amount
-    this.sumChargedAmountByPeriod -= data.amount
+
+    assertPropInitialized(this, 'sumChargedAmount', 'bigint')
+    this.sumChargedAmount! -= data.amount
+
+    assertPropInitialized(this, 'sumChargedAmountByPeriod', 'bigint')
+    this.sumChargedAmountByPeriod! -= data.amount
+
     this.pendingAmount = data.pending
     return this
   }
@@ -95,9 +106,15 @@ export class PoolFeeService extends PoolFee {
   public pay(data: Omit<PoolFeeData, 'amount'> & Required<Pick<PoolFeeData, 'amount'>>) {
     logger.info(`Paying PoolFee ${data.feeId} with amount ${data.amount.toString(10)}`)
     if (!this.isActive) throw new Error('Unable to pay inactive PolFee')
-    this.sumPaidAmount += data.amount
-    this.sumPaidAmountByPeriod += data.amount
-    this.pendingAmount -= data.amount
+
+    assertPropInitialized(this, 'sumPaidAmount', 'bigint')
+    this.sumPaidAmount! += data.amount
+
+    assertPropInitialized(this, 'sumPaidAmountByPeriod', 'bigint')
+    this.sumPaidAmountByPeriod! += data.amount
+
+    assertPropInitialized(this, 'pendingAmount', 'bigint')
+    this.pendingAmount! -= data.amount
     return this
   }
 
@@ -109,7 +126,9 @@ export class PoolFeeService extends PoolFee {
     this.pendingAmount = pending + disbursement
 
     const newAccruedAmount = this.pendingAmount
-    this.sumAccruedAmountByPeriod = newAccruedAmount - this.sumAccruedAmount + this.sumPaidAmountByPeriod
+    assertPropInitialized(this, 'sumAccruedAmount', 'bigint')
+    assertPropInitialized(this, 'sumPaidAmountByPeriod', 'bigint')
+    this.sumAccruedAmountByPeriod = newAccruedAmount - this.sumAccruedAmount! + this.sumPaidAmountByPeriod!
     this.sumAccruedAmount = newAccruedAmount
     return this
   }
@@ -122,6 +141,9 @@ export class PoolFeeService extends PoolFee {
   static async computeSumPendingFees(poolId: string): Promise<bigint> {
     logger.info(`Computing pendingFees for pool: ${poolId} `)
     const poolFees = await this.getByPoolId(poolId, { limit: 100 })
-    return poolFees.reduce((sumPendingAmount, poolFee) => (sumPendingAmount + poolFee.pendingAmount), BigInt(0))
+    return poolFees.reduce((sumPendingAmount, poolFee) => {
+      if (!poolFee.pendingAmount) throw new Error(`pendingAmount not available in poolFee ${poolFee.id}`)
+      return sumPendingAmount + poolFee.pendingAmount
+    }, BigInt(0))
   }
 }

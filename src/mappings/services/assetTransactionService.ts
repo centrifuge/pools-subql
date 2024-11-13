@@ -30,16 +30,16 @@ export class AssetTransactionService extends AssetTransaction {
       `${data.poolId}-${data.assetId}`,
       type
     )
-    tx.accountId = data.address ?? null
-    tx.amount = data.amount ?? null
-    tx.principalAmount = data.principalAmount ?? null
-    tx.interestAmount = data.interestAmount ?? null
-    tx.unscheduledAmount = data.unscheduledAmount ?? null
-    tx.quantity = data.quantity ?? null
-    tx.settlementPrice = data.settlementPrice ?? null
-    tx.fromAssetId = data.fromAssetId ? `${data.poolId}-${data.fromAssetId}` : null
-    tx.toAssetId = data.toAssetId ? `${data.poolId}-${data.toAssetId}` : null
-    tx.realizedProfitFifo = data.realizedProfitFifo ?? null
+    tx.accountId = data.address
+    tx.amount = data.amount
+    tx.principalAmount = data.principalAmount
+    tx.interestAmount = data.interestAmount
+    tx.unscheduledAmount = data.unscheduledAmount
+    tx.quantity = data.quantity
+    tx.settlementPrice = data.settlementPrice
+    tx.fromAssetId = data.fromAssetId ? `${data.poolId}-${data.fromAssetId}` : undefined
+    tx.toAssetId = data.toAssetId ? `${data.poolId}-${data.toAssetId}` : undefined
+    tx.realizedProfitFifo = data.realizedProfitFifo
     return tx
   }
 
