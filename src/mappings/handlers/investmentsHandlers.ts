@@ -78,7 +78,7 @@ async function _handleInvestOrderUpdated(event: SubstrateEvent<OrderUpdatedEvent
     orderData.address,
     orderData.poolId,
     orderData.trancheId,
-    event.block.timestamp
+    timestamp
   )
   await trancheBalance.investOrder(orderData.amount)
   await trancheBalance.save()
@@ -152,7 +152,7 @@ async function _handleRedeemOrderUpdated(event: SubstrateEvent<OrderUpdatedEvent
     orderData.address,
     orderData.poolId,
     orderData.trancheId,
-    event.block.timestamp
+    timestamp
   )
   await trancheBalance.redeemOrder(orderData.amount)
   await trancheBalance.save()
@@ -206,7 +206,7 @@ async function _handleInvestOrdersCollected(event: SubstrateEvent<InvestOrdersCo
     orderData.address,
     orderData.poolId,
     orderData.trancheId,
-    event.block.timestamp
+    timestamp
   )
 
   if (orderData.amount > 0) {
@@ -267,7 +267,7 @@ async function _handleRedeemOrdersCollected(event: SubstrateEvent<RedeemOrdersCo
     orderData.address,
     orderData.poolId,
     orderData.trancheId,
-    event.block.timestamp
+    timestamp
   )
 
   if (orderData.amount > 0) {

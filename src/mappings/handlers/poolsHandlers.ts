@@ -241,7 +241,7 @@ async function _handleEpochExecuted(event: SubstrateEvent<EpochClosedExecutedEve
         orderData.address,
         orderData.poolId,
         orderData.trancheId,
-        event.block.timestamp
+        timestamp
       )
 
       if (oo.investAmount > BigInt(0) && epochState.investFulfillmentPercentage! > BigInt(0)) {
