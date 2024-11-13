@@ -212,7 +212,7 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
 
     logger.info('## Performing snapshots...')
     const blockInfo = { number: block.block.header.number.toNumber(), timestamp: block.timestamp }
-    await statesSnapshotter('periodId', period.id, pools, PoolSnapshot, blockInfo, 'poolId')
+    await statesSnapshotter('periodId', period.id, poolsToSnapshot, PoolSnapshot, blockInfo, 'poolId')
     await statesSnapshotter('periodId', period.id, tranchesToSnapshot, TrancheSnapshot, blockInfo, 'trancheId')
     await statesSnapshotter('periodId', period.id, assetsToSnapshot, AssetSnapshot, blockInfo, 'assetId')
     await statesSnapshotter('periodId', period.id, poolFeesToSnapshot, PoolFeeSnapshot, blockInfo, 'poolFeeId')
