@@ -46,7 +46,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
     PoolService['id'],
     {
       pool: PoolService
-      tinlakePool:  typeof tinlakePools[0]
+      tinlakePool: (typeof tinlakePools)[0]
       latestNavFeed?: ContractArray
       latestReserve?: ContractArray
     }
@@ -152,7 +152,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
 
   // Take snapshots
   const blockInfo: BlockInfo = { timestamp: date, number: block.number }
-  const poolsToSnapshot: PoolService[] = Object.values(processedPools).map(e => e.pool)
+  const poolsToSnapshot: PoolService[] = Object.values(processedPools).map((e) => e.pool)
   await statesSnapshotter('periodId', snapshotPeriod.id, poolsToSnapshot, PoolSnapshot, blockInfo, 'poolId')
 
   //Update tracking of period and continue
