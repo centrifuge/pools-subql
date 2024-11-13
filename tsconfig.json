@@ -10,15 +10,16 @@
     "outDir": "dist",
     //"rootDir": "src",
     "target": "es2017",
-    //"strict": true
+    "strict": true
   },
   "include": [
     "src/**/*",
     "smoke-tests/*.ts",
     "smoke-tests/*.d.ts",
     "node_modules/@subql/types-core/dist/global.d.ts",
-    "node_modules/@subql/types/dist/global.d.ts"
-, "smoke-tests/.test.ts"  ],
+    //"node_modules/@subql/types/dist/global.d.ts",
+    "smoke-tests/.test.ts"
+  ],
   "exclude": ["src/api-interfaces/**"],
   "exports": {
     "chaintypes": "./src/chaintypes.ts"

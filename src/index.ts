@@ -5,14 +5,14 @@ import type { u64 } from '@polkadot/types'
 import type { Provider } from '@ethersproject/providers'
 
 const isSubstrateNode = 'query' in api
-const isEvmNode = typeof (api as unknown as Provider).getNetwork === 'function'
-const ethNetworkProm = isEvmNode ? (api as unknown as Provider).getNetwork() : null
+const isEvmNode = typeof (api as Provider).getNetwork === 'function'
+const ethNetworkProm = isEvmNode ? (api as Provider).getNetwork() : null
 
 global.fetch = fetch as unknown as typeof global.fetch
-global.atob = atob
+global.atob = atob as typeof global.atob
 global.getNodeEvmChainId = async function () {
   if (isSubstrateNode) return ((await api.query.evmChainId.chainId()) as u64).toString(10)
-  if (isEvmNode) return (await ethNetworkProm).chainId.toString(10)
+  if (isEvmNode) return (await ethNetworkProm)?.chainId.toString(10)
 }
 
 export * from './mappings/handlers/blockHandlers'

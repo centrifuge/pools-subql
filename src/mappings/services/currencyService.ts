@@ -17,7 +17,7 @@ export class CurrencyService extends Currency {
   static async getOrInit(chainId: string, currencyType: string, ...currencyValue: string[]) {
     const currencyId = currencyValue.length > 0 ? `${currencyType}-${currencyValue.join('-')}` : currencyType
     const id = `${chainId}-${currencyId}`
-    let currency: CurrencyService = (await this.get(id)) as CurrencyService
+    let currency = (await this.get(id)) as CurrencyService | undefined
     if (!currency) {
       const enumPayload = formatEnumPayload(currencyType, ...currencyValue)
       const assetMetadata = (await api.query.ormlAssetRegistry.metadata(enumPayload)) as Option<AssetMetadata>
@@ -57,9 +57,9 @@ export class CurrencyService extends Currency {
 }
 
 export const currencyFormatters: CurrencyFormatters = {
-  AUSD: () => [],
+  Ausd: () => [],
   ForeignAsset: (value: TokensCurrencyId['asForeignAsset']) => [value.toString(10)],
-  Native: () => [],
+  Native: () => [''],
   Staking: () => ['BlockRewards'],
   Tranche: (value: TokensCurrencyId['asTranche']) => {
     return Array.isArray(value)

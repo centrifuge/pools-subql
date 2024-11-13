@@ -1,4 +1,3 @@
-import { ExtendedCall } from '../../helpers/types'
 import { AssetCashflow } from '../../types/models/AssetCashflow'
 
 export class AssetCashflowService extends AssetCashflow {
@@ -13,9 +12,8 @@ export class AssetCashflowService extends AssetCashflow {
     if (specVersion < 1103) return
     const [poolId, assetId] = _assetId.split('-')
     logger.info(`Recording AssetCashflows for Asset ${_assetId}`)
-    const apiCall = api.call as ExtendedCall
-    logger.info(`Calling runtime API loansApi.expectedCashflows(${poolId}, ${assetId})`)
-    const response = await apiCall.loansApi.expectedCashflows(poolId, assetId)
+    logger.info(`Calling runtime API loansapi.expectedCashflows(${poolId}, ${assetId})`)
+    const response = await api.call.loansApi.expectedCashflows(poolId, assetId)
     logger.info(JSON.stringify(response))
     if(!response.isOk) return
     await this.clearAssetCashflows(_assetId)
