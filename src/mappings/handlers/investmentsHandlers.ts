@@ -74,7 +74,12 @@ async function _handleInvestOrderUpdated(event: SubstrateEvent<OrderUpdatedEvent
   await epoch.saveWithStates()
 
   // Update trancheBalance
-  const trancheBalance = await TrancheBalanceService.getOrInit(orderData.address, orderData.poolId, orderData.trancheId)
+  const trancheBalance = await TrancheBalanceService.getOrInit(
+    orderData.address,
+    orderData.poolId,
+    orderData.trancheId,
+    event.block.timestamp
+  )
   await trancheBalance.investOrder(orderData.amount)
   await trancheBalance.save()
 }
@@ -143,7 +148,12 @@ async function _handleRedeemOrderUpdated(event: SubstrateEvent<OrderUpdatedEvent
   await epoch.saveWithStates()
 
   // Update trancheBalance
-  const trancheBalance = await TrancheBalanceService.getOrInit(orderData.address, orderData.poolId, orderData.trancheId)
+  const trancheBalance = await TrancheBalanceService.getOrInit(
+    orderData.address,
+    orderData.poolId,
+    orderData.trancheId,
+    event.block.timestamp
+  )
   await trancheBalance.redeemOrder(orderData.amount)
   await trancheBalance.save()
 }
@@ -192,7 +202,12 @@ async function _handleInvestOrdersCollected(event: SubstrateEvent<InvestOrdersCo
     amount: payoutInvestmentInvest.toBigInt(),
   }
 
-  const trancheBalance = await TrancheBalanceService.getOrInit(orderData.address, orderData.poolId, orderData.trancheId)
+  const trancheBalance = await TrancheBalanceService.getOrInit(
+    orderData.address,
+    orderData.poolId,
+    orderData.trancheId,
+    event.block.timestamp
+  )
 
   if (orderData.amount > 0) {
     const it = InvestorTransactionService.collectInvestOrder(orderData)
@@ -248,7 +263,12 @@ async function _handleRedeemOrdersCollected(event: SubstrateEvent<RedeemOrdersCo
     amount: payoutInvestmentRedeem.toBigInt(),
   }
 
-  const trancheBalance = await TrancheBalanceService.getOrInit(orderData.address, orderData.poolId, orderData.trancheId)
+  const trancheBalance = await TrancheBalanceService.getOrInit(
+    orderData.address,
+    orderData.poolId,
+    orderData.trancheId,
+    event.block.timestamp
+  )
 
   if (orderData.amount > 0) {
     const it = InvestorTransactionService.collectRedeemOrder(orderData)

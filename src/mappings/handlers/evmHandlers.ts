@@ -122,7 +122,12 @@ async function _handleEvmTransfer(event: TransferLog): Promise<void> {
     const investLpCollect = InvestorTransactionService.collectLpInvestOrder({ ...orderData, address: toAccount!.id })
     await investLpCollect.save()
 
-    const trancheBalance = await TrancheBalanceService.getOrInit(toAccount!.id, orderData.poolId, orderData.trancheId)
+    const trancheBalance = await TrancheBalanceService.getOrInit(
+      toAccount.id,
+      orderData.poolId,
+      orderData.trancheId,
+      timestamp
+    )
     await trancheBalance.investCollect(orderData.amount)
     await trancheBalance.save()
   }

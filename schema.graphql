@@ -410,6 +410,8 @@ type TrancheBalance @entity {
   pool: Pool! @index
   tranche: Tranche! @index
 
+  initialisedAt: Date!
+
   pendingInvestCurrency: BigInt!
   claimableTrancheTokens: BigInt!
 
