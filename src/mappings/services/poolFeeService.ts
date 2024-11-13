@@ -40,13 +40,13 @@ export class PoolFeeService extends PoolFee {
     blockchain = '0'
   ) {
     const { poolId, feeId } = data
-    let poolFee = (await this.get(`${poolId}-${feeId}`)) as PoolFeeService | undefined
+    let poolFee = await this.get(`${poolId}-${feeId}`)
     if (!poolFee) {
       poolFee = this.init(data, type, status, blockchain)
     } else {
       poolFee.status = PoolFeeStatus[status]
     }
-    return poolFee
+    return poolFee as PoolFeeService
   }
 
   static getById(poolId: string, feeId: string) {
@@ -70,9 +70,12 @@ export class PoolFeeService extends PoolFee {
     logger.info(`Removing PoolFee ${data.feeId}`)
     const { poolId, feeId } = data
     const poolFee = await this.get(`${poolId}-${feeId}`)
-    if (!poolFee) throw new Error('Unable to remove PoolFee. PoolFee does not exist.')
+    if (!poolFee) {
+      logger.error('Unable to remove PoolFee. PoolFee does not exist.')
+      return
+    }
     poolFee.isActive = false
-    return poolFee
+    return poolFee as PoolFeeService
   }
 
   public charge(data: Omit<PoolFeeData, 'amount'> & Required<Pick<PoolFeeData, 'amount' | 'pending'>>) {

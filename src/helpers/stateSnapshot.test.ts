@@ -1,7 +1,7 @@
 import { SubstrateBlock } from '@subql/types'
 import { PoolService } from '../mappings/services/poolService'
-import { substrateStateSnapshotter } from './stateSnapshot'
-import { Pool, PoolSnapshot } from '../types'
+import { BlockInfo, statesSnapshotter } from './stateSnapshot'
+import { PoolSnapshot } from '../types'
 import { getPeriodStart } from './timekeeperService'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -25,40 +25,24 @@ describe('Given a populated pool,', () => {
     set.mockReset()
     getByFields.mockReset()
     getByFields.mockReturnValue([pool])
-    await substrateStateSnapshotter('periodId', periodId, Pool, PoolSnapshot, block)
-    expect(store.getByFields).toHaveBeenCalledWith('Pool', [['blockchainId', '=', '0']], expect.anything())
+    const blockInfo: BlockInfo = { timestamp, number: blockNumber }
+    await statesSnapshotter('periodId', periodId, [pool], PoolSnapshot, blockInfo)
+    expect(store.set).toHaveBeenCalledTimes(2)
     expect(store.set).toHaveBeenNthCalledWith(1, 'Pool', poolId, expect.anything())
-    expect(store.set).toHaveBeenNthCalledWith(2, 'PoolSnapshot', `${poolId}-11246`, expect.anything())
+    expect(store.set).toHaveBeenNthCalledWith(2, 'PoolSnapshot', `${poolId}-${blockNumber}`, expect.anything())
   })
 
   test('when a snapshot is taken, then the timestamp and blocknumber are added', async () => {
     set.mockReset()
     getByFields.mockReset()
     getByFields.mockReturnValue([pool])
-    await substrateStateSnapshotter('periodId', periodId, Pool, PoolSnapshot, block)
+    const blockInfo: BlockInfo = { timestamp, number: blockNumber }
+    await statesSnapshotter('periodId', periodId, [pool], PoolSnapshot, blockInfo)
     expect(store.set).toHaveBeenNthCalledWith(
       2,
       'PoolSnapshot',
-      `${poolId}-11246`,
-      expect.objectContaining({ timestamp: block.timestamp, blockNumber: 11246 })
-    )
-  })
-
-  test('when filters are specified, then the correct values are fetched', async () => {
-    set.mockReset()
-    getByFields.mockReset()
-    getByFields.mockReturnValue([pool])
-    await substrateStateSnapshotter<Pool, PoolSnapshot>('periodId', periodId, Pool, PoolSnapshot, block, [
-      ['isActive', '=', true],
-    ])
-    expect(store.getByFields).toHaveBeenNthCalledWith(
-      1,
-      'Pool',
-      [
-        ['blockchainId', '=', '0'],
-        ['isActive', '=', true],
-      ],
-      expect.anything()
+      `${poolId}-${blockNumber}`,
+      expect.objectContaining({ timestamp: block.timestamp, blockNumber: blockNumber })
     )
   })
 
@@ -66,19 +50,12 @@ describe('Given a populated pool,', () => {
     set.mockReset()
     getByFields.mockReset()
     getByFields.mockReturnValue([pool])
-    await substrateStateSnapshotter<Pool, PoolSnapshot>(
-      'periodId',
-      periodId,
-      Pool,
-      PoolSnapshot,
-      block,
-      [['type', '=', 'ALL']],
-      'poolId'
-    )
+    const blockInfo: BlockInfo = { timestamp, number: blockNumber }
+    await statesSnapshotter('periodId', periodId, [pool], PoolSnapshot, blockInfo, 'poolId')
     expect(store.set).toHaveBeenNthCalledWith(
       2,
       'PoolSnapshot',
-      `${poolId}-11246`,
+      `${poolId}-${blockNumber}`,
       expect.objectContaining({ poolId: poolId })
     )
   })
@@ -101,13 +78,14 @@ describe('Given a pool with non zero accumulators, ', () => {
 
     Object.assign(pool, accumulatedProps)
 
-    await substrateStateSnapshotter('periodId', periodId, Pool, PoolSnapshot, block)
+    const blockInfo: BlockInfo = { timestamp, number: 11246 }
+    await statesSnapshotter('periodId', periodId, [pool], PoolSnapshot, blockInfo)
 
     expect(store.set).toHaveBeenNthCalledWith(1, 'Pool', poolId, expect.objectContaining(zeroedProps))
     expect(store.set).toHaveBeenNthCalledWith(
       2,
       'PoolSnapshot',
-      `${poolId}-11246`,
+      `${poolId}-${blockNumber}`,
       expect.objectContaining(zeroedProps)
     )
   })

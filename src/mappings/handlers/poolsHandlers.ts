@@ -240,7 +240,8 @@ async function _handleEpochExecuted(event: SubstrateEvent<EpochClosedExecutedEve
       const trancheBalance = await TrancheBalanceService.getOrInit(
         orderData.address,
         orderData.poolId,
-        orderData.trancheId
+        orderData.trancheId,
+        timestamp
       )
 
       if (oo.investAmount > BigInt(0) && epochState.investFulfillmentPercentage! > BigInt(0)) {

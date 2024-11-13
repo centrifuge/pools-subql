@@ -13,7 +13,6 @@ import { Pool } from '../../types'
 import { cid, readIpfs } from '../../helpers/ipfsFetch'
 import { EpochService } from './epochService'
 import { WAD_DIGITS } from '../../config'
-import { CurrencyService } from './currencyService'
 import { assertPropInitialized } from '../../helpers/validation'
 
 export class PoolService extends Pool {
@@ -214,7 +213,7 @@ export class PoolService extends Pool {
     return this
   }
 
-  public async updateNAV() {
+  public async updateNAV(poolCurrencyDecimals: number) {
     const specVersion = api.runtimeVersion.specVersion.toNumber()
     const specName = api.runtimeVersion.specName.toString()
     switch (specName) {
@@ -225,7 +224,7 @@ export class PoolService extends Pool {
         await (specVersion < 1025 ? this.updateNAVQuery() : this.updateNAVCall())
         break
     }
-    await this.updateNormalizedNAV()
+    await this.updateNormalizedNAV(poolCurrencyDecimals)
     return this
   }
 
@@ -275,13 +274,9 @@ export class PoolService extends Pool {
     return this
   }
 
-  public async updateNormalizedNAV() {
-    assertPropInitialized(this, 'currencyId', 'string')
+  public async updateNormalizedNAV(poolCurrencyDecimals: number) {
     assertPropInitialized(this, 'netAssetValue', 'bigint')
-
-    const currency = await CurrencyService.get(this.currencyId!)
-    if (!currency) throw new Error(`No currency with Id ${this.currencyId} found!`)
-    const digitsMismatch = WAD_DIGITS - currency.decimals
+    const digitsMismatch = WAD_DIGITS - poolCurrencyDecimals
     if (digitsMismatch === 0) {
       this.normalizedNAV = this.netAssetValue
       return this

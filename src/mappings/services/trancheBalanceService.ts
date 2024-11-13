@@ -1,13 +1,14 @@
 import { TrancheBalance } from '../../types/models/TrancheBalance'
 
 export class TrancheBalanceService extends TrancheBalance {
-  static init(address: string, poolId: string, trancheId: string) {
+  static init(address: string, poolId: string, trancheId: string, timestamp: Date) {
     logger.info(`Initialising new TrancheBalance: ${address}-${poolId}-${trancheId}`)
     const trancheBalance = new this(
       `${address}-${poolId}-${trancheId}`,
       address,
       poolId,
       `${poolId}-${trancheId}`,
+      timestamp,
       BigInt(0),
       BigInt(0),
       BigInt(0),
@@ -24,13 +25,13 @@ export class TrancheBalanceService extends TrancheBalance {
     return trancheBalance as TrancheBalanceService | undefined
   }
 
-  static getOrInit = async (address: string, poolId: string, trancheId: string) => {
+  static async getOrInit(address: string, poolId: string, trancheId: string, timestamp: Date) {
     let trancheBalance = await this.getById(address, poolId, trancheId)
-    if (trancheBalance === undefined) {
-      trancheBalance = this.init(address, poolId, trancheId)
+    if (!trancheBalance) {
+      trancheBalance = this.init(address, poolId, trancheId, timestamp)
       await trancheBalance.save()
     }
-    return trancheBalance
+    return trancheBalance as TrancheBalanceService
   }
 
   public investOrder(currencyAmount: bigint) {

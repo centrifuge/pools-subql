@@ -143,7 +143,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
         pool.id === ALT_1_POOL_ID && blockNumber > ALT_1_END_BLOCK
           ? BigInt(0)
           : (pool.portfolioValuation ?? BigInt(0)) + (pool.totalReserve ?? BigInt(0))
-      await pool.updateNormalizedNAV()
+      await pool.updateNormalizedNAV(currency.decimals)
       logger.info(`Updating pool ${pool.id} with portfolioValuation: ${pool.portfolioValuation}`)
     }
 
@@ -155,7 +155,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
           : ReserveAbi__factory.createInterface().decodeFunctionResult('totalBalance', callResult.result)[0].toBigInt()
       pool.totalReserve = totalBalance
       pool.netAssetValue = (pool.portfolioValuation ?? BigInt(0)) + (pool.totalReserve ?? BigInt(0))
-      await pool.updateNormalizedNAV()
+      await pool.updateNormalizedNAV(currency.decimals)
       logger.info(`Updating pool ${pool.id} with totalReserve: ${pool.totalReserve}`)
     }
 
