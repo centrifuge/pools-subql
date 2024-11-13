@@ -50,6 +50,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
       tinlakePool: (typeof tinlakePools)[0]
       latestNavFeed?: ContractArray
       latestReserve?: ContractArray
+      latestAssessor?: ContractArray
     }
   > = {}
   const poolUpdateCalls: PoolMulticall[] = []
@@ -190,7 +191,6 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
         latestNavFeed.address
       )
     }
-
     await pool.save()
   }
 
@@ -473,7 +473,8 @@ async function getNewLoans(existingLoans: number[], shelfAddress: string) {
 }
 
 function getLatestContract(contractArray: ContractArray[], blockNumber: number) {
-  return contractArray.find((entry) => entry.startBlock <= blockNumber)
+  if(contractArray.length === 1) return contractArray[0]
+  return contractArray.find((entry) => entry.startBlock! <= blockNumber)
 }
 
 function chunkArray<T>(array: T[], chunkSize: number): T[][] {
@@ -522,5 +523,5 @@ interface LoanDetails {
 
 interface ContractArray {
   address: string | null
-  startBlock: number
+  startBlock?: number
 }
