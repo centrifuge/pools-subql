@@ -25,9 +25,9 @@ export class TrancheBalanceService extends TrancheBalance {
     return trancheBalance as TrancheBalanceService | undefined
   }
 
-  static getOrInit = async (address: string, poolId: string, trancheId: string, timestamp: Date) => {
+  static async getOrInit(address: string, poolId: string, trancheId: string, timestamp: Date) {
     let trancheBalance = await this.getById(address, poolId, trancheId)
-    if (trancheBalance === undefined) {
+    if (!trancheBalance) {
       trancheBalance = this.init(address, poolId, trancheId, timestamp)
       await trancheBalance.save()
     }

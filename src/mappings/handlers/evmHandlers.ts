@@ -9,13 +9,10 @@ import { InvestorTransactionData, InvestorTransactionService } from '../services
 import { CurrencyService } from '../services/currencyService'
 import { BlockchainService } from '../services/blockchainService'
 import { CurrencyBalanceService } from '../services/currencyBalanceService'
-import type { Provider } from '@ethersproject/providers'
 import { TrancheBalanceService } from '../services/trancheBalanceService'
 import { escrows } from '../../config'
 import { InvestorPositionService } from '../services/investorPositionService'
 import { getPeriodStart } from '../../helpers/timekeeperService'
-
-const _ethApi = api as Provider
 //const networkPromise = typeof ethApi.getNetwork === 'function' ? ethApi.getNetwork() : null
 
 export const handleEvmDeployTranche = errorHandler(_handleEvmDeployTranche)
@@ -123,7 +120,7 @@ async function _handleEvmTransfer(event: TransferLog): Promise<void> {
     await investLpCollect.save()
 
     const trancheBalance = await TrancheBalanceService.getOrInit(
-      toAccount.id,
+      toAccount!.id,
       orderData.poolId,
       orderData.trancheId,
       timestamp
