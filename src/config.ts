@@ -21,6 +21,7 @@ export const tinlakePools = [
     reserve: [{ address: '0xdcc68229b0d0fb7668f3304d88ee9a2738a7b51d', startBlock: 13796304 }],
     shelf: [{ address: '0xbcCB3516D0fDE02DC46d9Bf591CF9cb3880D9842' }],
     pile: [{ address: '0xc2a75288cf644b068fC1e765586c170f2529a87F' }],
+    assessor: [{ address: '0xbAC0588400b84367E1F9601b96ac6C7f3e28F979' }],
     seniorInterestRate: '1000000001585489599188229325',
   },
   {
@@ -31,6 +32,7 @@ export const tinlakePools = [
     reserve: [{ address: '0x932344ba99bf34035b4bc25cbd98f912ebc60371', startBlock: 11197219 }],
     shelf: [{ address: '0xCFad06aDAcf221f8119995c8bCa25184A6b5A268' }],
     pile: [{ address: '0x05739C677286d38CcBF0FfC8f9cdbD45904B47Fd' }],
+    assessor: [{ address: '0x2B8feA4eEDB43fCa58ccb063221FaE5858b47538' }],
     seniorInterestRate: '1000000002378234398782343987',
   },
   {
@@ -41,6 +43,7 @@ export const tinlakePools = [
     reserve: [{ address: '0xb12e705733042610174ed22f6726d26db12dbdfe', startBlock: 12703288 }],
     shelf: [{ address: '0x4Ca7049E61629407a7E829564C1Dd2538d70182C' }],
     pile: [{ address: '0xAAEaCfcCc3d3249f125Ba0644495560309C266cB' }],
+    assessor: [{ address: '0x623f6DbDcB637f357551F8EFD7b4c304cf7Bcbd0' }],
     seniorInterestRate: '1000000004439370877727042110',
   },
   {
@@ -51,6 +54,7 @@ export const tinlakePools = [
     reserve: [{ address: '0x101e8f7598639bf3d1320ac9999977a0678aa186', startBlock: 13513359 }],
     shelf: [{ address: '0x720E872De93F3416bD0d43d3ACA6891f26D60797' }],
     pile: [{ address: '0x2bD53Bd2341329e0cf36c55380A77a3E457028Ca' }],
+    assessor: [{ address: '0x038a0a70E99D2fD12d7D9FeFD912c9A8E670eB83' }],
     seniorInterestRate: '1000000001090816844241501775',
   },
   {
@@ -61,6 +65,7 @@ export const tinlakePools = [
     reserve: [{ address: '0xb15ccb81f633b98845a0f6c91a89483298a41cc3', startBlock: 13402984 }],
     shelf: [{ address: '0x5621d692DEEea943C0c694dC3000E32d3CE28bA7' }],
     pile: [{ address: '0x696866ea53C0f521C24a28D92fAbD2c559182D38' }],
+    assessor: [{ address: '0x909127EEec2797804ee62E196e6e731D6eb2d037' }],
     seniorInterestRate: '1000000001902587519025875190',
   },
   {
@@ -71,6 +76,7 @@ export const tinlakePools = [
     reserve: [{ address: '0x1794a4b29ff2ecdc044ad5d4972fa118d4c121b9', startBlock: 12902086 }],
     shelf: [{ address: '0x661f03AcE6Bd3087201503541ac7b0Cb1185d673' }],
     pile: [{ address: '0x9E39e0130558cd9A01C1e3c7b2c3803baCb59616' }],
+    assessor: [{ address: '0x87C67534d9aF78d678101f2dE0F796F4d911697a' }],
     seniorInterestRate: '1000000002695332318619989852',
   },
   {
@@ -81,6 +87,7 @@ export const tinlakePools = [
     reserve: [{ address: '0x50f8a1cdedd9aef2901c7ec0859d8adbf61b1263', startBlock: 16041344 }],
     shelf: [{ address: '0x35Cbc4F6de5333DAFb372200591E69b68B2A5FbF' }],
     pile: [{ address: '0x62E6225d9DbFa9C5f09ccB43304F60a0a7dDeb7A' }],
+    assessor: [{ address: '0x9A359b74BaDd48c23A0A848d149D96B87816F944' }],
     seniorInterestRate: '1000000001268391679350583460',
   },
   {
@@ -98,6 +105,10 @@ export const tinlakePools = [
     ],
     shelf: [{ address: '0x9C3a54AC3af2e1FC9ee49e991a0452629C9bca64' }],
     pile: [{ address: '0x11C14AAa42e361Cf3500C9C46f34171856e3f657' }],
+    assessor: [
+      { address: '0x4e7D665FB7747747bd770CB35F604412249AE8bC', startBlock: 11282864 },
+      { address: '0xCC2cA000DB7Df0499667ca4048987727151b0b1f', startBlock: 12996577 },
+    ],
     seniorInterestRate: '1000000003170979198376458650',
   },
   {
@@ -111,6 +122,10 @@ export const tinlakePools = [
     ],
     shelf: [{ address: '0x5b2b43b3676057e38F332De73A9fCf0F8f6Babf7' }],
     pile: [{ address: '0xE7876f282bdF0f62e5fdb2C63b8b89c10538dF32' }],
+    assessor: [
+      { address: '0x6e40A9d1eE2c8eF95322b879CBae35BE6Dd2D143', startBlock: 11464257 },
+      { address: '0xf2ED14102ee9D86606Ec24E48e89060ADB6DeFdb', startBlock: 13004076 },
+    ],
     seniorInterestRate: '1000000003488077118214104515',
   },
   {
@@ -121,6 +136,7 @@ export const tinlakePools = [
     reserve: [{ address: '0x1f5fa2e665609ce4953c65ce532ac8b47ec97cd5', startBlock: 12702995 }],
     shelf: [{ address: '0x7d057A056939bb96D682336683C10EC89b78D7CE' }],
     pile: [{ address: '0x3eC5c16E7f2C6A80E31997C68D8Fa6ACe089807f' }],
+    assessor: [{ address: '0x29BB673054b6Fd268d73af5D676f150C91bd63af' }],
     seniorInterestRate: '1000000001585489599188229325',
   },
   {
@@ -131,6 +147,7 @@ export const tinlakePools = [
     reserve: [{ address: '0xeeaeb5dd73f59b985620ba957c7c1917efcaa36b', startBlock: 16047892 }],
     shelf: [{ address: '0x9ACe0E10D30bee67F096861e36faA984005d2DA3' }],
     pile: [{ address: '0xFE2cC8f110311D9aeB116292687697FD805D9FDB' }],
+    assessor: [{ address: '0x3540948a82B7dA7078A635f9c806023bc146eEA0' }],
     seniorInterestRate: '1000000001268391679350583460',
   },
   {
@@ -144,6 +161,7 @@ export const tinlakePools = [
     ],
     shelf: [{ address: '0xeCc564B98f3F50567C3ED0C1E784CbA4f97C6BcD' }],
     pile: [{ address: '0xe17F3c35C18b2Af84ceE2eDed673c6A08A671695' }],
+    assessor: [{ address: '0x546F37C27483ffd6deC56076d0F8b4B636C5616B' }],
     seniorInterestRate: '1000000003646626078132927447',
   },
   {
@@ -154,6 +172,7 @@ export const tinlakePools = [
     reserve: [{ address: '0x0958c089e6389f2bba2eedd754047265241baf55', startBlock: 12003573 }],
     shelf: [{ address: '0x8868b1e995CBCBaD4D904012D4c2a590510773d8' }],
     pile: [{ address: '0x99D0333f97432fdEfA25B7634520d505e58B131B' }],
+    assessor: [{ address: '0xab321CDc90b8882D19c2866b377b450284501219' }],
     seniorInterestRate: '1000000003488077118214104515',
   },
   {
@@ -164,6 +183,7 @@ export const tinlakePools = [
     reserve: [{ address: '0xb873c152c06be54c704f891e37a7e3b554514964', startBlock: 11459264 }],
     shelf: [{ address: '0x67C1d2552a0cE8572AAfFD0c9664EeA7edbBCeF3' }],
     pile: [{ address: '0x37c8B836eA1b89b7cC4cFdDed4C4fbC454CcC679' }],
+    assessor: [{ address: '0x966F53cb928ab361714AF16E301e82fDf01bCbb9' }],
     seniorInterestRate: '1000000002219685438863521055',
   },
   {
@@ -174,6 +194,7 @@ export const tinlakePools = [
     reserve: [{ address: '0xb54900bcc0674e356627b58420fd051f2d47b9e9', startBlock: 16047729 }],
     shelf: [{ address: '0xE791898207C129dB963260D6A3b23C8e7B8E31f2' }],
     pile: [{ address: '0x6af9dA8dB1925F8ef359274A59eF01e1c6Df7bE0' }],
+    assessor: [{ address: '0xFe37f99cd0597164BFdaBFB7c9f98E4fc44BeF52' }],
     seniorInterestRate: '1000000001268391679350583460',
   },
   {
@@ -184,6 +205,7 @@ export const tinlakePools = [
     reserve: [{ address: '0x6942f8779c5c4aa385121a3ee203f2ca1d9d10bc', startBlock: 12951486 }],
     shelf: [{ address: '0xE80C9e9fbaE9868e1D645f9727436afE5381047A' }],
     pile: [{ address: '0xB7d1DE24c0243e6A3eC4De9fAB2B19AB46Fa941F' }],
+    assessor: [{ address: '0xdBBa712f10061A3c7619Dc46852d8399F33C9fC7' }],
     seniorInterestRate: '1000000001902587519025875190',
   },
   {
@@ -194,6 +216,7 @@ export const tinlakePools = [
     reserve: [{ address: '0x86ade02617911d2bf020b29b3035e6b3d805992d', startBlock: 16047557 }],
     shelf: [{ address: '0x77bd5e87fBdae67C495d17ba268DD9E494983627' }],
     pile: [{ address: '0x611e36809ad4BB94ae6dE889fd4e830Fc21835f7' }],
+    assessor: [{ address: '0x03354D4E877aE79Aba6a7955fa7B80aF0A4Ace8d' }],
     seniorInterestRate: '1000000001268391679350583460',
   },
   {
@@ -204,6 +227,7 @@ export const tinlakePools = [
     reserve: [{ address: '0xc156aa23a29ef7678b4dec5b812b84797ed21ee0', startBlock: 15460175 }],
     shelf: [{ address: '0x511680e8eD9cA463E5F1776281992de4Aec22039' }],
     pile: [{ address: '0x8f7b701a7309c2Ef5c0Fe850ab7589d5b23a8f76' }],
+    assessor: [{ address: '0x28D56f3286c400c16e2aFBBA6989d7BfAA4FCA7c' }],
     seniorInterestRate: '1000000004756468797564687975',
   },
   {
@@ -217,6 +241,7 @@ export const tinlakePools = [
     ],
     shelf: [{ address: '0xA0B0d8394ADC79f5d1563a892abFc6186E519644' }],
     pile: [{ address: '0x3fC72dA5545E2AB6202D81fbEb1C8273Be95068C' }],
+    assessor: [{ address: '0x6aaf2EE5b2B62fb9E29E021a1bF3B381454d900a' }],
     seniorInterestRate: '1000000002536783358701166920',
   },
   {
@@ -227,6 +252,7 @@ export const tinlakePools = [
     reserve: [{ address: '0x35f7de72c8597599ef4f2a18eafd162257301435', startBlock: 14167898 }],
     shelf: [{ address: '0x11daC3fA9d2216377A79Bef04F6A2682630371c3' }],
     pile: [{ address: '0xE18AAB16cC26EB23740D72875e0C6b52cEbb46b3' }],
+    assessor: [{ address: '0x623419515a24F2F5d9c9d48cA27969aD107E7a6f' }],
     seniorInterestRate: '1000000002536783358701166920',
   },
   {
@@ -237,6 +263,7 @@ export const tinlakePools = [
     reserve: [{ address: '0x729e12cdc0190a2e4ab4401bca4c16132d75adc5', startBlock: 11639877 }],
     shelf: [{ address: '0xC42CfB07bC1140f9A615bD63c4fFAE5F8260Ab22' }],
     pile: [{ address: '0xdB07B21109117208a0317adfbed484C87c9c2aFf' }],
+    assessor: [{ address: '0x95bC79d2Aa5147108C285d71CFfB842B7A781a96' }],
     seniorInterestRate: '1000000001585489599188229325',
   },
 ]

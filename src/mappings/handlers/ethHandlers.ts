@@ -9,6 +9,7 @@ import { BlockchainService } from '../services/blockchainService'
 import {
   ShelfAbi__factory,
   NavfeedAbi__factory,
+  AssessorAbi__factory,
   ReserveAbi__factory,
   PileAbi__factory,
   MulticallAbi__factory,
@@ -49,6 +50,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
       tinlakePool: (typeof tinlakePools)[0]
       latestNavFeed?: ContractArray
       latestReserve?: ContractArray
+      latestAssessor?: ContractArray
     }
   > = {}
   const poolUpdateCalls: PoolMulticall[] = []
@@ -58,6 +60,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
     const pool = await PoolService.getOrSeed(tinlakePool.id, false, false, blockchain.id)
     const latestNavFeed = getLatestContract(tinlakePool.navFeed, blockNumber)
     const latestReserve = getLatestContract(tinlakePool.reserve, blockNumber)
+    const latestAssessor = getLatestContract(tinlakePool.assessor, blockNumber)
     processedPools[pool.id] = { pool, latestNavFeed, latestReserve, tinlakePool }
 
     // initialize new pool
@@ -98,6 +101,28 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
         result: '',
       })
     }
+    //Append token price calls for pool
+    if (latestAssessor && latestAssessor.address) {
+      poolUpdateCalls.push({
+        id: tinlakePool.id,
+        type: 'calcSeniorTokenPrice',
+        call: {
+          target: latestAssessor.address,
+          callData: AssessorAbi__factory.createInterface().encodeFunctionData('calcSeniorTokenPrice'),
+        },
+        result: '',
+      })
+
+      poolUpdateCalls.push({
+        id: tinlakePool.id,
+        type: 'calcJuniorTokenPrice',
+        call: {
+          target: latestAssessor.address,
+          callData: AssessorAbi__factory.createInterface().encodeFunctionData('calcJuniorTokenPrice'),
+        },
+        result: '',
+      })
+    }
   }
 
   //Execute available calls
@@ -107,7 +132,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
   })
 
   for (const callResult of callResults) {
-    const { pool, latestNavFeed, latestReserve, tinlakePool } = processedPools[callResult.id]
+    const { pool, latestNavFeed, latestReserve, latestAssessor, tinlakePool } = processedPools[callResult.id]
     // Update pool vurrentNav
     if (callResult.type === 'currentNAV' && latestNavFeed) {
       const currentNAV =
@@ -135,6 +160,26 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
       logger.info(`Updating pool ${pool.id} with totalReserve: ${pool.totalReserve}`)
     }
 
+    if (callResult.type === 'calcSeniorTokenPrice' && latestAssessor) {
+      const seniorPrice = AssessorAbi__factory.createInterface()
+        .decodeFunctionResult('calcSeniorTokenPrice', callResult.result)[0]
+        .toBigInt()
+      const senior = await TrancheService.getOrSeed(tinlakePool?.id, 'senior', blockchain.id)
+      senior.tokenPrice = seniorPrice
+      await senior.save()
+      logger.info(`Updating pool ${tinlakePool?.id} senior token price to: ${seniorPrice}`)
+    }
+
+    if (callResult.type === 'calcJuniorTokenPrice' && latestAssessor) {
+      const juniorPrice = AssessorAbi__factory.createInterface()
+        .decodeFunctionResult('calcJuniorTokenPrice', callResult.result)[0]
+        .toBigInt()
+      const junior = await TrancheService.getOrSeed(tinlakePool?.id, 'junior', blockchain.id)
+      junior.tokenPrice = juniorPrice
+      await junior.save()
+      logger.info(`Updating pool ${tinlakePool?.id} junior token price to: ${juniorPrice}`)
+    }
+
     // Update loans (only index if fully synced)
     if (latestNavFeed && latestNavFeed.address && date.toDateString() === new Date().toDateString()) {
       await updateLoans(
@@ -146,7 +191,6 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
         latestNavFeed.address
       )
     }
-
     await pool.save()
   }
 
@@ -429,7 +473,8 @@ async function getNewLoans(existingLoans: number[], shelfAddress: string) {
 }
 
 function getLatestContract(contractArray: ContractArray[], blockNumber: number) {
-  return contractArray.find((entry) => entry.startBlock <= blockNumber)
+  if(contractArray.length === 1) return contractArray[0]
+  return contractArray.find((entry) => entry.startBlock! <= blockNumber)
 }
 
 function chunkArray<T>(array: T[], chunkSize: number): T[][] {
@@ -478,5 +523,5 @@ interface LoanDetails {
 
 interface ContractArray {
   address: string | null
-  startBlock: number
+  startBlock?: number
 }
