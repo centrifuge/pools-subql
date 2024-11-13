@@ -162,8 +162,8 @@ export class InvestorTransactionService extends InvestorTransaction {
   }
 
   static async getById(hash: string) {
-    const tx = (await this.get(hash)) as InvestorTransactionService | undefined
-    return tx
+    const tx = await this.get(hash)
+    return tx as InvestorTransactionService | undefined
   }
 
   static computeTokenAmount(data: InvestorTransactionData) {

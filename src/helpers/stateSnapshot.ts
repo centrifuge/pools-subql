@@ -47,8 +47,6 @@ export async function statesSnapshotter<T extends SnapshottableEntity, U extends
       entitySaves.push(stateEntity.save())
     }
     entitySaves.push(snapshotEntity.save())
-    //logger.info(JSON.stringify(stateEntity))
-    //logger.info(JSON.stringify(snapshotEntity))
   }
   return Promise.all(entitySaves)
 }
@@ -87,4 +85,14 @@ export interface EntityClass<T extends Entity> {
 export interface BlockInfo {
   number: number
   timestamp: Date
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function logObject(object: any) {
+  return logger.info(
+    JSON.stringify(
+      object,
+      (_key, value) => (typeof value === 'bigint' ? value.toString() : value) // return everything else unchanged
+    )
+  )
 }

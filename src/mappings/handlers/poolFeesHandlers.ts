@@ -105,7 +105,7 @@ async function _handleFeeRemoved(event: SubstrateEvent<PoolFeesRemovedEvent>): P
   }
 
   const poolFee = await PoolFeeService.delete(poolFeeData)
-  await poolFee.save()
+  if(poolFee) await poolFee.save()
 
   const poolFeeTransaction = PoolFeeTransactionService.delete(poolFeeData)
   await poolFeeTransaction.save()

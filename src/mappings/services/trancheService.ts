@@ -57,8 +57,8 @@ export class TrancheService extends Tranche {
   }
 
   static async getById(poolId: string, trancheId: string) {
-    const tranche = (await this.get(`${poolId}-${trancheId}`)) as TrancheService | undefined
-    return tranche
+    const tranche = (await this.get(`${poolId}-${trancheId}`))
+    return tranche as TrancheService | undefined
   }
 
   static async getByPoolId(poolId: string): Promise<TrancheService[]> {
