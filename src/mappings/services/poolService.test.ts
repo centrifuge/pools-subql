@@ -86,7 +86,7 @@ describe('Given a new pool, when initialised', () => {
 
 describe('Given an existing pool,', () => {
   test.skip('when the nav is updated, then the value is fetched and set correctly', async () => {
-    await pool.updateNAV()
+    await pool.updateNAV(14)
     expect(api.query.loans.portfolioValuation).toHaveBeenCalled()
     expect(pool.portfolioValuation).toBe(BigInt(100000000000000))
   })

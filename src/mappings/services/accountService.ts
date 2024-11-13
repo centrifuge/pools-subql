@@ -17,13 +17,13 @@ export class AccountService extends Account {
   }
 
   static async getOrInit(address: string, blockchainService = BlockchainService): Promise<AccountService> {
-    let account = (await this.get(address)) as AccountService | undefined
+    let account = (await this.get(address))
     if (!account) {
       account = await this.init(address)
       await blockchainService.getOrInit(account.chainId)
       await account.save()
     }
-    return account
+    return account as AccountService
   }
 
   static evmToSubstrate(evmAddress: string, chainId: string) {

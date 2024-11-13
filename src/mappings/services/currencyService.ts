@@ -17,7 +17,7 @@ export class CurrencyService extends Currency {
   static async getOrInit(chainId: string, currencyType: string, ...currencyValue: string[]) {
     const currencyId = currencyValue.length > 0 ? `${currencyType}-${currencyValue.join('-')}` : currencyType
     const id = `${chainId}-${currencyId}`
-    let currency = (await this.get(id)) as CurrencyService | undefined
+    let currency = (await this.get(id))
     if (!currency) {
       const enumPayload = formatEnumPayload(currencyType, ...currencyValue)
       const assetMetadata = (await api.query.ormlAssetRegistry.metadata(enumPayload)) as Option<AssetMetadata>
@@ -33,7 +33,7 @@ export class CurrencyService extends Currency {
   static async getOrInitEvm(chainId: string, currencyType: string, symbol?: string, name?: string) {
     const currencyId = currencyType
     const id = `${chainId}-${currencyId}`
-    let currency: CurrencyService = (await this.get(id)) as CurrencyService
+    let currency = (await this.get(id))
     if (!currency) {
       currency = this.init(chainId, currencyId, WAD_DIGITS, symbol, name)
       await currency.save()

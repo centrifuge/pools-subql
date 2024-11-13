@@ -81,8 +81,8 @@ export class AssetService extends Asset {
   }
 
   static async getById(poolId: string, assetId: string) {
-    const asset = (await this.get(`${poolId}-${assetId}`)) as AssetService | undefined
-    return asset
+    const asset = (await this.get(`${poolId}-${assetId}`))
+    return asset as AssetService
   }
 
   static async getByNftId(collectionId: string, itemId: string) {
