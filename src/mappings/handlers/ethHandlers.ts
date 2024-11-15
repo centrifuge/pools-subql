@@ -61,7 +61,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
     const latestNavFeed = getLatestContract(tinlakePool.navFeed, blockNumber)
     const latestReserve = getLatestContract(tinlakePool.reserve, blockNumber)
     const latestAssessor = getLatestContract(tinlakePool.assessor, blockNumber)
-    processedPools[pool.id] = { pool, latestNavFeed, latestReserve, tinlakePool }
+    processedPools[pool.id] = { pool, latestNavFeed, latestReserve, latestAssessor, tinlakePool }
 
     // initialize new pool
     if (!pool.isActive) {
@@ -473,7 +473,7 @@ async function getNewLoans(existingLoans: number[], shelfAddress: string) {
 }
 
 function getLatestContract(contractArray: ContractArray[], blockNumber: number) {
-  if(contractArray.length === 1) return contractArray[0]
+  if (contractArray.length === 1) return contractArray[0]
   return contractArray.find((entry) => entry.startBlock! <= blockNumber)
 }
 
