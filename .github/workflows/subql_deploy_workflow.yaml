@@ -93,4 +93,6 @@ jobs:
           --disableIndexerStoreCacheAsync \
           --queryLimit=1000 \
           --indexerUnsafe \
+          --indexerSubscription \
+          --querySubscription \
           --queryAggregate
