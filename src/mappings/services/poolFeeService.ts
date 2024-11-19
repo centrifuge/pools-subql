@@ -54,7 +54,13 @@ export class PoolFeeService extends PoolFee {
   }
 
   static async getActives(poolId: string) {
-    const poolFees = await this.getByFields([['poolId', '=', poolId],['isActive', '=', true]], { limit: 100 })
+    const poolFees = await this.getByFields(
+      [
+        ['poolId', '=', poolId],
+        ['isActive', '=', true],
+      ],
+      { limit: 100 }
+    )
     return poolFees as PoolFeeService[]
   }
 
@@ -147,11 +153,12 @@ export class PoolFeeService extends PoolFee {
   }
 
   static computeSumPendingFees(poolFees: PoolFeeService[]): bigint {
-    if(poolFees.length === 0) return BigInt(0)
+    if (poolFees.length === 0) return BigInt(0)
     const poolId = poolFees[0].poolId
     logger.info(`Computing pendingFees for pool: ${poolId} `)
     return poolFees.reduce((sumPendingAmount, poolFee) => {
-      if (!poolFee.pendingAmount) throw new Error(`pendingAmount not available in poolFee ${poolFee.id}`)
+      if (typeof poolFee.pendingAmount !== 'bigint')
+        throw new Error(`pendingAmount not available in poolFee ${poolFee.id}`)
       return sumPendingAmount + poolFee.pendingAmount
     }, BigInt(0))
   }
