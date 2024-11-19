@@ -123,6 +123,8 @@ jobs:
           --disableHistorical \
           --queryLimit=1000 \
           --indexerWorkers=0 \
+          --indexerSubscription \
+          --querySubscription \
           --indexerUnsafe \
           --indexerVersion="$SUBQL_VERSIONS" \
           --queryAggregate
