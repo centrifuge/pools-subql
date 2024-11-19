@@ -15,7 +15,7 @@ import { SnapshotPeriodService } from '../services/snapshotPeriodService'
 import { TrancheBalanceService } from '../services/trancheBalanceService'
 import { InvestorPositionService } from '../services/investorPositionService'
 import { CurrencyService } from '../services/currencyService'
-import { BlockchainService } from '../services/blockchainService'
+import { BlockchainService, LOCAL_CHAIN_ID } from '../services/blockchainService'
 
 const timekeeper = TimekeeperService.init()
 
@@ -33,7 +33,7 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
   logger.info(
     `# It's a new period on block ${blockNumber}: ${block.timestamp.toISOString()} (specVersion: ${specVersion})`
   )
-  const _blockchain = BlockchainService.getOrInit(chainId)
+  const _blockchain = BlockchainService.getOrInit(LOCAL_CHAIN_ID)
   const period = SnapshotPeriodService.init(blockPeriodStart)
   await period.save()
 
