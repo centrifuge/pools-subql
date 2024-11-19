@@ -57,7 +57,7 @@ export class TrancheService extends Tranche {
   }
 
   static async getById(poolId: string, trancheId: string) {
-    const tranche = (await this.get(`${poolId}-${trancheId}`))
+    const tranche = await this.get(`${poolId}-${trancheId}`)
     return tranche as TrancheService | undefined
   }
 
@@ -266,6 +266,11 @@ export class TrancheService extends Tranche {
   public activate() {
     logger.info(`Activating tranche ${this.id}`)
     this.isActive = true
+  }
+
+  public setTokenPrice(value: bigint) {
+  logger.info(`Setting tranche ${this.id} token price to: ${value.toString()}`)
+    this.tokenPrice = value
   }
 
   public async loadSnapshot(periodStart: Date) {
