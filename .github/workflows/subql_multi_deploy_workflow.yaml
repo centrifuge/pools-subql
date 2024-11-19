@@ -121,7 +121,6 @@ jobs:
           --dict="$SUBQL_DICTIONARIES" \
           --type=$SUBQL_DEPLOYMENT_TYPE \
           --disableHistorical \
-          --disableIndexerStoreCacheAsync \
           --queryLimit=1000 \
           --indexerWorkers=0 \
           --indexerUnsafe \
