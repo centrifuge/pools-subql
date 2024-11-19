@@ -53,6 +53,11 @@ export class PoolFeeService extends PoolFee {
     return this.get(`${poolId}-${feeId}`) as Promise<PoolFeeService | undefined>
   }
 
+  static async getActives(poolId: string) {
+    const poolFees = await this.getByFields([['poolId', '=', poolId],['isActive', '=', true]], { limit: 100 })
+    return poolFees as PoolFeeService[]
+  }
+
   static async propose(data: PoolFeeData, type: keyof typeof PoolFeeType) {
     logger.info(`Proposing PoolFee ${data.feeId}`)
     const poolFee = this.init(data, type, 'PROPOSED')
@@ -141,9 +146,10 @@ export class PoolFeeService extends PoolFee {
     this.name = name
   }
 
-  static async computeSumPendingFees(poolId: string): Promise<bigint> {
+  static computeSumPendingFees(poolFees: PoolFeeService[]): bigint {
+    if(poolFees.length === 0) return BigInt(0)
+    const poolId = poolFees[0].poolId
     logger.info(`Computing pendingFees for pool: ${poolId} `)
-    const poolFees = await this.getByPoolId(poolId, { limit: 100 })
     return poolFees.reduce((sumPendingAmount, poolFee) => {
       if (!poolFee.pendingAmount) throw new Error(`pendingAmount not available in poolFee ${poolFee.id}`)
       return sumPendingAmount + poolFee.pendingAmount

@@ -181,10 +181,11 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
     }
 
     //PoolFees operations
+    const poolFees = await PoolFeeService.getActives(pool.id)
     const accruedFees = await pool.getAccruedFees()
     for (const accruals of accruedFees) {
       const [feeId, pending, disbursement] = accruals
-      const poolFee = await PoolFeeService.getById(pool.id, feeId)
+      const poolFee = poolFees.find( fee => fee.id === `${pool.id}-${feeId}`)
       if (!poolFee) {
         logger.error(`Unable to retrieve PoolFee ${pool.id}-${feeId}, skipping accruals!`)
         continue
@@ -209,7 +210,7 @@ async function _handleBlock(block: SubstrateBlock): Promise<void> {
         logger.warn(`sumAccruedAmountByPeriod not set. unable to increase accrued fees for ${poolFee.id}`)
       }
     }
-    const sumPoolFeesPendingAmount = await PoolFeeService.computeSumPendingFees(pool.id)
+    const sumPoolFeesPendingAmount = await PoolFeeService.computeSumPendingFees(poolFees)
     await pool.updateSumPoolFeesPendingAmount(sumPoolFeesPendingAmount)
     await pool.save()
     poolsToSnapshot.push(pool)

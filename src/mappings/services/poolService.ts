@@ -274,7 +274,7 @@ export class PoolService extends Pool {
     return this
   }
 
-  public async updateNormalizedNAV(poolCurrencyDecimals: number) {
+  public updateNormalizedNAV(poolCurrencyDecimals: number) {
     assertPropInitialized(this, 'netAssetValue', 'bigint')
     const digitsMismatch = WAD_DIGITS - poolCurrencyDecimals
     if (digitsMismatch === 0) {
@@ -627,6 +627,23 @@ export class PoolService extends Pool {
     this.sumUnrealizedProfitAtMarketPrice! += atMarket
     this.sumUnrealizedProfitAtNotional! += atNotional
     this.sumUnrealizedProfitByPeriod! += byPeriod
+  }
+
+  public setPortfolioValuation(value: bigint) {
+    logger.info(`Setting pool ${this.id} portfolioValuation to: ${value.toString()}`)
+    this.portfolioValuation = value
+  }
+
+  public setTotalReserve(value: bigint) {
+    logger.info(`Setting pool ${this.id} totalReserve to: ${value.toString()}`)
+    this.totalReserve = value
+  }
+
+  public setNetAssetValue() {
+    assertPropInitialized(this, 'portfolioValuation', 'bigint')
+    assertPropInitialized(this, 'totalReserve', 'bigint')
+    this.netAssetValue = this.portfolioValuation! + this.totalReserve!
+    logger.info(`Set pool ${this.id} netAssetValue to: ${this.netAssetValue.toString()}`)
   }
 }
 

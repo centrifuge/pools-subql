@@ -21,6 +21,7 @@ import { Multicall3 } from '../../types/contracts/MulticallAbi'
 import type { Provider } from '@ethersproject/providers'
 import type { BigNumber } from '@ethersproject/bignumber'
 import { SnapshotPeriodService } from '../services/snapshotPeriodService'
+import type { BytesLike, Interface } from 'ethers/lib/utils'
 
 const timekeeper = TimekeeperService.init()
 
@@ -43,16 +44,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
   await snapshotPeriod.save()
 
   // update pool states
-  const processedPools: Record<
-    PoolService['id'],
-    {
-      pool: PoolService
-      tinlakePool: (typeof tinlakePools)[0]
-      latestNavFeed?: ContractArray
-      latestReserve?: ContractArray
-      latestAssessor?: ContractArray
-    }
-  > = {}
+  const processedPools: ProcessedPools = {}
   const poolUpdateCalls: PoolMulticall[] = []
 
   for (const tinlakePool of tinlakePools) {
@@ -61,7 +53,7 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
     const latestNavFeed = getLatestContract(tinlakePool.navFeed, blockNumber)
     const latestReserve = getLatestContract(tinlakePool.reserve, blockNumber)
     const latestAssessor = getLatestContract(tinlakePool.assessor, blockNumber)
-    processedPools[pool.id] = { pool, latestNavFeed, latestReserve, tinlakePool }
+    processedPools[pool.id] = { pool, latestNavFeed, latestReserve, latestAssessor, tinlakePool }
 
     // initialize new pool
     if (!pool.isActive) {
@@ -132,54 +124,74 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
   })
 
   for (const callResult of callResults) {
-    const { pool, latestNavFeed, latestReserve, latestAssessor, tinlakePool } = processedPools[callResult.id]
-    // Update pool vurrentNav
-    if (callResult.type === 'currentNAV' && latestNavFeed) {
-      const currentNAV =
-        pool.id === ALT_1_POOL_ID && blockNumber > ALT_1_END_BLOCK
-          ? BigInt(0)
-          : NavfeedAbi__factory.createInterface().decodeFunctionResult('currentNAV', callResult.result)[0].toBigInt()
-      pool.portfolioValuation = currentNAV
-      pool.netAssetValue =
-        pool.id === ALT_1_POOL_ID && blockNumber > ALT_1_END_BLOCK
-          ? BigInt(0)
-          : (pool.portfolioValuation ?? BigInt(0)) + (pool.totalReserve ?? BigInt(0))
-      await pool.updateNormalizedNAV(currency.decimals)
-      logger.info(`Updating pool ${pool.id} with portfolioValuation: ${pool.portfolioValuation}`)
+    const { pool, tinlakePool } = processedPools[callResult.id]
+    const isClosedPool = pool.id === ALT_1_POOL_ID && blockNumber > ALT_1_END_BLOCK
+    switch (callResult.type) {
+      case 'currentNAV': {
+        // Update pool currentNav
+        if (isClosedPool) {
+          pool.setPortfolioValuation(BigInt(0))
+          pool.setNetAssetValue()
+          pool.updateNormalizedNAV(currency.decimals)
+          break
+        }
+        const navFeedInterface = NavfeedAbi__factory.createInterface()
+        const decodedNav = decodeCall(navFeedInterface, 'currentNAV', callResult.result)
+        if (!decodedNav) break
+        const currentNAV = decodedNav[0].toBigInt()
+        pool.setPortfolioValuation(currentNAV)
+        pool.setNetAssetValue()
+        pool.updateNormalizedNAV(currency.decimals)
+        logger.info(`Updating pool ${pool.id} with portfolioValuation: ${pool.portfolioValuation}`)
+        break
+      }
+      case 'totalBalance': {
+        // Update pool reserve
+        if (isClosedPool) {
+          pool.setTotalReserve(BigInt(0))
+          pool.setNetAssetValue()
+          pool.updateNormalizedNAV(currency.decimals)
+          break
+        }
+        const reserveInterface = ReserveAbi__factory.createInterface()
+        const decodedTotalBalance = decodeCall(reserveInterface,'totalBalance', callResult.result)
+        if (!decodedTotalBalance) break
+        const totalBalance = decodedTotalBalance[0].toBigInt()
+        pool.setTotalReserve(totalBalance)
+        pool.setNetAssetValue()
+        pool.updateNormalizedNAV(currency.decimals)
+        break
+      }
+      case 'calcSeniorTokenPrice': {
+        const assessorInterface = AssessorAbi__factory.createInterface()
+        const decodedSeniorPrice = decodeCall(assessorInterface,'calcSeniorTokenPrice', callResult.result)
+        if (!decodedSeniorPrice) break
+        const seniorPrice = decodedSeniorPrice[0].toBigInt()
+        const senior = await TrancheService.getOrSeed(tinlakePool.id, 'senior', blockchain.id)
+        await senior.setTokenPrice(seniorPrice)
+        await senior.save()
+        break
+      }
+      case 'calcJuniorTokenPrice': {
+        const assessorInterface = AssessorAbi__factory.createInterface()
+        const decodedJuniorPrice = decodeCall(assessorInterface,'calcJuniorTokenPrice', callResult.result)
+        if (!decodedJuniorPrice) break
+        const juniorPrice = decodedJuniorPrice[0].toBigInt()
+        const junior = await TrancheService.getOrSeed(tinlakePool.id, 'junior', blockchain.id)
+        junior.setTokenPrice(juniorPrice)
+        await junior.save()
+        break
+      }
+      default: {
+        logger.warn(`Unknown call result type: ${callResult.type}`)
+        break
+      }
     }
+    await pool.save()
+  }
 
-    // Update pool reserve
-    if (callResult.type === 'totalBalance' && latestReserve) {
-      const totalBalance =
-        pool.id === ALT_1_POOL_ID && blockNumber > ALT_1_END_BLOCK
-          ? BigInt(0)
-          : ReserveAbi__factory.createInterface().decodeFunctionResult('totalBalance', callResult.result)[0].toBigInt()
-      pool.totalReserve = totalBalance
-      pool.netAssetValue = (pool.portfolioValuation ?? BigInt(0)) + (pool.totalReserve ?? BigInt(0))
-      await pool.updateNormalizedNAV(currency.decimals)
-      logger.info(`Updating pool ${pool.id} with totalReserve: ${pool.totalReserve}`)
-    }
-
-    if (callResult.type === 'calcSeniorTokenPrice' && latestAssessor) {
-      const seniorPrice = AssessorAbi__factory.createInterface()
-        .decodeFunctionResult('calcSeniorTokenPrice', callResult.result)[0]
-        .toBigInt()
-      const senior = await TrancheService.getOrSeed(tinlakePool?.id, 'senior', blockchain.id)
-      senior.tokenPrice = seniorPrice
-      await senior.save()
-      logger.info(`Updating pool ${tinlakePool?.id} senior token price to: ${seniorPrice}`)
-    }
-
-    if (callResult.type === 'calcJuniorTokenPrice' && latestAssessor) {
-      const juniorPrice = AssessorAbi__factory.createInterface()
-        .decodeFunctionResult('calcJuniorTokenPrice', callResult.result)[0]
-        .toBigInt()
-      const junior = await TrancheService.getOrSeed(tinlakePool?.id, 'junior', blockchain.id)
-      junior.tokenPrice = juniorPrice
-      await junior.save()
-      logger.info(`Updating pool ${tinlakePool?.id} junior token price to: ${juniorPrice}`)
-    }
-
+  for (const row of Object.values(processedPools)) {
+    const { pool, latestNavFeed, tinlakePool } = row
     // Update loans (only index if fully synced)
     if (latestNavFeed && latestNavFeed.address && date.toDateString() === new Date().toDateString()) {
       await updateLoans(
@@ -191,7 +203,6 @@ async function _handleEthBlock(block: EthereumBlock): Promise<void> {
         latestNavFeed.address
       )
     }
-    await pool.save()
   }
 
   // Take snapshots
@@ -219,7 +230,7 @@ async function updateLoans(
 ) {
   logger.info(`Updating loans for pool ${poolId}`)
   let existingLoans = await AssetService.getByPoolId(poolId, { limit: 100 })
-  const existingLoanIds = existingLoans?.map((loan) => parseInt(loan.id.split('-')[1]))
+  const existingLoanIds = existingLoans.map((loan) => parseInt(loan.id.split('-')[1]))
   const newLoans = await getNewLoans(existingLoanIds as number[], shelf)
   logger.info(`Found ${newLoans.length} new loans for pool ${poolId}`)
 
@@ -473,7 +484,7 @@ async function getNewLoans(existingLoans: number[], shelfAddress: string) {
 }
 
 function getLatestContract(contractArray: ContractArray[], blockNumber: number) {
-  if(contractArray.length === 1) return contractArray[0]
+  if (contractArray.length === 1) return contractArray[0]
   return contractArray.find((entry) => entry.startBlock! <= blockNumber)
 }
 
@@ -506,6 +517,17 @@ async function processCalls(callsArray: PoolMulticall[], chunkSize = 30): Promis
   return callsArray
 }
 
+function decodeCall<T extends Interface>(abiInterface: T, functionFragment: string, data: BytesLike) {
+  try {
+    const decodedCall = abiInterface.decodeFunctionResult(functionFragment, data)
+    return decodedCall
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (err: any) {
+    logger.error(`Failed to decode interface call ${functionFragment}: ${err.errorName}`)
+    return undefined
+  }
+}
+
 interface PoolMulticall {
   id: string
   type: string
@@ -525,3 +547,14 @@ interface ContractArray {
   address: string | null
   startBlock?: number
 }
+
+type ProcessedPools = Record<
+  PoolService['id'],
+  {
+    pool: PoolService
+    tinlakePool: (typeof tinlakePools)[0]
+    latestNavFeed?: ContractArray
+    latestReserve?: ContractArray
+    latestAssessor?: ContractArray
+  }
+>
