@@ -537,3 +537,12 @@ export interface TrancheCurrencyBefore1400 extends Struct {
   poolId: u64
   trancheId: U8aFixed
 }
+
+export interface RemarkEnum extends Enum {
+  isIpfsHash: boolean
+  asIpfsHash: string
+  isNamed: boolean
+  asNamed: string
+}
+
+export type RemarkEvent = ITuple<[remarks: Vec<RemarkEnum>]>
